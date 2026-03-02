@@ -1,35 +1,29 @@
-﻿using eft_dma_radar;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.UI;
-using eft_dma_radar.UI.LootFilters;
-using eft_dma_radar.UI.Misc;
-using eft_dma_radar.UI.Pages;
-using eft_dma_radar.Common.DMA;
-using eft_dma_radar.UI.ESP;
+﻿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Config;
-using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.LowLevel;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Tarkov.Features.MemoryWrites;
+using eft_dma_radar.Tarkov.Features.MemoryWrites.Chams;
+using eft_dma_radar.UI.ESP;
+using eft_dma_radar.UI.LootFilters;
+using eft_dma_radar.UI.Misc;
 using System.IO;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using static eft_dma_radar.Tarkov.API.EFTProfileService;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using Size = System.Windows.Size;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Chams;
 public static class ConfigManager
 {
     private static readonly string ConfigDirectory = Program.ConfigPath.FullName;
     public static readonly string CustomConfigDirectory = Program.CustomConfigPath.FullName;
     private const string ConfigExtension = ".json";
     private const string LastSelectedConfigFile = "lastSelectedConfig.json";
-    
+
     public static Config CurrentConfig { get; private set; }
     public static string CurrentConfigName { get; private set; }
 
@@ -51,18 +45,18 @@ public static class ConfigManager
         // Try to load last selected config
         string configToLoad = GetLastSelectedConfig();
         // If no last selected config or it doesn't exist, use config-eft-v3.json
-        if (string.IsNullOrEmpty(configToLoad)) 
+        if (string.IsNullOrEmpty(configToLoad))
         {
             configToLoad = "config-eft-v3.json";
         }
 
         var configPath = Path.Combine(CustomConfigDirectory, configToLoad);
-        
+
         // If the config file doesn't exist, create it
         if (!File.Exists(configPath))
         {
-            CurrentConfig = new Config 
-            { 
+            CurrentConfig = new Config
+            {
                 ConfigName = Path.GetFileNameWithoutExtension(configToLoad),
                 Filename = configToLoad
             };
@@ -83,7 +77,7 @@ public static class ConfigManager
     private static string GetLastSelectedConfig()
     {
         var lastSelectedPath = Path.Combine(CustomConfigDirectory, LastSelectedConfigFile);
-        
+
         try
         {
             if (File.Exists(lastSelectedPath))
@@ -97,7 +91,7 @@ public static class ConfigManager
         {
             XMLogging.WriteLine($"[Config] Error reading last selected config: {ex}");
         }
-        
+
         return null;
     }
 
@@ -105,7 +99,7 @@ public static class ConfigManager
     private static void SetLastSelectedConfig(string configFilename)
     {
         var lastSelectedPath = Path.Combine(CustomConfigDirectory, LastSelectedConfigFile);
-        
+
         try
         {
             var lastSelected = new LastSelectedConfig { ConfigFilename = configFilename };
@@ -166,8 +160,8 @@ public static class ConfigManager
                     config.ConfigName = Path.GetFileNameWithoutExtension(path);
                 }
             }
-                //GeneralSettingsControl.ApplyConfig();
-            
+            //GeneralSettingsControl.ApplyConfig();
+
             return config;
         }
         catch (Exception ex)
@@ -176,7 +170,7 @@ public static class ConfigManager
             return null;
         }
     }
-    
+
     private static bool SafeSaveConfig(Config config, string path)
     {
         try
@@ -239,20 +233,20 @@ public static class ConfigManager
         {
             if (string.IsNullOrEmpty(configName))
                 return false;
-    
+
             if (!configName.EndsWith(ConfigExtension, StringComparison.OrdinalIgnoreCase))
                 configName += ConfigExtension;
-    
+
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(CurrentConfig, options);
             var configToSave = JsonSerializer.Deserialize<Config>(json, options);
-            
+
             configToSave.Filename = configName;
             configToSave.ConfigName = Path.GetFileNameWithoutExtension(configName);
-    
+
             var filePath = Path.Combine(CustomConfigDirectory, configName);
             SafeSaveConfig(configToSave, filePath);
-            
+
             XMLogging.WriteLine($"[Config] Saved new config: {configName}");
             return true;
         }
@@ -262,7 +256,7 @@ public static class ConfigManager
             return false;
         }
     }
-   
+
     public static bool DeleteConfig(string configName)
     {
         try
@@ -279,7 +273,7 @@ public static class ConfigManager
             {
                 // Check if we're deleting the currently loaded config
                 bool isCurrent = CurrentConfigName.Equals(configName, StringComparison.OrdinalIgnoreCase);
-                
+
                 File.Delete(filePath);
 
                 if (!File.Exists(filePath))
@@ -289,7 +283,7 @@ public static class ConfigManager
                     {
                         var fallbackConfig = "config-eft-v3.json";
                         var fallbackPath = Path.Combine(CustomConfigDirectory, fallbackConfig);
-                        
+
                         if (File.Exists(fallbackPath))
                         {
                             LoadConfig(fallbackConfig);
@@ -323,7 +317,7 @@ public static class ConfigManager
     {
         var defaultConfig = "config-eft-v3.json";
         var defaultPath = Path.Combine(CustomConfigDirectory, defaultConfig);
-        
+
         if (File.Exists(defaultPath))
         {
             LoadConfig(defaultConfig);
@@ -354,9 +348,9 @@ namespace eft_dma_radar.UI.Misc
         [JsonIgnore]
         public LowLevelCache LowLevelCache => this.Cache.LowLevel;
         [JsonIgnore]
-        public ChamsConfig ChamsConfig => this.MemWrites.Chams;    
+        public ChamsConfig ChamsConfig => this.MemWrites.Chams;
         [JsonIgnore]
-        public bool AdvancedMemWrites => this.MemWrites.AdvancedMemWrites;           
+        public bool AdvancedMemWrites => this.MemWrites.AdvancedMemWrites;
         #endregion
 
         /// <summary>
@@ -503,7 +497,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("lootPPS")]
         public bool LootPPS { get; set; }
-        
+
         /// <summary>
         /// Loot Price Mode.
         /// </summary>
@@ -637,7 +631,7 @@ namespace eft_dma_radar.UI.Misc
         /// <summary>
         /// Filename of this Config File (not full path).
         /// </summary>
-        [JsonIgnore] 
+        [JsonIgnore]
         public string Filename { get; set; } = "config-eft-v3.json";
 
         /// <summary>
@@ -647,20 +641,7 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("alternateProfileService")]
         public bool AlternateProfileService { get; set; } = false;
 
-        /// <summary>
-        /// The maximum amount of requests to send per minute to eft-api.tech (5 = free tier, 60+ = premium tier)
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("requestsPerMin")]
-        public int RequestsPerMin { get; set; } = 60;
-
         [JsonIgnore] private static readonly Lock _syncRoot = new();
-
-        [JsonIgnore]
-        private FileInfo _configFile => new(Path.Combine(Program.ConfigPath.FullName, Filename));
-
-        [JsonIgnore]
-        private FileInfo _tempFile => new(Path.Combine(Program.ConfigPath.FullName, Filename + ".tmp"));
 
         public static Config Load(string filename)
         {
@@ -668,11 +649,13 @@ namespace eft_dma_radar.UI.Misc
             {
                 try
                 {
-                    Config config = new Config();
-                    config.Filename = filename;
+                    Config config = new()
+                    {
+                        Filename = filename
+                    };
 
                     // Always load from custom config directory now
-                    FileInfo configFile = new FileInfo(Path.Combine(Program.CustomConfigPath.FullName, filename));
+                    FileInfo configFile = new(Path.Combine(Program.CustomConfigPath.FullName, filename));
                     var tempFile = new FileInfo(configFile.FullName + ".tmp");
 
                     if (configFile.Exists)
@@ -1014,7 +997,7 @@ namespace eft_dma_radar.UI.Misc
             }
         }
         #endregion
-    } 
+    }
     /// <summary>
     /// Configuration for panel positions
     /// </summary>
@@ -1269,7 +1252,7 @@ namespace eft_dma_radar.UI.Misc
             return Settings[playerType];
         }
     }
-    
+
     /// <summary>
     /// Settings for a specific player type
     /// </summary>
@@ -1613,13 +1596,13 @@ namespace eft_dma_radar.UI.Misc
 
         [JsonPropertyName("showRadius")]
         public bool ShowRadius { get; set; } = false;
-        
+
         [JsonPropertyName("showLockedDoors")]
         public bool ShowLockedDoors { get; set; } = true;
 
         [JsonPropertyName("showUnlockedDoors")]
         public bool ShowUnlockedDoors { get; set; } = true;
-        
+
         [JsonPropertyName("hideInactiveExfils")]
         public bool HideInactiveExfils { get; set; } = false;
 
@@ -1847,7 +1830,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("espTargetScreen")]
         public int EspTargetScreen { get; set; } = 1; // Default to second monitor (fuser)
-        
+
         /// <summary>
         /// Show FPS Counter in ESP Window.
         /// </summary>
@@ -1938,7 +1921,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("topLootOffset")]
         public PointFSer TopLootOffset { get; set; } = new PointFSer(0, 0);
-        
+
         [JsonPropertyName("killfeedOffset")]
         public PointFSer KillfeedOffset { get; set; } = new PointFSer(0, 0);
 
@@ -2115,7 +2098,7 @@ namespace eft_dma_radar.UI.Misc
         /// Keep always off, left for Chams compatibility.
         /// </summary>
         [JsonPropertyName("advancedMemWritesRisky")]
-        public bool AdvancedMemWrites { get; set; } = false;        
+        public bool AdvancedMemWrites { get; set; } = false;
         /// <summary>
         /// Enables DMA Memory Writing
         /// </summary>
@@ -2145,7 +2128,7 @@ namespace eft_dma_radar.UI.Misc
         /// Enable Loot Through Walls (LTW) on Startup.
         /// </summary>
         [JsonPropertyName("ltw")]
-        public LTWConfig LootThroughWalls { get; set; } = new();        
+        public LTWConfig LootThroughWalls { get; set; } = new();
         /// <summary>
         /// Amount of 'No Sway'. 0 = None, 1 = Full
         /// </summary>
@@ -2160,7 +2143,7 @@ namespace eft_dma_radar.UI.Misc
 
         [JsonPropertyName("muleMode")]
         public bool MuleMode { get; set; } = false;
-        
+
         [JsonPropertyName("noWeaponMalfunctions")]
         public bool NoWeaponMalfunctions { get; set; } = false;
 
@@ -2299,13 +2282,13 @@ namespace eft_dma_radar.UI.Misc
         /// Enables big head mode.
         /// </summary>
         [JsonPropertyName("bigHead")]
-        public BigHeadConfig BigHead { get; set; } = new();   
+        public BigHeadConfig BigHead { get; set; } = new();
 
         /// <summary>
         /// Move Speed is Enabled.
         /// </summary>
         [JsonPropertyName("moveSpeed")]
-        public MoveSpeedConfig MoveSpeed { get; set; } = new();     
+        public MoveSpeedConfig MoveSpeed { get; set; } = new();
 
     }
     public sealed class MoveSpeedConfig
@@ -2342,7 +2325,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("scale")]
         public float Scale { get; set; } = 1.0f;
-    }    
+    }
     public sealed class LongJumpConfig
     {
         /// <summary>

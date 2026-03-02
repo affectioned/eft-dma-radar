@@ -1,7 +1,4 @@
-﻿using SkiaSharp;
-using System.Text.Json.Serialization;
-
-namespace eft_dma_radar.Common.Misc.Data
+﻿namespace eft_dma_radar.Common.Misc.Data
 {
     /// <summary>
     /// JSON Wrapper for Important Loot.
@@ -91,5 +88,5 @@ namespace eft_dma_radar.Common.Misc.Data
 
             public override string ToString() => Name;
         }
-    }   
+    }
 }

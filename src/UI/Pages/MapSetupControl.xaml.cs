@@ -1,16 +1,12 @@
-﻿using eft_dma_radar.Tarkov.EFTPlayer;
+﻿using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using HandyControl.Controls;
-using System;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using Point = System.Windows.Point;
-using UserControl = System.Windows.Controls.UserControl;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using NumericUpDown = HandyControl.Controls.NumericUpDown;
+using Point = System.Windows.Point;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace eft_dma_radar.UI.Pages
 {

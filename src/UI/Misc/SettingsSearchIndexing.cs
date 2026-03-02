@@ -1,26 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
-using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
-using Color = System.Windows.Media.Color;
-using ColorConverter = System.Windows.Media.ColorConverter;
 using ComboBox = System.Windows.Controls.ComboBox;
-using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
-using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using GroupBox = System.Windows.Controls.GroupBox;
 using Point = System.Windows.Point;
+using RadioButton = System.Windows.Controls.RadioButton;
+using TabControl = System.Windows.Controls.TabControl;
+using TextBox = System.Windows.Controls.TextBox;
 using UserControl = System.Windows.Controls.UserControl;
 using Window = System.Windows.Window;
-using RadioButton = System.Windows.Controls.RadioButton;
-using TextBox = System.Windows.Controls.TextBox;
-using GroupBox = System.Windows.Controls.GroupBox;
-using TabControl = System.Windows.Controls.TabControl;
-using System.Windows.Media.Media3D;
 namespace eft_dma_radar.UI.Misc
 {
     public enum SettingsHitKind
@@ -410,7 +402,7 @@ namespace eft_dma_radar.UI.Misc
                     return item.ToString();
             }
         }
-            
+
         private static bool IsVisual(DependencyObject d) => d is Visual || d is Visual3D;
         private static DependencyObject GetParentSafe(DependencyObject d)
         {
@@ -517,7 +509,7 @@ namespace eft_dma_radar.UI.Misc
                         }
                     }
                     break;
-            }            
+            }
         }
 
         private static TAncestor FindAncestor<TAncestor>(DependencyObject start) where TAncestor : DependencyObject

@@ -1,11 +1,9 @@
-using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
-using System.Collections.Concurrent;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {

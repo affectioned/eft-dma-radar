@@ -1,10 +1,10 @@
-﻿using System.Collections.Frozen;
+﻿using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity.Collections;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
+using System.Collections.Frozen;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -51,7 +51,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         private readonly bool _isPMC;
         private readonly Player _player;
         private IReadOnlyDictionary<string, ulong> _slots =
-            FrozenDictionary<string, ulong>.Empty;        
+            FrozenDictionary<string, ulong>.Empty;
         public GearManager(Player player, bool isPMC = false)
         {
             _player = player;
@@ -127,7 +127,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 }
                 catch { }
             }
-            TryResolveAliveDogtagProfileId(_player, _equipmentSlotsPtr);  
+            TryResolveAliveDogtagProfileId(_player, _equipmentSlotsPtr);
 
             _slots = dict.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
             return _slots.Count > 0;
@@ -200,9 +200,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 return;
             if (player.IsAI)
                 return;
-        
+
             ulong barterOther = 0;
-        
+
             using var slots = MemArray<ulong>.Get(slotsPtr);
             foreach (var slotPtr in slots)
             {
@@ -214,44 +214,44 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                         continue;
                 }
                 catch { continue; }
-        
+
                 string className;
                 try
                 {
                     className = ObjectClass.ReadName(item);
                 }
                 catch { continue; }
-        
+
                 if (!className.Equals("BarterOther", StringComparison.Ordinal))
                     continue;
-        
+
                 barterOther = item;
                 break;
             }
-        
+
             if (barterOther == 0)
                 return;
-        
+
             try
             {
                 var dogtag = Memory.ReadPtr(barterOther + Offsets.BarterOtherOffsets.Dogtag);
                 if (!dogtag.IsValidVirtualAddress())
                     return;
-        
+
                 var profileIdPtr = Memory.ReadPtr(dogtag + Offsets.DogtagComponent.ProfileId);
                 if (!profileIdPtr.IsValidVirtualAddress())
                     return;
-        
+
                 var profileId = Memory.ReadUnityString(profileIdPtr, 32);
                 if (string.IsNullOrWhiteSpace(profileId))
                     return;
-        
+
                 // ✅ SET PROFILE ID ONCE
                 player.ProfileID = profileId;
-        
+
                 XMLogging.WriteLine(
                     $"[GearManager] Resolved ProfileID for {player}: {profileId}");
-        
+
             }
             catch { }
         }
@@ -273,7 +273,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 {
                     gear[SECURE_SLOT] = new GearItem
                     {
-                        Long  = entry.Name ?? "Secure Container",
+                        Long = entry.Name ?? "Secure Container",
                         Short = entry.ShortName ?? "Secure"
                     };
                 }

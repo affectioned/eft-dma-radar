@@ -1,11 +1,8 @@
-using eft_dma_radar.UI.ESP;
 using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.LowLevel.Types;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.Features.MemoryWrites.Chams;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
@@ -13,19 +10,12 @@ using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
 using HandyControl.Controls;
-using HandyControl.Data;
-using HandyControl.Themes;
-using Microsoft.AspNetCore.Identity;
-using System;
-using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using static SDK.Offsets;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
 using Color = System.Windows.Media.Color;
@@ -1381,7 +1371,7 @@ namespace eft_dma_radar.UI.Pages
 
         private void LoadFuserSettings()
         {
-            var cfg = Config.ESP;            
+            var cfg = Config.ESP;
             // Load available monitors
             LoadMonitors();
 
@@ -1887,7 +1877,7 @@ namespace eft_dma_radar.UI.Pages
         private void ScaleESPLines()
         {
             var lineScale = Config.ESP.LineScale;
-            
+
             SKPaints.PaintVisible.StrokeWidth = 1.5f * lineScale;
             SKPaints.PaintUSECESP.StrokeWidth = 1.5f * lineScale;
             SKPaints.PaintBEARESP.StrokeWidth = 1.5f * lineScale;
@@ -1947,7 +1937,7 @@ namespace eft_dma_radar.UI.Pages
 
             #region Paints
             SKPaints.PaintMiniLocalPlayer.StrokeWidth = 3 * newScale;
-            SKPaints.PaintMiniTeammate.StrokeWidth = 3 * newScale;;
+            SKPaints.PaintMiniTeammate.StrokeWidth = 3 * newScale; ;
             SKPaints.PaintMiniUSEC.StrokeWidth = 3 * newScale;
             SKPaints.PaintMiniBEAR.StrokeWidth = 3 * newScale;
             SKPaints.PaintMiniSpecial.StrokeWidth = 3 * newScale;
@@ -2078,7 +2068,7 @@ namespace eft_dma_radar.UI.Pages
                     case "TrailDuration":
                         Config.ESP.EntityTypeESPSettings.GetSettings("Grenade").TrailDuration = floatValue;
                         break;
-                        case "MinTrailDistance":
+                    case "MinTrailDistance":
                         Config.ESP.EntityTypeESPSettings.GetSettings("Grenade").MinTrailDistance = floatValue;
                         break;
                     case "MinimumKD":
@@ -2256,14 +2246,14 @@ namespace eft_dma_radar.UI.Pages
                 cmbTargetMonitor.ItemsSource = monitors;
                 cmbTargetMonitor.DisplayMemberPath = "DisplayName";
                 cmbTargetMonitor.SelectedValuePath = "Index";
-                
+
                 // Select configured monitor (default to index 1 if available, otherwise primary)
                 var targetIndex = Config.ESP.EspTargetScreen;
                 if (targetIndex >= 0 && targetIndex < monitors.Count)
                     cmbTargetMonitor.SelectedIndex = targetIndex;
                 else
                     cmbTargetMonitor.SelectedIndex = monitors.Count > 1 ? 1 : 0; // Default to second monitor if available
-                
+
                 XMLogging.WriteLine($"[ESP] Loaded {monitors.Count} monitor(s), selected monitor {cmbTargetMonitor.SelectedIndex}");
             }
             catch (Exception ex)
@@ -2282,7 +2272,7 @@ namespace eft_dma_radar.UI.Pages
                 Config.ESP.EspTargetScreen = monitor.Index;
                 Config.Save();
                 XMLogging.WriteLine($"[ESP] Target monitor changed to {monitor.DisplayName}");
-                
+
                 // Log for debugging
                 XMLogging.WriteLine($"[ESP] Monitor resolution: {monitor.Width}x{monitor.Height} @ ({monitor.Left}, {monitor.Top})");
             }

@@ -1,8 +1,5 @@
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity.LowLevel.Types;
-using eft_dma_shared.Common.Unity;
-using System;
-using System.Runtime.CompilerServices;
 
 namespace eft_dma_shared.Common.Unity.LowLevel.Hooks
 {
@@ -13,7 +10,7 @@ namespace eft_dma_shared.Common.Unity.LowLevel.Hooks
             ulong fn = NativeHook.UnityPlayerDll + NativeOffsets.GameObject_CUSTOM_Find;
             return NativeHook.Call(fn, name) ?? 0;
         }
-        public static readonly object Lock = new();        
+        public static readonly object Lock = new();
         public static ulong FindGameObjectS(string name)
         {
             lock (Lock)
@@ -26,7 +23,7 @@ namespace eft_dma_shared.Common.Unity.LowLevel.Hooks
 
                 if (result == 0x0)
                     XMLogging.WriteLine($"Game object \"{name}\" could not be found!");
-                
+
                 return result;
             }
         }

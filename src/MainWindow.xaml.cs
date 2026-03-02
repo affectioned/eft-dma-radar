@@ -1,10 +1,12 @@
-﻿using eft_dma_radar.Tarkov;
-using eft_dma_radar.Tarkov.API;
+﻿using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
@@ -15,37 +17,19 @@ using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
 using eft_dma_radar.UI.SKWidgetControl;
-using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.LowLevel;
 using HandyControl.Controls;
-using HandyControl.Themes;
-using HandyControl.Tools;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
-using SkiaSharp;
-using SkiaSharp.Views.WPF;
-using System;
-using System.Linq;
-using System.Security.Authentication.ExtendedProtection;
-using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using Application = System.Windows.Application;
 using Color = System.Windows.Media.Color;
-using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using Size = System.Windows.Size;
 using Switch = eft_dma_radar.Tarkov.GameWorld.Exits.Switch;
-using Timer = System.Timers.Timer;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace eft_dma_radar
@@ -63,12 +47,12 @@ namespace eft_dma_radar
         private Vector2 _mapPanPosition;
 
         private const float ZOOM_TO_MOUSE_STRENGTH = 5f; // Controls how much zoom moves toward mouse cursor
-                                                           // 0.0 = Always zoom to center (like old-school map zoom)
-                                                           // 0.5 = Zoom halfway toward mouse
-                                                           // 0.7 = Nice balanced feel (recommended)
-                                                           // 1.0 = Mouse stays at same world position
-                                                           // 1.5 = Overshoot toward mouse (aggressive zoom)
-                                                           // 2.0 = Heavy overshoot (might feel too aggressive)
+                                                         // 0.0 = Always zoom to center (like old-school map zoom)
+                                                         // 0.5 = Zoom halfway toward mouse
+                                                         // 0.7 = Nice balanced feel (recommended)
+                                                         // 1.0 = Mouse stays at same world position
+                                                         // 1.5 = Overshoot toward mouse (aggressive zoom)
+                                                         // 2.0 = Heavy overshoot (might feel too aggressive)
 
         private const int ZOOM_STEP = 5; // How much zoom changes per scroll step (1-50 typical range)
 
@@ -329,93 +313,93 @@ namespace eft_dma_radar
         /// </summary>
         private void SkCanvas_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e)
         {
-            var isStarting  = Starting;
-            var isReady     = Ready;
-            var inRaid      = InRaid;
+            var isStarting = Starting;
+            var isReady = Ready;
+            var inRaid = InRaid;
             var localPlayer = LocalPlayer;
-            var canvas      = e.Surface.Canvas;
-        
+            var canvas = e.Surface.Canvas;
+
             try
             {
                 SkiaResourceTracker.TrackMainWindowFrame();
-        
+
                 SetFPS(inRaid, canvas);
-        
+
                 var mapID = MapID;
                 if (string.IsNullOrWhiteSpace(mapID))
                     return;
-        
+
                 if (!mapID.Equals(XMMapManager.Map?.ID, StringComparison.OrdinalIgnoreCase))
                 {
                     XMMapManager.LoadMap(mapID);
                     UpdateSwitches();
                 }
-        
+
                 canvas.Clear(InterfaceColorOptions.RadarBackgroundColor);
-        
+
                 if (inRaid && localPlayer is not null)
                 {
                     var map = XMMapManager.Map;
                     ArgumentNullException.ThrowIfNull(map);
-        
+
                     var closestToMouse = _mouseOverItem;
-        
-                    var localPlayerPos     = localPlayer.Position;
-                    var localPlayerMapPos  = localPlayerPos.ToMapPos(map.Config);
-        
+
+                    var localPlayerPos = localPlayer.Position;
+                    var localPlayerMapPos = localPlayerPos.ToMapPos(map.Config);
+
                     XMMapParams mapParams;
                     if (_freeMode)
                         mapParams = map.GetParameters(skCanvas, _zoom, ref _mapPanPosition);
                     else
                         mapParams = map.GetParameters(skCanvas, _zoom, ref localPlayerMapPos);
-        
+
                     if (GeneralSettingsControl.chkMapSetup.IsChecked == true)
                         MapSetupControl.UpdatePlayerPosition(localPlayer);
-        
+
                     var mapCanvasBounds = new SKRect
                     {
-                        Left   = 0,
-                        Right  = (float)skCanvas.ActualWidth,
-                        Top    = 0,
+                        Left = 0,
+                        Right = (float)skCanvas.ActualWidth,
+                        Top = 0,
                         Bottom = (float)skCanvas.ActualHeight
                     };
-        
+
                     var centerX = (mapCanvasBounds.Left + mapCanvasBounds.Right) / 2;
                     var centerY = (mapCanvasBounds.Top + mapCanvasBounds.Bottom) / 2;
-        
+
                     canvas.RotateDegrees(_rotationDegrees, centerX, centerY);
-        
+
                     map.Draw(canvas, localPlayer.Position.Y, mapParams.Bounds, mapCanvasBounds);
-        
+
                     SKPaints.UpdatePulsingAsteriskColor();
-        
+
                     localPlayer.Draw(canvas, mapParams, localPlayer);
-        
+
                     // ─────────────────────────────
                     // SNAPSHOT ALL COLLECTIONS ONCE
                     // ─────────────────────────────
                     var allPlayersSnapshot = AllPlayers?.ToList();
-                    var lootSnapshot       = Loot?.ToList();
+                    var lootSnapshot = Loot?.ToList();
                     var containersSnapshot = Containers?.ToList();
                     var explosivesSnapshot = Explosives?.ToList();
-                    var exitsSnapshot      = Exits?.ToList();
-                    var switchesSnapshot   = Switches?.ToList();
-                    var doorsSnapshot      = Memory.Game?.Interactables._Doors?.ToList();
-        
+                    var exitsSnapshot = Exits?.ToList();
+                    var switchesSnapshot = Switches?.ToList();
+                    var doorsSnapshot = Memory.Game?.Interactables._Doors?.ToList();
+
                     var allPlayers = allPlayersSnapshot?
                         .Where(x => !x.HasExfild)
                         .ToList();
-        
+
                     var btrs = allPlayers?
                         .OfType<BtrOperator>()
                         .ToList();
-        
+
                     var normalPlayers = allPlayers?
                         .Where(p => p is not BtrOperator)
                         .ToList();
-        
+
                     var battleMode = Config.BattleMode;
-        
+
                     // ─────────────────────────────
                     // GROUP CONNECTORS (BOTTOM)
                     // ─────────────────────────────
@@ -450,7 +434,7 @@ namespace eft_dma_radar
                                     SKPaints.PaintConnectorGroup);
                             }
                         }
-                    }                  
+                    }
                     if (Config.PlayersOnTop && Config.ConnectGroups)
                     {
                         var groupedPlayers = allPlayers?.Where(x => x.IsHumanHostileActive && x.SpawnGroupID != -1);
@@ -476,9 +460,9 @@ namespace eft_dma_radar
                                 }
                             }
                         }
-                    }    
+                    }
 
-        
+
                     // ─────────────────────────────
                     // PLAYERS (BOTTOM)
                     // ─────────────────────────────
@@ -488,17 +472,17 @@ namespace eft_dma_radar
                             .Where(p => p != localPlayer)
                             .OrderBy(p => DrawPriority(p.Type))
                             .ToList();
-        
+
                         foreach (var player in ordered)
                             player.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     if (btrs is not null)
                     {
                         foreach (var btr in btrs)
                             btr.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     // ─────────────────────────────
                     // CONTAINERS
                     // ─────────────────────────────
@@ -510,15 +494,15 @@ namespace eft_dma_radar
                             {
                                 if (!LootSettingsControl.ContainerIsTracked(container.ID ?? "NULL"))
                                     continue;
-        
+
                                 if (Config.Containers.HideSearched && container.Searched)
                                     continue;
-        
+
                                 container.Draw(canvas, mapParams, localPlayer);
                             }
                         }
                     }
-        
+
                     // ─────────────────────────────
                     // LOOT
                     // ─────────────────────────────
@@ -532,20 +516,20 @@ namespace eft_dma_radar
                             .Where(x => x is not QuestItem)
                             .Reverse()
                             .ToList();
-        
+
                         if (loot is not null)
                         {
                             foreach (var item in loot)
                             {
                                 if (!LootItem.CorpseSettings.Enabled && item is LootCorpse)
                                     continue;
-        
+
                                 item.CheckNotify();
                                 item.Draw(canvas, mapParams, localPlayer);
                             }
                         }
                     }
-        
+
                     // ─────────────────────────────
                     // QUEST ITEMS & LOCATIONS
                     // ─────────────────────────────
@@ -556,12 +540,12 @@ namespace eft_dma_radar
                             var questItems = lootSnapshot?
                                 .Where(x => x is QuestItem)
                                 .ToList();
-        
+
                             if (questItems is not null)
                                 foreach (var item in questItems)
                                     item.Draw(canvas, mapParams, localPlayer);
                         }
-        
+
                         if (QuestManager.Settings.Enabled)
                         {
                             var questLocations = Memory.QuestManager?.LocationConditions?.ToList();
@@ -570,29 +554,29 @@ namespace eft_dma_radar
                                     loc.Draw(canvas, mapParams, localPlayer);
                         }
                     }
-        
+
                     // ─────────────────────────────
                     // EXPLOSIVES / EXITS / SWITCHES
                     // ─────────────────────────────
                     if (explosivesSnapshot is not null)
                         foreach (var explosive in explosivesSnapshot)
                             explosive.Draw(canvas, mapParams, localPlayer);
-        
+
                     if (!battleMode && exitsSnapshot is not null)
                     {
                         foreach (var exit in exitsSnapshot)
                         {
                             if (exit is Exfil ex && !localPlayer.IsPmc && ex.Status is Exfil.EStatus.Closed)
                                 continue;
-        
+
                             exit.Draw(canvas, mapParams, localPlayer);
                         }
                     }
-        
+
                     if (!battleMode && Switch.Settings.Enabled && switchesSnapshot is not null)
                         foreach (var sw in switchesSnapshot)
                             sw.Draw(canvas, mapParams, localPlayer);
-        
+
                     // ─────────────────────────────
                     // PLAYERS ON TOP
                     // ─────────────────────────────
@@ -602,11 +586,11 @@ namespace eft_dma_radar
                             .Where(p => p != localPlayer)
                             .OrderBy(p => DrawPriority(p.Type))
                             .ToList();
-        
+
                         foreach (var player in ordered)
                             player.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     closestToMouse?.DrawMouseover(canvas, mapParams, localPlayer);
                     // ─────────────────────────────
                     // DOORS
@@ -615,14 +599,14 @@ namespace eft_dma_radar
                     {
                         foreach (var door in doorsSnapshot)
                             door.Draw(canvas, mapParams, localPlayer);
-                    }          
+                    }
                     // ─────────────────────────────
                     // PINGS
                     // ─────────────────────────────
                     if (_activePings.Count > 0)
                     {
                         var now = DateTime.UtcNow;
-        
+
                         foreach (var ping in _activePings.ToList())
                         {
                             var elapsed = (float)(now - ping.StartTime).TotalSeconds;
@@ -631,37 +615,37 @@ namespace eft_dma_radar
                                 _activePings.Remove(ping);
                                 continue;
                             }
-        
+
                             float progress = elapsed / ping.DurationSeconds;
-                            float radius   = 10 + 50 * progress;
-                            float alpha    = 1f - progress;
-        
+                            float radius = 10 + 50 * progress;
+                            float alpha = 1f - progress;
+
                             var center = ping.Position.ToMapPos(map.Config).ToZoomedPos(mapParams);
-        
+
                             using var paint = new SKPaint
                             {
-                                Style        = SKPaintStyle.Stroke,
-                                StrokeWidth  = 4,
-                                Color        = new SKColor(0, 255, 255, (byte)(alpha * 255)),
-                                IsAntialias  = true
+                                Style = SKPaintStyle.Stroke,
+                                StrokeWidth = 4,
+                                Color = new SKColor(0, 255, 255, (byte)(alpha * 255)),
+                                IsAntialias = true
                             };
-        
+
                             canvas.DrawCircle(center.X, center.Y, radius, paint);
                         }
                     }
-        
+
                     if (allPlayers is not null && Config.ShowInfoTab)
                         _playerInfo?.Draw(canvas, localPlayer, allPlayers);
-        
+
                     if (Config.AimviewWidgetEnabled)
                         _aimview?.Draw(canvas);
-        
+
                     if (Config.ShowDebugWidget)
                         _debugInfo?.Draw(canvas);
-        
+
                     if (Config.ShowLootInfoWidget)
                         _lootInfo?.Draw(canvas, UnfilteredLoot);
-        
+
                     if (Config.ShowQuestInfoWidget)
                         _questInfo?.Draw(canvas);
                 }
@@ -674,7 +658,7 @@ namespace eft_dma_radar
                     else if (!inRaid)
                         WaitingForRaidStatus(canvas);
                 }
-        
+
                 SetStatusText(canvas);
                 canvas.Flush();
             }
@@ -690,10 +674,10 @@ namespace eft_dma_radar
             PlayerType.Streamer => 6,
             PlayerType.USEC or PlayerType.BEAR => 5,
             PlayerType.PScav => 4,
-            PlayerType.AIBoss=> 3,
+            PlayerType.AIBoss => 3,
             PlayerType.AIRaider => 2,
-            _                 => 1
-            
+            _ => 1
+
         };
         public static void PingItem(string itemName)
         {
@@ -880,7 +864,7 @@ namespace eft_dma_radar
             int zoomChange = e.Delta > 0 ? -ZOOM_STEP : ZOOM_STEP;
             var newZoom = Math.Max(1, Math.Min(200, _zoom + zoomChange));
 
-            if (newZoom == _zoom) 
+            if (newZoom == _zoom)
                 return;
 
             if (_freeMode && zoomChange < 0)
@@ -1009,7 +993,7 @@ namespace eft_dma_radar
                 var aimEnabled = Aimbot.Config.Enabled;
                 var mode = Aimbot.Config.TargetingMode;
                 string label = null;
-                
+
                 if (memWritesEnabled && Config.MemWrites.RageMode)
                     label = MemWriteFeature<Aimbot>.Instance.Enabled ? $"{mode.GetDescription()}: RAGE MODE" : "RAGE MODE";
 
@@ -1937,7 +1921,8 @@ namespace eft_dma_radar
 
         private void OnAllPanelsReady(object sender, EventArgs e)
         {
-            Dispatcher.Invoke(() => {
+            Dispatcher.Invoke(() =>
+            {
                 InitializeToolbar();
                 InitializePanelsCollection();
 
@@ -1955,7 +1940,8 @@ namespace eft_dma_radar
                 RestorePanelPositions();
                 AttachPanelEvents();
 
-                Dispatcher.BeginInvoke(new Action(() => {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
                     ValidateAndFixImportedToolbarPosition();
                     ValidateAndFixImportedPanelPositions();
                     EnsureAllPanelsInBounds();
@@ -2245,7 +2231,8 @@ namespace eft_dma_radar
 
         private void AttachPreviewMouseDown(FrameworkElement panel, Canvas canvas)
         {
-            panel.PreviewMouseDown += (s, e) => {
+            panel.PreviewMouseDown += (s, e) =>
+            {
                 BringPanelToFront(canvas);
             };
         }
@@ -2410,10 +2397,10 @@ namespace eft_dma_radar
 
             MapSetupControl.DragRequested += sharedDragHandler;
             MapSetupControl.CloseRequested += sharedCloseHandler;
-            
-            SettingsSearchControl.DragRequested   += sharedDragHandler;
+
+            SettingsSearchControl.DragRequested += sharedDragHandler;
             SettingsSearchControl.ResizeRequested += sharedResizeHandler;
-            SettingsSearchControl.CloseRequested  += sharedCloseHandler;
+            SettingsSearchControl.CloseRequested += sharedCloseHandler;
         }
 
         private void InitializePanelsCollection()
@@ -2561,7 +2548,7 @@ namespace eft_dma_radar
             if (e.Key == Key.Delete)
             {
                 LootFilterControl.HandleDeleteKey();
-                e.Handled = true; 
+                e.Handled = true;
             }
         }
         #endregion

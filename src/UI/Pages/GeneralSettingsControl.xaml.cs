@@ -1,47 +1,30 @@
-using eft_dma_radar.Tarkov;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Misc.Data.EFT;
+using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
-using System.Net.Http;
-using System.Windows.Media.Imaging;
-using SkiaSharp;
-using System.IO;
 using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.WebRadar;
+using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
-using eft_dma_radar.UI.SKWidgetControl;
-using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Config;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.UI.Controls;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.LowLevel;
-using eft_dma_radar.Common.Unity.LowLevel.PhysX;
 using HandyControl.Controls;
-using HandyControl.Data;
-using HandyControl.Themes;
-using Microsoft.VisualBasic;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using static eft_dma_radar.Tarkov.Features.MemoryWrites.Aimbot;
-using static SDK.Offsets;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
 using Clipboard = System.Windows.Clipboard;
@@ -1137,9 +1120,9 @@ namespace eft_dma_radar.UI.Pages
                     }
 
                     var sortedItems = QuestItems.OrderBy(q => q.Name, StringComparer.OrdinalIgnoreCase).ToList();
-                    
+
                     QuestItems.Clear();
-                    
+
                     foreach (var item in sortedItems)
                     {
                         QuestItems.Add(item);
@@ -1159,20 +1142,20 @@ namespace eft_dma_radar.UI.Pages
                 MessageBoxButton.OKCancel,
                 MessageBoxImage.Warning
             );
-        
+
             if (result != MessageBoxResult.OK)
                 return;
-        
+
             btnSendStashDogTags.IsEnabled = false;
             btnSendStashDogTags.Content = "Sending...";
-        
+
             try
             {
                 await Task.Run(() =>
                 {
                     MenuStashDogtagDumper.Dump();
                 });
-        
+
                 NotificationsShared.Success(
                     "Menu stash dogtags successfully sent to API.\n\n" +
                     "You may now enter a raid safely."
@@ -2408,7 +2391,7 @@ namespace eft_dma_radar.UI.Pages
             var registeredCount = 0;
             var allHotkeys = GetAllHotkeys().ToList();
             XMLogging.WriteLine($"[Hotkeys] Found {allHotkeys.Count} total hotkey entries in config");
-            
+
             foreach (var (actionKey, entry) in allHotkeys)
             {
                 if (entry.Enabled && entry.Key != -1)
@@ -2460,7 +2443,7 @@ namespace eft_dma_radar.UI.Pages
         private void HandleHotkeyEvent(string actionKey, HotkeyEntry entry, InputManager.KeyEventArgs e)
         {
             XMLogging.WriteLine($"[Hotkeys] HandleHotkeyEvent: {actionKey} IsPressed={e.IsPressed} Mode={entry.Mode}");
-            
+
             if (_lastExecutionTime.TryGetValue(actionKey, out var lastTime))
             {
                 var elapsed = (DateTime.UtcNow - lastTime).TotalMilliseconds;
@@ -2691,28 +2674,28 @@ namespace eft_dma_radar.UI.Pages
             {
                 #region Testing
                 //case nameof(HotkeyConfig.TestAction):
-                    //XMLogging.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
-                    //break;
+                //XMLogging.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
+                //break;
                 //case nameof(HotkeyConfig.TestAction2):
-                  // try
-                  // {
-                  //     var from = Memory.LocalPlayer.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
-                  //     foreach (var player in Memory.Players)
-                  //     {
-                  //         var to = player.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
-                  //         bool visible = PhysXManager.IsVisible(from, to);
-                  //         if (visible)
-                  //             NotificationsShared.Info($"Player {player.Name} is visible from the local player's head.");
-                  //         else
-                  //             NotificationsShared.Info($"Player {player.Name} is NOT visible from the local player's head. {to}");
-                  //     }
-                  //     NotificationsShared.Info("Test action executed!");
-                  // }
-                  // catch (Exception ex)
-                  // {
-                  //     NotificationsShared.Error($"Error executing test action: {ex.Message}");
-                  // }
-                    //break;
+                // try
+                // {
+                //     var from = Memory.LocalPlayer.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
+                //     foreach (var player in Memory.Players)
+                //     {
+                //         var to = player.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
+                //         bool visible = PhysXManager.IsVisible(from, to);
+                //         if (visible)
+                //             NotificationsShared.Info($"Player {player.Name} is visible from the local player's head.");
+                //         else
+                //             NotificationsShared.Info($"Player {player.Name} is NOT visible from the local player's head. {to}");
+                //     }
+                //     NotificationsShared.Info("Test action executed!");
+                // }
+                // catch (Exception ex)
+                // {
+                //     NotificationsShared.Error($"Error executing test action: {ex.Message}");
+                // }
+                //break;
                 #endregion
 
                 #region Loot
@@ -2797,7 +2780,7 @@ namespace eft_dma_radar.UI.Pages
                     break;
                 case nameof(HotkeyConfig.EngageLTW):
                     LootThroughWalls.ZoomEngaged = isActive;
-                    break;                    
+                    break;
                 case nameof(HotkeyConfig.EngageTeammate):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;
@@ -3077,30 +3060,30 @@ namespace eft_dma_radar.UI.Pages
         private void RefreshConfigList()
         {
             _isRefreshingConfigList = true;
-        
+
             try
             {
                 _ignoreConfigSelectionChanged = true;
                 cboConfigs.Items.Clear();
-        
+
                 var configs = ConfigManager.GetAvailableConfigs()
                     .OrderBy(c => c.ConfigName)
                     .ToList();
-        
+
                 var currentConfigNameWithoutExt = Path.GetFileNameWithoutExtension(ConfigManager.CurrentConfigName);
                 var selectedIndex = -1;
-        
+
                 foreach (var config in configs)
                 {
                     var displayName = Path.GetFileNameWithoutExtension(config.ConfigName);
                     cboConfigs.Items.Add(displayName);
-        
+
                     if (displayName.Equals(currentConfigNameWithoutExt, StringComparison.OrdinalIgnoreCase))
                         selectedIndex = cboConfigs.Items.Count - 1;
                 }
-        
+
                 cboConfigs.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
-        
+
                 txtCurrentConfig.Text = currentConfigNameWithoutExt;
             }
             finally
@@ -3125,13 +3108,13 @@ namespace eft_dma_radar.UI.Pages
 
             if (confirm != MessageBoxResult.Yes)
                 return;
-            
+
             try
             {
                 ESPForm.CloseESP();
 
                 ConfigManager.CurrentConfig.Save();
-                
+
                 var loaded = await Task.Run(() => ConfigManager.LoadConfig(configToLoad));
 
                 if (loaded)
@@ -3342,7 +3325,7 @@ namespace eft_dma_radar.UI.Pages
         private void BtnExportClipboard_Click(object sender, RoutedEventArgs e)
         {
             ExportConfigToClipboard();
-        }   
+        }
 
         private void ExportConfigToClipboard()
         {
@@ -3474,7 +3457,7 @@ namespace eft_dma_radar.UI.Pages
             {
                 btnImportClipboard.IsEnabled = true;
             }
-        }          
+        }
         #endregion
     }
 }

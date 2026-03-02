@@ -1,13 +1,12 @@
-﻿using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.UI.ESP;
-using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Common.Maps;
+﻿using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
-using static eft_dma_radar.Tarkov.EFTPlayer.Player;
+using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.UI.ESP;
+using eft_dma_radar.UI.Misc;
 
 namespace eft_dma_radar.Tarkov.GameWorld.Exits
 {

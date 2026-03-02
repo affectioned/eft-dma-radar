@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using eft_dma_radar.Common.DMA.ScatterAPI;
+﻿using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity.Collections;
 
@@ -73,7 +67,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                         {
                             map.Execute();
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             //XMLogging.WriteLine($"[EXP-RTL] Scatter Execute error: {ex}");
                         }
@@ -85,7 +79,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                             {
                                 explosive.OnRefresh(idx);
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
                                 //XMLogging.WriteLine($"[EXP-RTL] OnRefresh error for 0x{explosive.Addr:X}: {ex}");
                             }
@@ -148,7 +142,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                             // XMLogging.WriteLine($"[EXP-RTL] New grenade @ 0x{grenadeAddr:X}");
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         // Silently skip invalid grenades to reduce log spam
                         // XMLogging.WriteLine($"[EXP-RTL] Grenade create error @ 0x{grenadeAddr:X}: {ex}");

@@ -35,17 +35,17 @@ namespace eft_dma_radar.Tarkov.Features
                 //        RevertAllLootChams();
                 //    }
                 //        
-//
+                //
                 //    return;
                 //}
-//
+                //
                 //var lootManager = Memory.Loot;
                 //if (lootManager?.FilteredLoot == null)
                 //    return;
-//
+                //
                 //var currentImportantItems = new HashSet<string>();
                 //var currentQuestItems = new HashSet<string>();
-//
+                //
                 //ProcessImportantItemChams(lootManager, currentImportantItems);
                 //ProcessQuestItemChams(lootManager, currentQuestItems);
                 //RevertObsoleteChams(currentImportantItems, currentQuestItems);
@@ -92,7 +92,7 @@ namespace eft_dma_radar.Tarkov.Features
         {
             LoadCache();
             ApplyConfiguredColors();
-            
+
             ChamsManager.MaterialsUpdated += OnMaterialsUpdated;
 
             XMLogging.WriteLine("[Loot Chams] Manager initialized");
@@ -350,7 +350,7 @@ namespace eft_dma_radar.Tarkov.Features
                 XMLogging.WriteLine($"[Player Chams] Failed to get basic material ID: {ex}");
                 return -1;
             }
-        }        
+        }
         private static int GetVisible2Id(CameraManager cameraManager, ChamsConfig.EntityChamsSettings settings)
         {
             try

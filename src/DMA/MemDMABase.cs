@@ -1,13 +1,7 @@
 // Global using removed - use eft_dma_radar.Tarkov.MemoryInterface instead
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using Vmmsharp;
 
 namespace eft_dma_radar.Common.DMA
@@ -274,7 +268,7 @@ namespace eft_dma_radar.Common.DMA
 
             uint flags = useCache ? 0 : Vmm.FLAG_NOCACHE;
             using var hScatter = Process.MemReadScatter2(flags, pagesToRead.ToArray());
-            
+
 
             foreach (var entry in entries) // Second loop through all entries - PARSE RESULTS
             {
@@ -322,11 +316,11 @@ namespace eft_dma_radar.Common.DMA
             }
             catch (VmmException)
             {
-                
+
                 throw;
             }
         }
-         /// <summary>
+        /// <summary>
         /// Read an array of type <typeparamref name="T"/> from memory.
         /// The first element begins reading at 0x0 and the array is assumed to be contiguous.
         /// IMPORTANT: You must call <see cref="IDisposable.Dispose"/> on the returned SharedArray when done."/>
@@ -363,7 +357,7 @@ namespace eft_dma_radar.Common.DMA
             {
                 throw new Exception($"[DMA] ERROR reading buffer at 0x{addr:X}", ex);
             }
-        }        
+        }
         /// <summary>
         /// Read memory into a Buffer of type <typeparamref name="T"/> and ensure the read is correct.
         /// </summary>
@@ -409,7 +403,7 @@ namespace eft_dma_radar.Common.DMA
             }
             catch (VmmException)
             {
-                
+
                 throw;
             }
         }
@@ -419,12 +413,12 @@ namespace eft_dma_radar.Common.DMA
         public static unsafe byte[] ReadBufferEnsureE(ulong addr, int size)
         {
             const int ValidationCount = 3;
-        
+
             try
             {
                 if (BaseMemoryHolder.MemoryBase == null)
                     throw new Exception("[DMA] BaseMemoryHolder.MemoryBase is not initialized!");
-        
+
                 byte[][] buffers = new byte[ValidationCount][];
                 for (int i = 0; i < ValidationCount; i++)
                 {
@@ -439,12 +433,12 @@ namespace eft_dma_radar.Common.DMA
                             out bytesRead,                 // actual bytes read
                             Vmm.FLAG_NOCACHE               // no cache flag
                         );
-        
+
                         if (!success || bytesRead != size)
                             throw new Exception($"Incomplete memory read ({bytesRead}/{size}) at 0x{addr:X}");
                     }
                 }
-        
+
                 // Validation: ensure all reads match
                 for (int i = 1; i < ValidationCount; i++)
                 {
@@ -454,7 +448,7 @@ namespace eft_dma_radar.Common.DMA
                         return null;
                     }
                 }
-        
+
                 return buffers[0];
             }
             catch (Exception ex)
@@ -509,7 +503,7 @@ namespace eft_dma_radar.Common.DMA
             uint flags = useCache ? 0 : Vmm.FLAG_NOCACHE;
             return Process.MemReadString(Encoding.UTF8, addr, (uint)cb, flags) ??
                 throw new VmmException("Memory Read Failed!");
-        }        
+        }
         /// <summary>
         /// Read value type/struct from specified address.
         /// </summary>
@@ -537,7 +531,7 @@ namespace eft_dma_radar.Common.DMA
                 throw;
             }
         }
-        
+
         public ulong FindDataXref(
             ulong targetAddress,
             string moduleName = "UnityPlayer.dll",
@@ -545,15 +539,15 @@ namespace eft_dma_radar.Common.DMA
         {
             if (targetAddress == 0)
                 return 0;
-        
+
             ulong moduleBase = Process.GetModuleBase(moduleName);
             if (moduleBase == 0 || moduleBase == ulong.MaxValue)
                 return 0;
-        
+
             // Scan forward from the string location
             ulong scanStart = targetAddress & ~0xFFFUL; // page-align
-            ulong scanEnd   = scanStart + (ulong)searchRange;
-        
+            ulong scanEnd = scanStart + (ulong)searchRange;
+
             byte[] buffer;
             try
             {
@@ -566,7 +560,7 @@ namespace eft_dma_radar.Common.DMA
             {
                 return 0;
             }
-        
+
             for (int i = 0; i <= buffer.Length - 8; i += 8)
             {
                 ulong value = BitConverter.ToUInt64(buffer, i);
@@ -575,7 +569,7 @@ namespace eft_dma_radar.Common.DMA
                     return scanStart + (ulong)i;
                 }
             }
-        
+
             return 0;
         }
 
@@ -701,7 +695,7 @@ namespace eft_dma_radar.Common.DMA
                 var b1 = new ReadOnlySpan<byte>(&r1, cb);
                 var b2 = new ReadOnlySpan<byte>(&r2, cb);
                 var b3 = new ReadOnlySpan<byte>(&r3, cb);
-                
+
                 if (!b1.SequenceEqual(b2) || !b1.SequenceEqual(b3) || !b2.SequenceEqual(b3))
                     throw new VmmException("Memory Read Failed!");
 
@@ -781,9 +775,9 @@ namespace eft_dma_radar.Common.DMA
                 // Search up to 200MB to cover most IL2CPP builds
                 const ulong MAX_SEARCH_SIZE = 0xC800000; // 200MB
                 const ulong CHUNK_SIZE = 0x1000000; // 16MB chunks for DMA reads
-                
+
                 ulong rangeEnd = moduleBase + MAX_SEARCH_SIZE;
-                
+
                 // Search in chunks to avoid DMA read limits
                 for (ulong chunkStart = moduleBase; chunkStart < rangeEnd; chunkStart += CHUNK_SIZE - 0x100)
                 {
@@ -792,7 +786,7 @@ namespace eft_dma_radar.Common.DMA
                     if (result != 0)
                         return result;
                 }
-                
+
                 return 0;
             }
             catch (Exception ex)

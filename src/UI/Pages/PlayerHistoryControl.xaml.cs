@@ -1,29 +1,16 @@
-﻿using eft_dma_radar.Tarkov.EFTPlayer;
+﻿using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
 using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity.LowLevel;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using UserControl = System.Windows.Controls.UserControl;
+using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
-using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
-using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace eft_dma_radar.UI.Pages
 {
@@ -341,7 +328,8 @@ namespace eft_dma_radar.UI.Pages
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.Invoke(() => {
+                Dispatcher.Invoke(() =>
+                {
                     RefreshDataGrid();
                     RefreshSorting();
                 });

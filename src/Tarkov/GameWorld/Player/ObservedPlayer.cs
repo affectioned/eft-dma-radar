@@ -1,13 +1,8 @@
-﻿using eft_dma_radar.Tarkov.API;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
-using eft_dma_radar.UI.Misc;
-using eft_dma_radar.UI.Pages;
-using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.DMA.Features;
+﻿using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.UI.Misc;
 using static SDK.Enums;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer
@@ -54,13 +49,13 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 if (!IsHuman || string.IsNullOrEmpty(ProfileID))
                     return -1;
-        
+
                 return PlayerListWorker.GetOrAssignSpawnGroup(
                     ProfileID,
                     Position,
                     PlayerSide);
             }
-        }     
+        }
 
         /// <summary>
         /// Player's Faction.
@@ -99,7 +94,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         // Key: Player.Base (ulong) → assigned index
         private static readonly Dictionary<ulong, int> _pmcIndex = new();
-        private static readonly object _pmcLock = new(); 
+        private static readonly object _pmcLock = new();
         private int GetOrAssignPmcIndex(bool isUsec)
         {
             lock (_pmcLock)
@@ -114,12 +109,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 _pmcIndex[this] = index;
                 return index;
             }
-        }               
+        }
         /// <summary>
         /// Player's Skeleton Bones.
         /// </summary>
         public override Skeleton Skeleton { get; protected set; }
-        public override int VoipId { get; }  
+        public override int VoipId { get; }
         private static int ParseVoipId(ulong baseAddr)
         {
             try
@@ -138,7 +133,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 return -1;
             }
-        }     
+        }
         public bool TryEnsureSkeleton()
         {
             if (Skeleton != null)
@@ -154,7 +149,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 Skeleton = null;
                 return false;
             }
-        }            
+        }
         /// <summary>
         /// Player's Current Health Status
         /// </summary>
@@ -189,7 +184,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
             var isAI = Memory.ReadValue<bool>(this + Offsets.ObservedPlayerView.IsAI);
             IsHuman = !isAI;
-            
+
             // TEMP: Account IDs no longer networked
             AccountID = IsHuman ? "HUMAN" : "AI";
             IsHuman = !isAI;
@@ -328,7 +323,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 var handController = Memory.ReadPtr(HandsControllerAddr);
                 var dickController = Memory.ReadPtr(handController + Offsets.ObservedHandsController.BundleAnimationBones);
-                this.PWA =  Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
+                this.PWA = Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
                 Profile = new PlayerProfile(this);
             }
             else

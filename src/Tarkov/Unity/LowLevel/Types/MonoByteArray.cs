@@ -1,6 +1,4 @@
-﻿using System.Buffers.Binary;
-
-namespace eft_dma_radar.Common.Unity.LowLevel.Types
+﻿namespace eft_dma_radar.Common.Unity.LowLevel.Types
 {
     public sealed class MonoByteArray : IMonoType
     {

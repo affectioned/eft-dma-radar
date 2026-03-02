@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
 
@@ -27,8 +23,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                     _seenProfileIds.Clear();
 
                 ulong unityBase = Memory.UnityBase;
-                ulong gomAddr   = GameObjectManager.GetAddr(unityBase);
-                var   gom       = GameObjectManager.Get(gomAddr);
+                ulong gomAddr = GameObjectManager.GetAddr(unityBase);
+                var gom = GameObjectManager.Get(gomAddr);
 
                 ulong tarkovApplication =
                     gom.FindBehaviourByClassName("TarkovApplication");
@@ -239,7 +235,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             {
                 if (EnableDebug)
                     Log($"KILLER ? {killerName} ({killerProfileId})");
-            
+
             }
         }
 

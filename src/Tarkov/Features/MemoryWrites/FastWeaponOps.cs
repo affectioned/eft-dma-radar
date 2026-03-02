@@ -1,13 +1,11 @@
-﻿using System.IO;
+﻿using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.Features;
-using eft_dma_shared.Common.Unity;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using System.IO;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {
@@ -98,7 +96,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 sb.AppendLine($"Animator VA: 0x{animator:X}");
                 sb.AppendLine("Offset | Initial | AfterWrite | AfterDelay");
                 sb.AppendLine("------------------------------------------------");
-        
+
                 for (uint off = 0x10; off <= 0x900; off += 4)
                 {
                     float initial;
@@ -110,11 +108,11 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     {
                         continue;
                     }
-        
+
                     // Only consider sane candidates
                     if (initial < 0.5f || initial > 2.0f)
                         continue;
-        
+
                     // Write probe
                     try
                     {
@@ -124,9 +122,9 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     {
                         continue;
                     }
-        
+
                     Thread.Sleep(10);
-        
+
                     float afterWrite;
                     try
                     {
@@ -136,9 +134,9 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     {
                         continue;
                     }
-        
+
                     Thread.Sleep(200);
-        
+
                     float afterDelay;
                     try
                     {
@@ -148,22 +146,22 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     {
                         continue;
                     }
-        
+
                     // Restore original
                     try
                     {
                         Memory.WriteValue(animator + off, initial);
                     }
                     catch { }
-        
+
                     sb.AppendLine(
                         $"0x{off:X4} | {initial,6:F3} | {afterWrite,9:F3} | {afterDelay,10:F3}"
                     );
                 }
-        
+
                 var path = Path.Combine(AppContext.BaseDirectory, "AnimatorSpeedCandidates.txt");
                 File.WriteAllText(path, sb.ToString());
-        
+
                 XMLogging.WriteLine($"[Animator] Candidate scan written to {path}");
             }
             catch (Exception ex)

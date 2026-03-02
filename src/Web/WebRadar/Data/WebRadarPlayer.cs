@@ -1,11 +1,7 @@
-﻿﻿using eft_dma_radar.Common.Maps;
+﻿using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.UI.Misc;
 using MessagePack;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace eft_dma_radar.Tarkov.WebRadar.Data
 {
@@ -16,17 +12,17 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
         // CORE DATA
         // ============================================================
 
-        [Key(0)]  public string Name { get; init; }
-        [Key(1)]  public WebPlayerType Type { get; init; }
-        [Key(2)]  public bool IsActive { get; init; }
-        [Key(3)]  public bool IsAlive { get; init; }
-        [Key(4)]  public int Value { get; init; }
+        [Key(0)] public string Name { get; init; }
+        [Key(1)] public WebPlayerType Type { get; init; }
+        [Key(2)] public bool IsActive { get; init; }
+        [Key(3)] public bool IsAlive { get; init; }
+        [Key(4)] public int Value { get; init; }
 
-        [Key(5)]  public string PrimaryWeapon { get; init; }
-        [Key(6)]  public string SecondaryWeapon { get; init; }
-        [Key(7)]  public string Armor { get; init; }
-        [Key(8)]  public string Helmet { get; init; }
-        [Key(9)]  public string Backpack { get; init; }
+        [Key(5)] public string PrimaryWeapon { get; init; }
+        [Key(6)] public string SecondaryWeapon { get; init; }
+        [Key(7)] public string Armor { get; init; }
+        [Key(8)] public string Helmet { get; init; }
+        [Key(9)] public string Backpack { get; init; }
         [Key(10)] public string Rig { get; init; }
 
         [Key(11)] public float KD { get; init; }

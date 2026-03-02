@@ -1,8 +1,7 @@
-﻿using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.Features;
+﻿using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Tarkov.EFTPlayer;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {
@@ -85,7 +84,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 }
 
                 var resetMask = (newSway > 0 && _lastSway == 0) || (recoilAmt > 0 && _lastRecoil == 0);
-                
+
                 if (resetMask)
                     WriteMask((int)ORIGINAL_PWA_MASK, mask);
                 else if (recoilAmt == 0 && newSway == 0 && mask != 1)

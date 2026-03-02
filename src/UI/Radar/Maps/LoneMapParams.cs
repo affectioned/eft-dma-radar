@@ -1,6 +1,4 @@
-﻿using SkiaSharp;
-
-namespace eft_dma_radar.Common.Maps
+﻿namespace eft_dma_radar.Common.Maps
 {
     /// <summary>
     /// Contains multiple map parameters used by the GUI.

@@ -1,8 +1,4 @@
-﻿using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Misc;
-using eft_dma_shared.Common.Unity.LowLevel.Hooks;
-using System.Diagnostics;
+﻿using eft_dma_radar.Common.Misc;
 using static eft_dma_radar.Common.Unity.MonoLib;
 
 namespace eft_dma_radar.Common.DMA.Features
@@ -93,7 +89,7 @@ namespace eft_dma_radar.Common.DMA.Features
             static string GetName(string className)
             {
                 return $"({className})";
-            }            
+            }
             ulong methodAddr = 0x0;
             if (methodAddr == 0x0)
             {
@@ -115,7 +111,7 @@ namespace eft_dma_radar.Common.DMA.Features
                 ulong compiledClass = 0x0;
                 if (compiledClass == 0x0)
                     throw new Exception($"Unable to compile class {GetName(className)}!");
-            }          
+            }
         }
 
         public static void PatchMethodE(in string className, in string methodName, in SignatureInfo sigInfo, in int subclass = -1, in string assemblyName = "Assembly-CSharp", in bool compileClass = false, in bool compileMethod = true)

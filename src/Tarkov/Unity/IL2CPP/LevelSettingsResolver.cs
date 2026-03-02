@@ -1,11 +1,5 @@
-using System;
-using System.Diagnostics;
-using System.Threading;
-using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
-using SDK;
 
 namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 {
@@ -101,7 +95,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 // 2) Global pointer to GameObjectManager
                 var gomGlobal = unityBase + UnityOffsets.ModuleBase.GameObjectManager;
-                var gomPtr    = Memory.ReadPtr(gomGlobal);
+                var gomPtr = Memory.ReadPtr(gomGlobal);
 
                 if (!gomPtr.IsValidVirtualAddress())
                 {
@@ -113,7 +107,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 // 3) Read first / last active nodes
                 var firstNode = Memory.ReadValue<LinkedListObject>(gom.ActiveNodes);
-                var lastNode  = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
+                var lastNode = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
 
                 firstNode.ThisObject.ThrowIfInvalidVirtualAddress();
                 firstNode.NextObjectLink.ThrowIfInvalidVirtualAddress();

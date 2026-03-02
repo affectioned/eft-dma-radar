@@ -1,7 +1,4 @@
-using System;
-using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
 
 namespace eft_dma_radar.Common.Unity.IL2CPP
 {
@@ -51,7 +48,7 @@ namespace eft_dma_radar.Common.Unity.IL2CPP
                     continue;
 
                 string name = ReadIl2CppString(klass + Offsets.Il2CppClass.Name);
-                string ns   = ReadIl2CppString(klass + Offsets.Il2CppClass.Namespace);
+                string ns = ReadIl2CppString(klass + Offsets.Il2CppClass.Namespace);
 
                 string full = string.IsNullOrEmpty(ns)
                     ? name

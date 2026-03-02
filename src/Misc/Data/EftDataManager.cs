@@ -2,10 +2,6 @@
 using eft_dma_radar.Common.UI;
 using System.Collections.Frozen;
 using System.IO;
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace eft_dma_radar.Common.Misc.Data
 {
@@ -36,7 +32,7 @@ namespace eft_dma_radar.Common.Misc.Data
         /// Map Data for Tarkov (extracts and transits).
         /// </summary>
         public static FrozenDictionary<string, MapElement> MapData { get; private set; }
-        
+
         public static bool IsInitialized { get; set; } = false;
 
         #region Startup
@@ -83,7 +79,7 @@ namespace eft_dma_radar.Common.Misc.Data
                 MapData = data.Maps?
                     .Where(x => !string.IsNullOrEmpty(x.NameId))
                     .ToDictionary(k => k.NameId, v => v, StringComparer.OrdinalIgnoreCase)
-                    .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase) 
+                    .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
                     ?? new Dictionary<string, MapElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
 
                 IsInitialized = true;

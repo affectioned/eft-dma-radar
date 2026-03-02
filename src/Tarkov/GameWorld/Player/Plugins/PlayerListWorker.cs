@@ -12,17 +12,10 @@
  * - FILE IS TOUCHED ONLY WHEN SESSION ID CHANGES
  */
 
-using System.Collections.Concurrent;
-using System.Numerics;
-using System.Text.Json;
-using System.IO;
-using System.Threading;
-using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Tarkov.GameWorld;
-using eft_dma_radar.Tarkov.EFTPlayer;
-using static SDK.Enums;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
+using System.IO;
+using static SDK.Enums;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -30,7 +23,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         Exclude = true,
         ApplyToMembers = true,
         Feature = "all"
-    )]    
+    )]
     public sealed class PlayerListWorker
     {
         static PlayerListWorker()
@@ -325,14 +318,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         {
             if (string.IsNullOrEmpty(profileId) || !IsValidSpawn(spawn))
                 return -1;
-        
+
             lock (_lock)
             {
                 if (_players.TryGetValue(profileId, out var existing))
                     return existing.GroupId;
-        
+
                 int groupId = FindOrCreateGroup(spawn);
-        
+
                 var entry = new PlayerEntry
                 {
                     ProfileId = profileId,
@@ -340,10 +333,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                     GroupId = groupId,
                     Spawn = spawn
                 };
-        
+
                 _players[profileId] = entry;
                 Save();
-        
+
                 return groupId;
             }
         }

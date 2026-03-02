@@ -1,30 +1,20 @@
-﻿using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.DMA.Features;
+﻿using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.LowLevel;
-
-using eft_dma_radar.Tarkov;
 using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
-using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.Misc;
-using eft_dma_shared.Common.Unity.LowLevel.Hooks;
 using HandyControl.Controls;
-using System;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.Features.MemoryWrites.Aimbot;
 using Application = System.Windows.Application;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
-using ComboBox = System.Windows.Controls.ComboBox;
 using MessageBox = HandyControl.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
@@ -278,15 +268,15 @@ namespace eft_dma_radar.UI.Pages
             chkNightVision.Checked += MemWritingCheckbox_Checked;
             chkNightVision.Unchecked += MemWritingCheckbox_Checked;
             chkDisableFrostbite.Checked += MemWritingCheckbox_Checked;
-            chkDisableFrostbite.Unchecked += MemWritingCheckbox_Checked;            
+            chkDisableFrostbite.Unchecked += MemWritingCheckbox_Checked;
             chkThermalVision.Checked += MemWritingCheckbox_Checked;
             chkThermalVision.Unchecked += MemWritingCheckbox_Checked;
             chkThirdPerson.Checked += MemWritingCheckbox_Checked;
             chkThirdPerson.Unchecked += MemWritingCheckbox_Checked;
             chkOwlMode.Checked += MemWritingCheckbox_Checked;
             chkOwlMode.Unchecked += MemWritingCheckbox_Checked;
-           // chkDisableScreenEffects.Checked += MemWritingCheckbox_Checked;
-           // chkDisableScreenEffects.Unchecked += MemWritingCheckbox_Checked;
+            // chkDisableScreenEffects.Checked += MemWritingCheckbox_Checked;
+            // chkDisableScreenEffects.Unchecked += MemWritingCheckbox_Checked;
             chkDisableShadows.Checked += MemWritingCheckbox_Checked;
             chkDisableShadows.Unchecked += MemWritingCheckbox_Checked;
             chkDisableGrass.Checked += MemWritingCheckbox_Checked;
@@ -569,13 +559,13 @@ namespace eft_dma_radar.UI.Pages
 
         private void ToggleMoveSpeedControls()
         {
-           var memWrites = MemWrites.Enabled;
-           var enableControl = memWrites && MemWrites.Config.MoveSpeed.Enabled;
-           chkMoveSpeed.IsEnabled = memWrites;
-           btnMoveSpeedConfig.IsEnabled = enableControl;
-           sldrMoveSpeedMultiplier.IsEnabled = enableControl;
-           if (!enableControl && pnlMoveSpeed.Visibility == Visibility.Visible)
-               pnlMoveSpeed.Visibility = Visibility.Collapsed;
+            var memWrites = MemWrites.Enabled;
+            var enableControl = memWrites && MemWrites.Config.MoveSpeed.Enabled;
+            chkMoveSpeed.IsEnabled = memWrites;
+            btnMoveSpeedConfig.IsEnabled = enableControl;
+            sldrMoveSpeedMultiplier.IsEnabled = enableControl;
+            if (!enableControl && pnlMoveSpeed.Visibility == Visibility.Visible)
+                pnlMoveSpeed.Visibility = Visibility.Collapsed;
         }
 
         private void ToggleWideLeanControls()
@@ -620,13 +610,13 @@ namespace eft_dma_radar.UI.Pages
         {
             //var memWrites = MemWrites.Enabled;
             //var enableControl = memWrites && MemWrites.Config.VisCheck.Enabled;
-//
+            //
             //btnVisCheckConfig.IsEnabled = enableControl;
             //sldrVisCheckLowDistance.IsEnabled = enableControl;
             //sldrVisCheckMidDistance.IsEnabled = enableControl;
             //sldrVisCheckFarDistance.IsEnabled = enableControl;
             //chkIgnoreAi.IsEnabled = enableControl;
-//
+            //
             //if (!enableControl && pnlVisCheck.Visibility == Visibility.Visible)
             //    pnlVisCheck.Visibility = Visibility.Collapsed;
         }
@@ -673,12 +663,12 @@ namespace eft_dma_radar.UI.Pages
         {
             //var memWrites = MemWrites.Enabled;
             //var enableControl = memWrites && MemWrites.Config.SilentLoot.Enabled;
-//
+            //
             //chkSilentLoot.IsEnabled = memWrites;
             //btnSilentLootConfig.IsEnabled = enableControl;
             //sldrSilentLootDistance.IsEnabled = enableControl;
             //sldrSilentLootMaxDistance.IsEnabled = enableControl;
-//
+            //
             //if (!enableControl && pnlSilentLoot.Visibility == Visibility.Visible)
             //    pnlSilentLoot.Visibility = Visibility.Collapsed;
         }
@@ -701,25 +691,25 @@ namespace eft_dma_radar.UI.Pages
             //var memWritingEnabled = MemWrites.Enabled;
             //var advMemWrites = MemWrites.AdvEnabled;
             //var enabled = (memWritingEnabled && advMemWrites);
-//
+            //
             //// General Settings
             //chkAdvancedWrites.IsEnabled = memWritingEnabled;
             //chkAntiPage.IsEnabled = enabled;
-//
+            //
             //// Chams
             //MainWindow.Window.ESPControl.UpdateChamsControls();
-//
+            //
             //// Weapon
             //chkRemoveableAttachments.IsEnabled = enabled;
-//
+            //
             //// World
             //chkDisableShadows.IsEnabled = enabled;
-//
+            //
             //// Camera
             //chkDisableScreenEffects.IsEnabled = enabled;
             //chkFOVChanger.IsEnabled = enabled;
             //btnFOVConfig.IsEnabled = (enabled && MemWrites.Config.FOV.Enabled);
-//
+            //
             //// Misc
             //chkStreamerMode.IsEnabled = enabled;
             //chkHideRaidCode.IsEnabled = enabled;
@@ -742,14 +732,14 @@ namespace eft_dma_radar.UI.Pages
         {
             //var memWrites = MemWrites.Enabled;
             //var enableControl = memWrites && MemWrites.Config.FOV.Enabled;
-//
+            //
             ////chkFOVChanger.IsEnabled = memWrites && MemWrites.Config.AdvancedMemWrites;
             ////btnFOVConfig.IsEnabled = enableControl && MemWrites.Config.AdvancedMemWrites;
             //sldrFOVBase.IsEnabled = enableControl;
             //sldrADSFOV.IsEnabled = enableControl;
             //sldrTPPFOV.IsEnabled = enableControl;
             //sldrZoomFOV.IsEnabled = enableControl;
-//
+            //
             //if (!enableControl && pnlFOV.Visibility == Visibility.Visible)
             //    pnlFOV.Visibility = Visibility.Collapsed;
         }
@@ -999,13 +989,13 @@ namespace eft_dma_radar.UI.Pages
                         MemWriteFeature<BigHead>.Instance.Enabled = value;
                         ToggleBigHeadControls();
                         break;
-                    //case "VisCheck":
-                    //    MemPatchFeature<VisibilityLinecast>.Instance.Enabled = value;
-                    //    ToggleVisCheckControls();
-                    //    break;
-                    //case "IgnoreAi":
-                    //    MemWrites.Config.VisCheck.IgnoreAi = value;
-                    //    break;
+                        //case "VisCheck":
+                        //    MemPatchFeature<VisibilityLinecast>.Instance.Enabled = value;
+                        //    ToggleVisCheckControls();
+                        //    break;
+                        //case "IgnoreAi":
+                        //    MemWrites.Config.VisCheck.IgnoreAi = value;
+                        //    break;
                 }
 
                 Config.Save();
@@ -1124,27 +1114,27 @@ namespace eft_dma_radar.UI.Pages
                     case "BigHeadScale":
                         MemWrites.Config.BigHead.Scale = floatValue;
                         break;
-                    //case "VisLowDist":
-                    //    MemWrites.Config.VisCheck.LowDist = floatValue;
-                    //    break;
-                    //case "VisMidDist":
-                    //    MemWrites.Config.VisCheck.MidDist = floatValue;
-                    //    break;
-                    //case "VisfarDist":
-                    //    MemWrites.Config.VisCheck.FarDist = floatValue;
-                    //    break;
-                    //case "FOVBase":
-                    //    MemWrites.Config.FOV.Base = intValue;
-                    //    break;
-                    //case "ADSFOV":
-                    //    MemWrites.Config.FOV.ADS = intValue;
-                    //    break;
-                    //case "TPPFOV":
-                    //    MemWrites.Config.FOV.ThirdPerson = intValue;
-                    //    break;
-                    //case "ZoomFOV":
-                    //    MemWrites.Config.FOV.InstantZoom = intValue;
-                    //    break;
+                        //case "VisLowDist":
+                        //    MemWrites.Config.VisCheck.LowDist = floatValue;
+                        //    break;
+                        //case "VisMidDist":
+                        //    MemWrites.Config.VisCheck.MidDist = floatValue;
+                        //    break;
+                        //case "VisfarDist":
+                        //    MemWrites.Config.VisCheck.FarDist = floatValue;
+                        //    break;
+                        //case "FOVBase":
+                        //    MemWrites.Config.FOV.Base = intValue;
+                        //    break;
+                        //case "ADSFOV":
+                        //    MemWrites.Config.FOV.ADS = intValue;
+                        //    break;
+                        //case "TPPFOV":
+                        //    MemWrites.Config.FOV.ThirdPerson = intValue;
+                        //    break;
+                        //case "ZoomFOV":
+                        //    MemWrites.Config.FOV.InstantZoom = intValue;
+                        //    break;
                 }
 
                 Config.Save();
@@ -1297,26 +1287,26 @@ namespace eft_dma_radar.UI.Pages
                 btnAntiAFK.IsEnabled = true;
             }
         }
-private static class ObservedPlayerViewOffsets
-{
-    public const uint RaidId        = 0x20;   // int
-    public const uint Voice         = 0x40;   // string
-    public const uint IsVisible     = 0x64;   // bool
-    public const uint WorldTime     = 0x68;   // float
-    public const uint Id            = 0x7C;   // int
-    public const uint GroupId       = 0x80;   // string
-    public const uint TeamId        = 0x88;   // string
-    public const uint UsedSkeleton  = 0x90;   // bool
-    public const uint Side          = 0x94;   // int (enum)
-    public const uint IsAI          = 0xA0;   // bool
-    public const uint ProfileId     = 0xA8;   // string
-    public const uint VoipId        = 0xB0;   // string
-    public const uint NickName      = 0xB8;   // string
-    public const uint AccountId     = 0xC0;   // string
-}
+        private static class ObservedPlayerViewOffsets
+        {
+            public const uint RaidId = 0x20;   // int
+            public const uint Voice = 0x40;   // string
+            public const uint IsVisible = 0x64;   // bool
+            public const uint WorldTime = 0x68;   // float
+            public const uint Id = 0x7C;   // int
+            public const uint GroupId = 0x80;   // string
+            public const uint TeamId = 0x88;   // string
+            public const uint UsedSkeleton = 0x90;   // bool
+            public const uint Side = 0x94;   // int (enum)
+            public const uint IsAI = 0xA0;   // bool
+            public const uint ProfileId = 0xA8;   // string
+            public const uint VoipId = 0xB0;   // string
+            public const uint NickName = 0xB8;   // string
+            public const uint AccountId = 0xC0;   // string
+        }
 
-private async void btnTest_Click(object sender, RoutedEventArgs e)
-{
+        private async void btnTest_Click(object sender, RoutedEventArgs e)
+        {
             btnTest.Content = "Please Wait...";
             btnTest.IsEnabled = false;
 
@@ -1338,7 +1328,7 @@ private async void btnTest_Click(object sender, RoutedEventArgs e)
                 btnTest.Content = "Test HideRaidCode";
                 btnTest.IsEnabled = true;
             }
-}
+        }
 
 
 

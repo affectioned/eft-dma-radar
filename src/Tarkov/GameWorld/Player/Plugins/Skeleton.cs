@@ -1,11 +1,4 @@
-using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.UI.ESP;
-using SkiaSharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -141,7 +134,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 midTorsoScreen = _lastMidTorso;
             }
             else _lastMidTorso = midTorsoScreen;
-            
+
             // For all other bones: use new position if valid, otherwise use cached
             var headScreen = CameraManagerBase.WorldToScreen(ref _bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position, out var h) ? (_lastHead = h) : _lastHead;
             var neckScreen = CameraManagerBase.WorldToScreen(ref _bones[eft_dma_radar.Common.Unity.Bones.HumanNeck].Position, out var n) ? (_lastNeck = n) : _lastNeck;
@@ -158,9 +151,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             var rightKneeScreen = CameraManagerBase.WorldToScreen(ref _bones[eft_dma_radar.Common.Unity.Bones.HumanRThigh2].Position, out var rk) ? (_lastRightKnee = rk) : _lastRightKnee;
             var leftElbowScreen = CameraManagerBase.WorldToScreen(ref _bones[eft_dma_radar.Common.Unity.Bones.HumanLForearm2].Position, out var le) ? (_lastLeftElbow = le) : _lastLeftElbow;
             var rightElbowScreen = CameraManagerBase.WorldToScreen(ref _bones[eft_dma_radar.Common.Unity.Bones.HumanRForearm2].Position, out var re) ? (_lastRightElbow = re) : _lastRightElbow;
-            
+
             _hasValidCache = true;
-            
+
             int index = 0;
             // Head to left foot
             ESPBuffer[index++] = headScreen;
@@ -349,12 +342,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         {
             var oldTransform = _bones[bone];
             var lastValidPosition = oldTransform.HasValidPosition ? oldTransform.Position : (Vector3?)null;
-            
+
             var transform = new UnityTransform(_bones[bone].TransformInternal, lastValidPosition);
             _bones[bone] = transform;
             if (bone is eft_dma_radar.Common.Unity.Bones.HumanBase)
                 Root = transform;
-        }        
+        }
         /// <summary>
         /// Clears cached ESP screen positions and rebuilds transforms.
         /// Does NOT destroy identity or bones.
@@ -362,34 +355,34 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         public void ResetESPCacheAndTransforms()
         {
             // Reset cached screen positions
-            _lastMidTorso     = default;
-            _lastHead         = default;
-            _lastNeck         = default;
-            _lastLeftCollar   = default;
-            _lastRightCollar  = default;
-            _lastLeftHand     = default;
-            _lastRightHand    = default;
-            _lastUpperTorso   = default;
-            _lastLowerTorso   = default;
-            _lastPelvis       = default;
-            _lastLeftFoot     = default;
-            _lastRightFoot    = default;
-            _lastLeftKnee     = default;
-            _lastRightKnee    = default;
-            _lastLeftElbow    = default;
-            _lastRightElbow   = default;
-        
+            _lastMidTorso = default;
+            _lastHead = default;
+            _lastNeck = default;
+            _lastLeftCollar = default;
+            _lastRightCollar = default;
+            _lastLeftHand = default;
+            _lastRightHand = default;
+            _lastUpperTorso = default;
+            _lastLowerTorso = default;
+            _lastPelvis = default;
+            _lastLeftFoot = default;
+            _lastRightFoot = default;
+            _lastLeftKnee = default;
+            _lastRightKnee = default;
+            _lastLeftElbow = default;
+            _lastRightElbow = default;
+
             _hasValidCache = false;
-        
+
             // Clear static ESP buffer (important!)
             Array.Clear(ESPBuffer, 0, ESPBuffer.Length);
-        
+
             // Rebuild all transforms (preserve last valid positions)
             foreach (var bone in _bones.Keys.ToList())
             {
                 ResetTransform(bone);
             }
-        }        
+        }
         #endregion
     }
 }

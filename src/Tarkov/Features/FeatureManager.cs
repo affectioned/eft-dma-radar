@@ -1,12 +1,9 @@
-﻿using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.GameWorld;
-
-using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.DMA.ScatterAPI;
+﻿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Tarkov.EFTPlayer;
 
 namespace eft_dma_radar.Tarkov.Features
 {
@@ -61,10 +58,10 @@ namespace eft_dma_radar.Tarkov.Features
                         continue;
                     }
 
-                    bool enabled    = MemWrites.Enabled;
-                    bool ready      = Memory.Ready;
-                    bool inRaid     = Memory.InRaid;
-                    bool hasLocal   = Memory.LocalPlayer is not null;
+                    bool enabled = MemWrites.Enabled;
+                    bool ready = Memory.Ready;
+                    bool inRaid = Memory.InRaid;
+                    bool hasLocal = Memory.LocalPlayer is not null;
                     bool handsValid = hasLocal &&
                                       Memory.LocalPlayer.Firearm.HandsController.Item1.IsValidVirtualAddress();
 

@@ -1,7 +1,5 @@
-﻿using eft_dma_radar.Common.Misc;
-using System.Collections.Frozen;
+﻿using System.Collections.Frozen;
 using System.IO;
-using System.Text.Json;
 
 namespace eft_dma_radar.Common.Maps
 {

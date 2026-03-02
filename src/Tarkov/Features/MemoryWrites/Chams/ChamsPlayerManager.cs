@@ -9,15 +9,8 @@ using eft_dma_radar.Tarkov.Features.MemoryWrites.Chams;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
 using eft_dma_radar.UI.Misc;
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
 // (Safe to include even if you have global usings)
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using SkiaSharp;
 
 namespace eft_dma_radar.Tarkov.Features
 {
@@ -726,7 +719,7 @@ namespace eft_dma_radar.Tarkov.Features
                 XMLogging.WriteLine($"[Player Chams] Failed to get basic material ID: {ex}");
                 return -1;
             }
-        }        
+        }
         private static int GetVisibleMaterialId(CameraManager cameraManager, ChamsConfig.EntityChamsSettings settings)
         {
             try

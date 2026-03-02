@@ -1,7 +1,4 @@
-﻿using System.Numerics;
-using System.Runtime.InteropServices;
-
-namespace eft_dma_radar.UI.ESP
+﻿namespace eft_dma_radar.UI.ESP
 {
     /// <summary>
     /// Defines a transposed Matrix4x4 for ESP Operations (only contains necessary fields).
@@ -18,7 +15,7 @@ namespace eft_dma_radar.UI.ESP
 
         public ViewMatrix() { }
 
-        public void Update(ref Matrix4x4 matrix) 
+        public void Update(ref Matrix4x4 matrix)
         {
             /// Transpose necessary fields
             M44 = matrix.M44;

@@ -1,5 +1,5 @@
-﻿using MessagePack.Formatters;
-using MessagePack;
+﻿using MessagePack;
+using MessagePack.Formatters;
 using MessagePack.Resolvers;
 
 namespace eft_dma_radar.Common.Misc.MessagePack

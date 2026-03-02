@@ -1,9 +1,5 @@
-using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 {
@@ -98,11 +94,11 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             }
 
             var first = Memory.ReadValue<LinkedListObject>(ActiveNodes);
-            var last  = Memory.ReadValue<LinkedListObject>(LastActiveNode);
+            var last = Memory.ReadValue<LinkedListObject>(LastActiveNode);
 
             ulong result =
                 ScanForward(first, last, name, ignoreCase);
-            
+
             if (result == 0)
                 result = ScanBackward(last, first, name, ignoreCase);
 
@@ -117,69 +113,69 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         public ulong FindBehaviourByClassName(string className)
         {
             var first = Memory.ReadValue<LinkedListObject>(ActiveNodes);
-            var last  = Memory.ReadValue<LinkedListObject>(LastActiveNode);
-        
+            var last = Memory.ReadValue<LinkedListObject>(LastActiveNode);
+
             ulong result =
                 ScanForwardForComponent(first, last, className);
-            if(result == 0)
+            if (result == 0)
                 ScanBackwardForComponent(last, first, className);
-        
+
             return result;
         }
-        
+
         private static ulong ScanForwardForComponent(
             LinkedListObject start,
             LinkedListObject end,
             string className)
         {
             var current = start;
-        
+
             for (int i = 0; i < 100_000; i++)
             {
                 if (!current.ThisObject.IsValidVirtualAddress())
                     break;
-        
+
                 ulong comp = eft_dma_radar.Common.Unity.GameObject.GetComponent(
                     current.ThisObject,
                     className);
-        
+
                 if (comp.IsValidVirtualAddress())
                     return comp;
-        
+
                 if (current.ThisObject == end.ThisObject)
                     break;
-        
+
                 current = Memory.ReadValue<LinkedListObject>(current.NextObjectLink);
             }
-        
+
             return 0;
         }
-        
+
         private static ulong ScanBackwardForComponent(
             LinkedListObject start,
             LinkedListObject end,
             string className)
         {
             var current = start;
-        
+
             for (int i = 0; i < 100_000; i++)
             {
                 if (!current.ThisObject.IsValidVirtualAddress())
                     break;
-        
+
                 ulong comp = eft_dma_radar.Common.Unity.GameObject.GetComponent(
                     current.ThisObject,
                     className);
-        
+
                 if (comp.IsValidVirtualAddress())
                     return comp;
-        
+
                 if (current.ThisObject == end.ThisObject)
                     break;
-        
+
                 current = Memory.ReadValue<LinkedListObject>(current.PreviousObjectLink);
             }
-        
+
             return 0;
         }
 

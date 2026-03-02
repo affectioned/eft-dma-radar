@@ -1,8 +1,4 @@
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace eft_dma_radar.Common.Misc
 {
@@ -55,7 +51,7 @@ namespace eft_dma_radar.Common.Misc
                         // Redirect standard output to the console
                         Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
                         Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
-                        
+
                         Console.Title = "WPF-RADAR Debug Console - IL2CPP Migration";
                         Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.WriteLine("================================================================");
@@ -63,7 +59,7 @@ namespace eft_dma_radar.Common.Misc
                         Console.WriteLine("================================================================");
                         Console.ResetColor();
                         Console.WriteLine();
-                        
+
                         _consoleAllocated = true;
                     }
                 }
@@ -94,10 +90,10 @@ namespace eft_dma_radar.Common.Misc
             var message = data?.ToString() ?? string.Empty;
             var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
             var formattedMessage = $"[{timestamp}] {message}";
-            
+
             // Write to Debug output (Visual Studio)
             Debug.WriteLine(formattedMessage);
-            
+
             // Write to Console (our allocated console window)
             if (_consoleAllocated)
             {
@@ -131,7 +127,7 @@ namespace eft_dma_radar.Common.Misc
                     Console.WriteLine(formattedMessage);
                 }
             }
-            
+
             // Write to file (if enabled via -logging flag)
             _writer?.WriteLine(formattedMessage);
         }

@@ -24,6 +24,6 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
                 Y = mappos.Y,
                 Z = p.Z
             };
-        } 
-    } 
+        }
+    }
 }

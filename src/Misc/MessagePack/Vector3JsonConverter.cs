@@ -1,7 +1,4 @@
-﻿using System.Numerics;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using MessagePack;
+﻿using MessagePack;
 using MessagePack.Formatters;
 namespace eft_dma_radar.Common.Misc.MessagePack
 {
@@ -19,12 +16,12 @@ namespace eft_dma_radar.Common.Misc.MessagePack
                 writer.Write(kvp.Value.Z);
             }
         }
-    
+
         public Dictionary<string, Vector3> Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
             int count = reader.ReadMapHeader();
             var dictionary = new Dictionary<string, Vector3>(count);
-    
+
             for (int i = 0; i < count; i++)
             {
                 string key = reader.ReadString();
@@ -34,7 +31,7 @@ namespace eft_dma_radar.Common.Misc.MessagePack
                 float z = reader.ReadSingle();
                 dictionary[key] = new Vector3(x, y, z);
             }
-    
+
             return dictionary;
         }
     }

@@ -1,7 +1,4 @@
-﻿using SkiaSharp;
-using SkiaSharp.Views.Desktop;
-using SkiaSharp.Views.WPF;
-using System.Numerics;
+﻿using SkiaSharp.Views.WPF;
 
 namespace eft_dma_radar.Common.Maps
 {
