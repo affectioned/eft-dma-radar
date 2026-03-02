@@ -273,7 +273,6 @@
                     Effect="{StaticResource PanelShadow}"
                     Background="Transparent"
                     BorderThickness="0">
-                <local:MemoryWritingControl x:Name="MemoryWritingControl"/>
             </Border>
         </Canvas>
         

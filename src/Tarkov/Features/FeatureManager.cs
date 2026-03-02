@@ -57,15 +57,13 @@ namespace eft_dma_radar.Tarkov.Features
                         Thread.Sleep(250);
                         continue;
                     }
-
-                    bool enabled = MemWrites.Enabled;
                     bool ready = Memory.Ready;
                     bool inRaid = Memory.InRaid;
                     bool hasLocal = Memory.LocalPlayer is not null;
                     bool handsValid = hasLocal &&
                                       Memory.LocalPlayer.Firearm.HandsController.Item1.IsValidVirtualAddress();
 
-                    if (!enabled || !ready || !inRaid || !hasLocal || !handsValid)
+                    if (!ready || !inRaid || !hasLocal || !handsValid)
                     {
                         // Gate silently, no spam logging
                         Thread.Sleep(250);
@@ -114,26 +112,6 @@ namespace eft_dma_radar.Tarkov.Features
             {
                 feature.OnRaidEnd();
             }
-        }
-    }
-
-    /// <summary>
-    /// Helper Class.
-    /// </summary>
-    internal static class MemWrites
-    {
-        /// <summary>
-        /// DMAToolkit/MemWrites Config.
-        /// </summary>
-        public static MemWritesConfig Config => Program.Config.MemWrites;
-
-        /// <summary>
-        /// True if Memory Writes are enabled, otherwise False.
-        /// </summary>
-        public static bool Enabled
-        {
-            get => Config.MemWritesEnabled;
-            set => Config.MemWritesEnabled = value;
         }
     }
 }

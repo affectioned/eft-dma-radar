@@ -311,12 +311,6 @@ namespace eft_dma_radar.UI.Pages
                             importedConfig.Cache = currentCache;
                             importedConfig.WebRadar = currentWebRadar;
 
-                            if (importedConfig.MemWrites.MemWritesEnabled)
-                            {
-                                var memoryWritingDecision = MemoryWritingControl.HandleConfigImportMemoryWriting(importedConfig);
-                                MemoryWritingControl.MemoryWritingImportHandler.ApplyMemoryWritingDecision(importedConfig, memoryWritingDecision);
-                            }
-
                             Program.UpdateConfig(importedConfig);
 
                             await Dispatcher.InvokeAsync(() =>
@@ -349,15 +343,6 @@ namespace eft_dma_radar.UI.Pages
                                 var mainWindow = MainWindow.Window;
                                 if (mainWindow != null)
                                 {
-                                    if (mainWindow.MemoryWritingControl != null)
-                                    {
-                                        MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
-                                        mainWindow.MemoryWritingControl.LoadSettings();
-                                        await Task.Delay(50);
-
-                                        await Task.Delay(50);
-                                    }
-
                                     if (mainWindow.LootSettingsControl != null)
                                     {
                                         mainWindow.LootSettingsControl.LoadSettings();
@@ -463,7 +448,6 @@ namespace eft_dma_radar.UI.Pages
             try
             {
                 var mainWindow = MainWindow.Window;
-                MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
 
                 XMLogging.WriteLine("[Config] Feature instances updated successfully");
             }
@@ -2759,66 +2743,14 @@ namespace eft_dma_radar.UI.Pages
 
                 #region Memory Writes
                 // Global
-                case nameof(HotkeyConfig.ToggleRageMode):
-                    Config.MemWrites.RageMode = isActive;
-                    mainWindow.MemoryWritingControl.chkRageMode.IsChecked = isActive;
-                    break;
                 // Aimbot
-                case nameof(HotkeyConfig.ToggleAimbot):
-                    Config.MemWrites.Aimbot.Enabled = isActive;
-                    mainWindow.MemoryWritingControl.chkEnableAimbot.IsChecked = isActive;
-                    break;
                 case nameof(HotkeyConfig.EngageTeammate):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;
                     break;
-                case nameof(HotkeyConfig.AimbotBone):
-                    if (isActive)
-                        mainWindow.MemoryWritingControl.ToggleAimbotBone();
-                    break;
-                case nameof(HotkeyConfig.SafeLock):
-                    Config.MemWrites.Aimbot.SilentAim.SafeLock = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Safe Lock", isActive);
-                    break;
-                case nameof(HotkeyConfig.RandomBone):
-                    Config.MemWrites.Aimbot.RandomBone.Enabled = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Random Bone", isActive);
-                    break;
-                case nameof(HotkeyConfig.AutoBone):
-                    Config.MemWrites.Aimbot.SilentAim.AutoBone = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Auto Bone", isActive);
-                    break;
-                case nameof(HotkeyConfig.HeadshotAI):
-                    Config.MemWrites.Aimbot.HeadshotAI = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Headshot AI", isActive);
-                    break;
                 // Weapons
-                case nameof(HotkeyConfig.FastWeaponOps):
-                    Config.MemWrites.FastWeaponOps = isActive;
-                    mainWindow.MemoryWritingControl.chkFastWeaponOps.IsChecked = isActive;
-                    break;
-                case nameof(HotkeyConfig.NoRecoil):
-                    Config.MemWrites.NoRecoil = isActive;
-                    mainWindow.MemoryWritingControl.chkNoRecoil.IsChecked = isActive;
-                    break;
-                // Movement
-                case nameof(HotkeyConfig.WideLean):
-                    Config.MemWrites.WideLean.Enabled = isActive;
-                    mainWindow.MemoryWritingControl.chkWideLean.IsChecked = isActive;
-                    break;
+                // Movement;
                 // Camera
-                case nameof(HotkeyConfig.NoVisor):
-                    Config.MemWrites.NoVisor = isActive;
-                    mainWindow.MemoryWritingControl.chkNoVisor.IsChecked = isActive;
-                    break;
-                case nameof(HotkeyConfig.NightVision):
-                    Config.MemWrites.NightVision = isActive;
-                    mainWindow.MemoryWritingControl.chkNightVision.IsChecked = isActive;
-                    break;
-                case nameof(HotkeyConfig.ThermalVision):
-                    Config.MemWrites.ThermalVision = isActive;
-                    mainWindow.MemoryWritingControl.chkThermalVision.IsChecked = isActive;
-                    break;
                 #endregion
 
                 #region General Settings
@@ -3126,13 +3058,6 @@ namespace eft_dma_radar.UI.Pages
 
                 await Dispatcher.InvokeAsync(async () =>
                 {
-                    if (mainWindow.MemoryWritingControl != null)
-                    {
-                        MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
-                        mainWindow.MemoryWritingControl.LoadSettings();
-                        await Task.Delay(50);
-                    }
-
                     if (mainWindow.LootSettingsControl != null)
                     {
                         mainWindow.LootSettingsControl.LoadSettings();
