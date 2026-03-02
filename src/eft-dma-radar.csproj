@@ -89,6 +89,7 @@
 		<PackageReference Include="Svg.Skia" Version="3.0.3" />
 		<PackageReference Include="Collections.Pooled.V2" Version="2.2.2" />
 		<PackageReference Include="System.Management" Version="9.0.0" />
+		<PackageReference Include="Vmmsharp" Version="5.17.0" />
 	</ItemGroup>
 
 	<ItemGroup>
