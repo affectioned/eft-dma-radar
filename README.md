@@ -37,12 +37,6 @@ Download **Debugging Tools for Windows** via the [Windows SDK](https://developer
 | `dbghelp.dll` | Windows Debug Help Library |
 | `symsrv.dll` | Symbol server client |
 
-### Microsoft DIA SDK (`Resources\` folder)
-Copy from your Visual Studio 2022 installation — typically found at:
-`C:\Program Files\Microsoft Visual Studio\2022\Community\DIA SDK\bin\amd64\msdia140.dll`
-
-Place it inside the `Resources\` subfolder next to the exe.
-
 ### Visual C++ Runtime
 Download **Visual C++ Redistributable 2015–2022 (x64)** from [Microsoft](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 Installing it system-wide is sufficient; copying `vcruntime140.dll` manually is only needed for a fully portable setup.
