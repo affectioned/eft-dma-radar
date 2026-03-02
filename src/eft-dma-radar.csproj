@@ -145,9 +145,7 @@
 	</Target>
 
 	<ItemGroup>
-		<Reference Include="VmmSharp">
-			<HintPath>..\VmmSharp.dll</HintPath>
-		</Reference>
+		<PackageReference Include="Vmmsharp" Version="5.17.0" />
 	</ItemGroup>
 </Project>
 
