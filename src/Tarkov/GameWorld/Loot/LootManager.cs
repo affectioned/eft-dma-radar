@@ -13,7 +13,6 @@ using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
 using System.IO;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.UI.ESP.eft_dma_radar.UI.ESP;
 using HandyControl.Controls;
 using System.Drawing.Imaging.Effects;
@@ -529,11 +528,6 @@ namespace eft_dma_radar.Tarkov.Loot
 
                     //XMLogging.WriteLine($"[Dogtag] ✔ VICTIM {victimName} ({victimProfileId})");
 
-                    DogtagApiClient.Send(
-                        victimAccountId,
-                        victimProfileId,
-                        victimName);
-
                     // -------------------------------------------------
                     // KILLER (AS SEPARATE PLAYER)
                     // -------------------------------------------------
@@ -551,10 +545,6 @@ namespace eft_dma_radar.Tarkov.Loot
                             profileId: killerProfileId,
                             nickname: killerName,
                             accountId: killerAccountId);
-                        DogtagApiClient.Send(
-                            killerAccountId,
-                            killerProfileId,
-                            killerName);
                         // -------------------------------------------------
                         // RESOLVE KILLER WEAPON FROM LIVE PLAYER LIST
                         // -------------------------------------------------

@@ -252,16 +252,16 @@ namespace eft_dma_radar.UI.Pages
 
                 var warningResult = MessageBox.Show(
                         "WARNING: Importing a configuration will replace current settings including:\n\n" +
-                        "ï¿? General settings & UI preferences\n" +
-                        "ï¿? Player/Entity display settings\n" +
-                        "ï¿? Color configurations\n" +
-                        "ï¿? Hotkey assignments\n" +
-                        "ï¿? ESP configurations\n" +
-                        "ï¿? Panel and toolbar positions\n" +
-                        "ï¿? Memory writing settings\n" +
-                        "ï¿? Loot settings\n" +
-                        "ï¿? Quest helper settings\n" +
-                        "ï¿? Container settings\n\n" +
+                        "ï¿½? General settings & UI preferences\n" +
+                        "ï¿½? Player/Entity display settings\n" +
+                        "ï¿½? Color configurations\n" +
+                        "ï¿½? Hotkey assignments\n" +
+                        "ï¿½? ESP configurations\n" +
+                        "ï¿½? Panel and toolbar positions\n" +
+                        "ï¿½? Memory writing settings\n" +
+                        "ï¿½? Loot settings\n" +
+                        "ï¿½? Quest helper settings\n" +
+                        "ï¿½? Container settings\n\n" +
                         "NOTE: Cache & Web Radar data will not be preserved.\n\n" +
                         "This action cannot be undone. Continue?",
                         "Import Configuration Warning",
@@ -1473,7 +1473,7 @@ namespace eft_dma_radar.UI.Pages
             if (hasKey)
             {
                 txtApiStatus.Text = $"API key loaded successfully";
-                btnCreateApiFile.Content = "Edit API Fileï¿?";
+                btnCreateApiFile.Content = "Edit API Fileï¿½?";
                 btnCreateApiFile.ToolTip = "Replace the stored API key";
                 btnClearApiFile.IsEnabled = true;
                 btnOpenApiFolder.IsEnabled = true;
@@ -1481,7 +1481,7 @@ namespace eft_dma_radar.UI.Pages
             else
             {
                 txtApiStatus.Text = "No API key saved.";
-                btnCreateApiFile.Content = "Create API Fileï¿?";
+                btnCreateApiFile.Content = "Create API Fileï¿½?";
                 btnCreateApiFile.ToolTip = "Create and store an API key securely";
                 btnClearApiFile.IsEnabled = false;
                 btnOpenApiFolder.IsEnabled = false;
@@ -1829,50 +1829,7 @@ namespace eft_dma_radar.UI.Pages
         }
 
 
-        private async void btnCreateApiFile_Click(object sender, RoutedEventArgs e)
-        {
-            btnCreateApiFile.IsEnabled = false;
-
-            try
-            {
-                var exists = File.Exists(ApiKeyStore.StorePath);
-
-                if (exists)
-                {
-                    var res = MessageBox.Show(
-                        "An API key already exists. Do you want to replace it?",
-                        "Replace API Key",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (res != MessageBoxResult.Yes)
-                        return;
-                }
-
-                var key = await ApiKeyWizard.CaptureApiKeyAsync();
-                if (string.IsNullOrWhiteSpace(key))
-                    return;
-
-                ApiKeyStore.SaveApiKey(key);
-
-                UpdateApiStatus();
-
-                MessageBox.Show(
-                    exists ? "API key updated successfully." : "API key saved securely (encrypted).",
-                    "Success",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to save API key:\n{ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                btnCreateApiFile.IsEnabled = true;
-            }
-        }
+        private void btnCreateApiFile_Click(object sender, RoutedEventArgs e) { }
 
 
         private void btnOpenApiFolder_Click(object sender, RoutedEventArgs e)
@@ -3435,16 +3392,16 @@ namespace eft_dma_radar.UI.Pages
 
                 var confirm = MessageBox.Show(
                     "WARNING: Importing a configuration will replace current settings including:\n\n" +
-                    "ï¿? General settings & UI preferences\n" +
-                    "ï¿? Player/Entity display settings\n" +
-                    "ï¿? Color configurations\n" +
-                    "ï¿? Hotkey assignments\n" +
-                    "ï¿? ESP configurations\n" +
-                    "ï¿? Panel and toolbar positions\n" +
-                    "ï¿? Memory writing settings\n" +
-                    "ï¿? Loot settings\n" +
-                    "ï¿? Quest helper settings\n" +
-                    "ï¿? Container settings\n\n" +
+                    "ï¿½? General settings & UI preferences\n" +
+                    "ï¿½? Player/Entity display settings\n" +
+                    "ï¿½? Color configurations\n" +
+                    "ï¿½? Hotkey assignments\n" +
+                    "ï¿½? ESP configurations\n" +
+                    "ï¿½? Panel and toolbar positions\n" +
+                    "ï¿½? Memory writing settings\n" +
+                    "ï¿½? Loot settings\n" +
+                    "ï¿½? Quest helper settings\n" +
+                    "ï¿½? Container settings\n\n" +
                     "NOTE: Cache data will not be preserved.\n\n" +
                     "This action cannot be undone. Continue?",
                     "Import Configuration Warning",

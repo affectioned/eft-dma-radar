@@ -4,7 +4,6 @@ using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
-using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
@@ -234,11 +233,6 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             if (EnableDebug)
                 Log($"DOGTAG ? {nickname} ({profileId})");
 
-            // ? SEND TO API
-            DogtagApiClient.Send(
-                accountId,
-                profileId,
-                nickname);
             if (!string.IsNullOrEmpty(killerAccountId) &&
                 !string.IsNullOrEmpty(killerProfileId) &&
                 !string.IsNullOrEmpty(killerName))
@@ -246,11 +240,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 if (EnableDebug)
                     Log($"KILLER ? {killerName} ({killerProfileId})");
             
-                DogtagApiClient.Send(
-                    killerAccountId,
-                    killerProfileId,
-                    killerName);
-            }                
+            }
         }
 
         private static string ReadStr(ulong addr)

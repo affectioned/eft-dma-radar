@@ -309,7 +309,6 @@ namespace eft_dma_radar
             Initialized = true;
             InitializePanels();
             InitializeUIActivityMonitoring();
-            InitilizeTelemetry();
         }
 
         private void btnDebug_Click(object sender, RoutedEventArgs e)
@@ -1872,16 +1871,6 @@ namespace eft_dma_radar
                 _uiActivityTimer.Stop();
             };
         }
-        private void InitilizeTelemetry()
-        {
-            bool sendUsage = Config?.SendAnonymousUsage ?? true;
-            if (!sendUsage)
-                    return;
-                    
-            Telemetry.Start(appVersion: Program.Version, true);
-            Telemetry.BeatNow(Program.Version);
-        }
-
         private void NotifyUIActivity()
         {
             _uiInteractionActive = true;

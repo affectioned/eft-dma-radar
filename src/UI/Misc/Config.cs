@@ -648,13 +648,6 @@ namespace eft_dma_radar.UI.Misc
         public bool AlternateProfileService { get; set; } = false;
 
         /// <summary>
-        /// Send anonymous data to fd-mambo server to count amoutn of users. A simple ping, no IP or personal info is stored. It creates and uses a uniqe ID number.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("sendAnonymousUsage")]
-        public bool SendAnonymousUsage { get; set; } = false;
-
-        /// <summary>
         /// The maximum amount of requests to send per minute to eft-api.tech (5 = free tier, 60+ = premium tier)
         /// </summary>
         [JsonInclude]
@@ -2741,7 +2734,7 @@ namespace eft_dma_radar.UI.Misc
     public sealed class WebRadarConfig
     {
         [JsonPropertyName("webClientUrl")]
-        public string WebClientURL { get; set; } = "http://radar.fd-mambo.org";
+        public string WebClientURL { get; set; } = "http://localhost";
 
         [JsonPropertyName("upnp")]
         public bool UPnP { get; set; } = true;

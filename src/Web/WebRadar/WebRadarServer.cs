@@ -17,8 +17,6 @@ using MessagePack;
 using System.Net;
 using System.Net.Sockets;
 using System.Diagnostics;
-using System.Text;
-using System.Net.Http;
 using eft_dma_radar.Common.Maps;
 using Microsoft.Extensions.Logging;
 using System.IO;
@@ -404,76 +402,24 @@ namespace eft_dma_radar.Tarkov.WebRadar
             return host;
         }
         /// <summary>
-        /// Get the External IP of the user running the Server.
+        /// Get the External IP of the user running the Server via UPnP.
         /// </summary>
         /// <returns>External WAN IP.</returns>
         /// <exception cref="Exception"></exception>
         public static async Task<string> GetExternalIPAsync()
         {
-            var errors = new StringBuilder();
-
             try
             {
-                string ip = null;
-
-                try
-                {
-                    ip = await QueryUPnPForIPAsync();
-
-                    if (!string.IsNullOrWhiteSpace(ip))
-                        return ip;
-                }
-                catch (Exception ex)
-                {
-                    errors.AppendLine($"[UPnP Error] {ex.Message}");
-                }
-
-                try
-                {
-                    using (var httpClient = new HttpClient())
-                    {
-                        httpClient.Timeout = TimeSpan.FromSeconds(5);
-
-                        var ipServices = new[]
-                        {
-                            "https://api.ipify.org",
-                            "https://icanhazip.com",
-                            "https://ifconfig.me/ip"
-                        };
-
-                        foreach (var service in ipServices)
-                        {
-                            try
-                            {
-                                var response = await httpClient.GetStringAsync(service);
-                                ip = response.Trim();
-
-                                if (IPAddress.TryParse(ip, out _))
-                                    return ip;
-                            }
-                            catch (Exception ex)
-                            {
-                                errors.AppendLine($"[Service {service} Error] {ex.Message}");
-                                continue;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errors.AppendLine($"[HTTP Error] {ex.Message}");
-                }
-
-                if (string.IsNullOrWhiteSpace(ip))
-                    throw new Exception("Failed to obtain external IP address from any source");
-
-                return ip;
+                var ip = await QueryUPnPForIPAsync();
+                if (!string.IsNullOrWhiteSpace(ip))
+                    return ip;
             }
             catch (Exception ex)
             {
-                errors.AppendLine($"[Final Error] {ex.Message}");
-                throw new Exception($"ERROR Getting External IP: {errors}");
+                XMLogging.WriteLine($"[WebRadar] UPnP IP lookup failed: {ex.Message}");
             }
+
+            throw new Exception("Failed to obtain external IP address via UPnP");
         }
 
         /// <summary>
