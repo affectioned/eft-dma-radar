@@ -5,7 +5,6 @@ using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.API;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -253,8 +252,6 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 XMLogging.WriteLine(
                     $"[GearManager] Resolved ProfileID for {player}: {profileId}");
         
-                // ✅ FIRE API INGESTION HERE (ONCE)
-                PlayerLookupApiClient.TryResolve(player);
             }
             catch { }
         }

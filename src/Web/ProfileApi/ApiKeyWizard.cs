@@ -86,32 +86,16 @@ namespace eft_dma_radar.Tarkov.API
 
                 bool vtOk = TryEnableVT(); // enable OSC-8 hyperlinks if supported
 
-                int afterBlockRow;
-                if (vtOk)
-                {
-                    // Use simple visible text (kept green). If you want a true clickable link, call SafeWriteHyperlinkCentered here.
-                    afterBlockRow = SafeWriteCenteredBlock(
-                        "Get a free API key at eft-api.tech",
-                        "",
-                        "(Press O to open the link in your browser, or any other key to continue)"
-                    );
-                }
-                else
-                {
-                    afterBlockRow = SafeWriteCenteredBlock(
-                        "To acquire a free API key please visit:",
-                        "https://eft-api.tech",
-                        "",
-                        "(Press O to open the link in your browser, or any other key to continue)"
-                    );
-                }
+                int afterBlockRow = SafeWriteCenteredBlock(
+                    "Please enter your API key",
+                    "",
+                    "(Press any key to continue)"
+                );
 
                 try
                 {
                     Console.SetCursorPosition(0, afterBlockRow);
-                    var keyOpen = Console.ReadKey(intercept: true);
-                    if (keyOpen.Key == ConsoleKey.O)
-                        OpenUrl("https://eft-api.tech");
+                    Console.ReadKey(intercept: true);
                 }
                 catch { /* ignore */ }
 

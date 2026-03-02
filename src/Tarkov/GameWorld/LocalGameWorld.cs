@@ -19,7 +19,6 @@ using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.API;
 
 namespace eft_dma_radar.Tarkov.GameWorld
 {
@@ -364,9 +363,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (!localGameWorld.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid LocalGameWorld address");
         
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
                 // OFFLINE / ONLINE detection (cheap)
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
                 try
                 {
                     ulong classNamePtr = Memory.ReadPtrChain(
@@ -388,9 +387,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     IsOffline = false;
                 }
         
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
-                // LEVEL SETTINGS ¡§C non-blocking
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
+                // LEVEL SETTINGS ï¿½ï¿½C non-blocking
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
                 try
                 {
                     // 1) Fast path: use cached value if we already resolved it
@@ -401,7 +400,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     }
                     else
                     {
-                        // 2) No cached value yet ¡§C schedule a background resolve.
+                        // 2) No cached value yet ï¿½ï¿½C schedule a background resolve.
                         //    Do NOT block the game / raid init thread here.
                         LevelSettings = 0;
         
@@ -567,7 +566,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (_rgtPlayers.GetPlayerCount() <= 0)
                     return false;
 
-                // 3) Map transition detection ¡§C but not on every single call
+                // 3) Map transition detection ï¿½ï¿½C but not on every single call
                 if ((_mapCheckTick++ & 0x3F) == 0) // every 64 calls
                 {
                     var currentMapId = GetCurrentMapId();
@@ -665,21 +664,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
                             catch (Exception ex)
                             {
                                 XMLogging.WriteLine($"[Raid] OnRaidStart error in {feature.GetType().Name}: {ex}");
-                            }
-                        }
-                        foreach (var player in Memory.Players)
-                        {
-                            if(player is null)
-                                continue;
-                            try
-                            {
-                                
-                                PlayerLookupApiClient.TryResolve(player);
-                                XMLogging.WriteLine($"[Raid] PlayerLookupApiClient resolved player {player.ProfileID}");
-                            }
-                            catch (Exception ex)
-                            {
-                                XMLogging.WriteLine($"[Raid] OnRaidStart error in Player {player}: {ex}");
                             }
                         }
                         XMLogging.WriteLine("[Raid] Raid fully active, all features notified.");
@@ -1002,7 +986,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch
             {
-                // Swallow ¡§C camera can fail transiently during transitions
+                // Swallow ï¿½ï¿½C camera can fail transiently during transitions
             }
         }
 
@@ -1091,7 +1075,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 Il2CppClass.ForceReset();
                 _screenManagerStaticClass = 0;
 
-                // 10¡§C15 seconds cooldown recommended
+                // 10ï¿½ï¿½C15 seconds cooldown recommended
                 RaidCooldown.BeginCooldown(12);
 
                 _cts.Cancel();
