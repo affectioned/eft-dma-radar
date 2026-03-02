@@ -229,25 +229,25 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
 
             if (Settings.ShowName && !string.IsNullOrEmpty(Name))
             {
-                var nameWidth = SKPaints.TextExplosives.MeasureText(Name);
+                var nameWidth = SKPaints.FontRadarLabel.MeasureText(Name);
                 var namePt = new SKPoint(
                     toPos.X - (nameWidth / 2),
                     toPos.Y - 10f * MainWindow.UIScale);
 
-                canvas.DrawText(Name, namePt, SKPaints.TextOutline);
-                canvas.DrawText(Name, namePt, SKPaints.TextExplosives);
+                canvas.DrawText(Name, namePt, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
+                canvas.DrawText(Name, namePt, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextExplosives);
             }
 
             if (Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
-                var distWidth = SKPaints.TextExplosives.MeasureText(distText);
+                var distWidth = SKPaints.FontRadarLabel.MeasureText(distText);
                 var distPt = new SKPoint(
                     toPos.X - (distWidth / 2),
                     toPos.Y + 18f * MainWindow.UIScale);
 
-                canvas.DrawText(distText, distPt, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPt, SKPaints.TextExplosives);
+                canvas.DrawText(distText, distPt, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPt, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextExplosives);
             }
         }
 
