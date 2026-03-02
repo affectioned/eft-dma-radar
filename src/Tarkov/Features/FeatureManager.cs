@@ -71,22 +71,6 @@ namespace eft_dma_radar.Tarkov.Features
                         Thread.Sleep(250);
                         continue;
                     }
-
-                    // Main memwrite loop – checked again inside ExecuteMemWrites.
-                    while (MemWrites.Enabled && Memory.Ready)
-                    {
-                        var memWrites = IFeature.AllFeatures
-                            .OfType<IMemWriteFeature>()
-                            .Where(feature => feature.CanRun)
-                            .ToList();
-
-                        if (memWrites.Count > 0)
-                        {
-                            ExecuteMemWrites(memWrites);
-                        }
-
-                        Thread.Sleep(10);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -97,98 +81,6 @@ namespace eft_dma_radar.Tarkov.Features
                     // Small back-off before restarting the outer loop
                     Thread.Sleep(1000);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Executes MemWrite Features.
-        /// </summary>
-        private static void ExecuteMemWrites(IEnumerable<IMemWriteFeature> memWrites)
-        {
-            try
-            {
-                if (Memory.Game is not LocalGameWorld game)
-                    return;
-
-                using var hScatter = new ScatterWriteHandle();
-
-                const bool LOG_SLOW_FEATURES = true;
-                const int SLOW_FEATURE_THRESHOLD_MS = 250;
-
-                // Build scatter from all features
-                foreach (var feature in memWrites)
-                {
-                    try
-                    {
-                        var name = feature.GetType().Name;
-                        var sw = LOG_SLOW_FEATURES ? Stopwatch.StartNew() : null;
-
-                        feature.TryApply(hScatter);
-                        feature.OnApply();
-
-                        if (LOG_SLOW_FEATURES)
-                        {
-                            sw!.Stop();
-                            if (sw.ElapsedMilliseconds > SLOW_FEATURE_THRESHOLD_MS)
-                            {
-                                //XMLogging.WriteLine(
-                                //    $"[FeatureManager] SLOW feature {name} took {sw.ElapsedMilliseconds} ms in TryApply/OnApply");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        XMLogging.WriteLine($"[FeatureManager] Feature {feature.GetType().Name} threw: {ex}");
-                        // Don’t kill the batch because one feature is buggy
-                    }
-                }
-
-                // ─────────────────────────────────────────────
-                // FINAL SAFETY GATE (non-blocking)
-                // ─────────────────────────────────────────────
-
-                if (!MemWrites.Enabled)
-                    return;
-
-                bool safeToWrite;
-                try
-                {
-                    // Soft safety: only write if we’re in raid AND game says it's safe
-                    safeToWrite = Memory.InRaid && game.IsSafeToWriteMem;
-                }
-                catch (Exception ex)
-                {
-                    XMLogging.WriteLine($"[MemWrites] IsSafeToWriteMem / InRaid check threw: {ex.Message}");
-                    safeToWrite = false;
-                }
-
-                if (!safeToWrite)
-                    return;
-
-                hScatter.Execute(() => true);
-            }
-            catch (Exception ex)
-            {
-                XMLogging.WriteLine($"MemWrites [FAIL] {ex}");
-            }
-        }
-
-        /// <summary>
-        /// Executes MemPatch Features.
-        /// </summary>
-        private static void ExecuteMemPatches(IEnumerable<IMemPatchFeature> patches)
-        {
-            try
-            {
-                foreach (var feature in patches)
-                {
-                    feature.TryApply();
-                    feature.OnApply();
-                }
-            }
-            catch (Exception ex)
-            {
-                XMLogging.WriteLine($"MemPatches [FAIL] {ex}");
             }
         }
 

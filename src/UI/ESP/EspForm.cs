@@ -5,7 +5,6 @@ using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
@@ -692,10 +691,8 @@ namespace eft_dma_radar.UI.ESP
                 if (ESPConfig.ShowRaidStats)
                     DrawRaidStats(canvas, players);
 
-                if (ESPConfig.ShowAimFOV &&
-                    MemWriteFeature<Aimbot>.Instance.Enabled)
+                if (ESPConfig.ShowAimFOV)
                 {
-                    AimFOV = Aimbot.Config.FOV;
                     DrawAimFOV(canvas);
                 }
 
@@ -704,9 +701,6 @@ namespace eft_dma_radar.UI.ESP
 
                 if (ESPConfig.ShowMagazine)
                     DrawMagazine(canvas, localPlayer);
-
-                if (ESPConfig.ShowFireportAim)
-                    DrawFireportAim(canvas, localPlayer);
 
                 if (ESPConfig.ShowStatusText)
                     DrawStatusText(canvas);
@@ -920,50 +914,6 @@ namespace eft_dma_radar.UI.ESP
             {
                 XMLogging.WriteLine($"ERROR Setting ESP Status Text: {ex}");
             }
-        }
-
-        /// <summary>
-        /// Draw fireport aim in front of player.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
-        {
-            if (localPlayer.Firearm.FireportPosition is not Vector3 fireportPos)
-                return;
-
-            if (!CameraManagerBase.WorldToScreen(ref fireportPos, out var fireportScr))
-                return;
-
-            Vector3 targetWorldPos;
-
-            var aimbotCache = MemWriteFeature<Aimbot>.Instance.Cache;
-
-            // 🎯 AIM LOCK ACTIVE → snap line to target
-            if (ESP.Config.ShowAimLock &&
-                aimbotCache?.AimbotLockedPlayer is Player locked &&
-                locked.IsAlive &&
-                aimbotCache.CurrentTargetBonePos is Vector3 lastPos)
-            {
-                targetWorldPos = lastPos;
-            }
-            else
-            {
-                // Free aim preview
-                if (localPlayer.Firearm.FireportRotation is not Quaternion rot)
-                    return;
-
-                var forward = rot.Down();
-                targetWorldPos = fireportPos + forward * 1000f;
-            }
-
-            if (!CameraManagerBase.WorldToScreen(ref targetWorldPos, out var targetScr))
-                return;
-
-            canvas.DrawLine(
-                fireportScr,
-                targetScr,
-                SKPaints.PaintFireportAimESP
-            );
         }
 
         /// <summary>
@@ -1371,7 +1321,6 @@ namespace eft_dma_radar.UI.ESP
 
             var anchorY =
                 CameraManagerBase.ViewportCenter.Y +
-                Aimbot.Config.FOV +
                 15f * ESPConfig.FontScale +
                 _closestPlayerOffset.Y;
 
@@ -2434,7 +2383,7 @@ namespace eft_dma_radar.UI.ESP
             var textHeight = SKPaints.TextESPClosestPlayer.TextSize;
 
             var anchorX = CameraManagerBase.ViewportCenter.X + _closestPlayerOffset.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + 15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
 
             var x = anchorX - textWidth / 2;
 
@@ -2633,7 +2582,7 @@ namespace eft_dma_radar.UI.ESP
                 var sampleHeight = SKPaints.TextESPClosestPlayer.TextSize;
 
                 var sampleAnchorX = CameraManagerBase.ViewportCenter.X;
-                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale;
+                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + 15f * ESPConfig.FontScale;
 
                 var sampleX = sampleAnchorX - sampleWidth / 2;
 
@@ -2644,7 +2593,7 @@ namespace eft_dma_radar.UI.ESP
             var textHeight = SKPaints.TextESPClosestPlayer.TextSize;
 
             var anchorX = CameraManagerBase.ViewportCenter.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + 15f * ESPConfig.FontScale;
 
             var x = anchorX - textWidth / 2;
 
@@ -2874,35 +2823,9 @@ namespace eft_dma_radar.UI.ESP
 
         private string GenerateCurrentStatusText()
         {
-            var aimEnabled = MemWriteFeature<Aimbot>.Instance.Enabled;
-            var rageMode = Config.MemWritesEnabled && Config.MemWrites.RageMode;
-            var wideLeanEnabled = MemWrites.Enabled && MemWriteFeature<WideLean>.Instance.Enabled;
-            //var lootThroughWallsZoomed = MemWrites.Enabled && MemWriteFeature<LootThroughWalls>.Instance.Enabled && LootThroughWalls.ZoomEngaged;
-            //var moveSpeedEnabled = MemWrites.Enabled && MemWriteFeature<MoveSpeed>.Instance.Enabled;
-
             string label = null;
 
-            if (rageMode)
-                label = aimEnabled ? $"{Aimbot.Config.TargetingMode.GetDescription()}: RAGE MODE" : "RAGE MODE";
-            else if (aimEnabled)
-            {
-                var mode = Aimbot.Config.TargetingMode.GetDescription();
-                if (Aimbot.Config.RandomBone.Enabled)
-                    label = $"{mode}: Random Bone";
-                else if (Aimbot.Config.SilentAim.AutoBone)
-                    label = $"{mode}: Auto Bone";
-                else
-                    label = $"{mode}: {Aimbot.Config.Bone.GetDescription()}";
-            }
-
             var secondaryFeatures = new List<string>();
-
-            if (wideLeanEnabled)
-                secondaryFeatures.Add("Lean");
-            //if (lootThroughWallsZoomed)
-            //    secondaryFeatures.Add("LTW");
-            //else if (moveSpeedEnabled)
-            //    secondaryFeatures.Add("MOVE");
 
             if (secondaryFeatures.Any())
             {

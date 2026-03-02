@@ -5,8 +5,6 @@ using eft_dma_radar.Common.Misc.Data.EFT;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.LowLevel;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Chams;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.LootFilters;
 using eft_dma_radar.UI.Misc;
@@ -345,10 +343,6 @@ namespace eft_dma_radar.UI.Misc
         #region ISharedConfig
         [JsonIgnore]
         public bool MemWritesEnabled => this.MemWrites.MemWritesEnabled;
-        [JsonIgnore]
-        public LowLevelCache LowLevelCache => this.Cache.LowLevel;
-        [JsonIgnore]
-        public ChamsConfig ChamsConfig => this.MemWrites.Chams;
         [JsonIgnore]
         public bool AdvancedMemWrites => this.MemWrites.AdvancedMemWrites;
         #endregion
@@ -2245,11 +2239,6 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("wideLean")]
         public WideLeanConfig WideLean { get; set; } = new();
         /// <summary>
-        /// Chams Feature Config
-        /// </summary>
-        [JsonPropertyName("chams")]
-        public ChamsConfig Chams { get; set; } = new();
-        /// <summary>
         /// Makes weapon operations faster (ads, mag loading, etc.)
         /// </summary>
         [JsonPropertyName("fastWeaponOps")]
@@ -2422,12 +2411,6 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; } = false;
-
-        /// <summary>
-        /// Last Aimbot Targeting Mode that the player set.
-        /// </summary>
-        [JsonPropertyName("targetingMode")]
-        public Aimbot.AimbotTargetingMode TargetingMode { get; set; } = Aimbot.AimbotTargetingMode.FOV;
 
         /// <summary>
         /// Aimbot FOV via ESP Circle.
@@ -2740,10 +2723,6 @@ namespace eft_dma_radar.UI.Misc
     /// </summary>
     public sealed class PersistentCache
     {
-        [JsonPropertyName("F7xLmP2")]
-        [JsonInclude]
-        public LowLevelCache LowLevel { get; private set; } = new();
-
         [JsonPropertyName("profileApi")]
         [JsonInclude]
         public ProfileApiCache ProfileAPI { get; private set; } = new();
