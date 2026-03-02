@@ -433,7 +433,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             get
             {
-                // HARD GUARD ¡ª prevents ALL render crashes
+                // HARD GUARD ï¿½ï¿½ prevents ALL render crashes
                 if (Skeleton == null || Skeleton.Root == null)
                     return ref _cachedPosition;
 
@@ -609,7 +609,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         public virtual void OnRegRefresh(ScatterReadIndex index, IReadOnlySet<ulong> registered, bool? isActiveParam = null)
         {
             if (!this.TryInitSkeleton())
-                return; 
+            {
+                ErrorTimer.Start(); // Body invalid â†’ accumulate error time so Refresh() re-allocates
+                return;
+            }
 
             if (this is ObservedPlayer op &&
                 op.IsPmc &&
@@ -675,7 +678,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             // Ensure skeleton exists
             if (!this.TryInitSkeleton())
+            {
+                ErrorTimer.Start(); // Body invalid â†’ accumulate error time so Refresh() re-allocates
                 return;
+            }
 
             // -------------------------
             // Scatter read setup
@@ -718,7 +724,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         }
                         catch
                         {
-                            // Transform chain likely invalidated ¡ú rebuild just this bone
+                            // Transform chain likely invalidated ï¿½ï¿½ rebuild just this bone
                             Skeleton.ResetTransform(tr.Key);
                             bonesOk = false;
                         }
@@ -749,7 +755,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     ErrorTimer.ElapsedMilliseconds > 800)
                 {
                     XMLogging.WriteLine(
-                        $"[SKELETON FIX] {Name} skeleton frozen ¡ú soft reset");
+                        $"[SKELETON FIX] {Name} skeleton frozen ï¿½ï¿½ soft reset");
 
                     SoftResetRuntimeState();
                     Skeleton.ResetESPCacheAndTransforms();
@@ -2087,7 +2093,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     var p0 = Skeleton.ESPBuffer[idx];
                     var p1 = Skeleton.ESPBuffer[idx + 1];
         
-                    // HARD GUARD ¡ú prevents long diagonal lines
+                    // HARD GUARD ï¿½ï¿½ prevents long diagonal lines
                     if (!p0.IsFinite() || !p1.IsFinite())
                         continue;
         
