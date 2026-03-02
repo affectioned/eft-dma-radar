@@ -1,9 +1,8 @@
-using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
@@ -80,12 +79,9 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
             ValidateStaminaValue(currentStamina);
             ValidateOxygenValue(currentOxygen);
 
-            var hasWrites = false;
-
             if (currentStamina < MAX_STAMINA * REFILL_THRESHOLD)
             {
                 writes.AddValueEntry(staminaObj + Offsets.PhysicalValue.Current, MAX_STAMINA);
-                hasWrites = true;
 
                 writes.Callbacks += () =>
                     XMLogging.WriteLine($"[InfStamina] Stamina refilled: {currentStamina:F1} -> {MAX_STAMINA:F1}");
@@ -94,7 +90,6 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
             if (currentOxygen < MAX_OXYGEN * REFILL_THRESHOLD)
             {
                 writes.AddValueEntry(oxygenObj + Offsets.PhysicalValue.Current, MAX_OXYGEN);
-                hasWrites = true;
 
                 writes.Callbacks += () =>
                     XMLogging.WriteLine($"[InfStamina] Oxygen refilled: {currentOxygen:F1} -> {MAX_OXYGEN:F1}");

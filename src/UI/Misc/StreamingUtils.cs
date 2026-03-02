@@ -1,7 +1,3 @@
-using eft_dma_radar.Common.Misc;
-using System;
-using System.Threading.Tasks;
-
 namespace eft_dma_radar.UI.Misc
 {
     /// <summary>

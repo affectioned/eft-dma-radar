@@ -1,9 +1,4 @@
-﻿using System;
-using System.Numerics;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
-namespace eft_dma_radar.Common.Misc.MessagePack
+﻿namespace eft_dma_radar.Common.Misc.MessagePack
 {
     public class Vector2JsonConverter : JsonConverter<Vector2>
     {

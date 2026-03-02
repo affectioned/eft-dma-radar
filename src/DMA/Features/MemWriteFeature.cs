@@ -1,8 +1,4 @@
-﻿using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.Misc;
-using System.Diagnostics;
-using static eft_dma_radar.Common.Unity.MonoLib;
+﻿using eft_dma_radar.Common.DMA.ScatterAPI;
 
 namespace eft_dma_radar.Common.DMA.Features
 {

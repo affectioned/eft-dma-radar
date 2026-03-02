@@ -1,9 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using System.Net.Http.Headers;
-using System.Net;
-using System.Text.Json;
-
-namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
+﻿namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
 {
     public static class TarkovMarketJob
     {
@@ -48,7 +43,7 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                     ImageLink = item.ImageLink,
                     Caliber = item.Properties?.Caliber  // <-- fix here
                 });
-                
+
             }
             foreach (var questItem in data.Data.QuestItems)
             {

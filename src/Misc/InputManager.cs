@@ -1,10 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Text;
-using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Misc;
+﻿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Tarkov;
 using Vmmsharp;
 

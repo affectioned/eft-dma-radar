@@ -1,27 +1,17 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Tarkov.WebRadar.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
-
-using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.Loot;
-using eft_dma_radar.Tarkov.WebRadar.Data;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.MessagePack;
-
-using Open.Nat;
-using MessagePack;
-
-using System.Net;
-using System.Net.Sockets;
-using System.Diagnostics;
-using eft_dma_radar.Common.Maps;
-using Microsoft.Extensions.Logging;
-using System.IO;
-using eft_dma_radar.Tarkov.GameWorld.Exits;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Open.Nat;
+using System.IO;
+using System.Net.Sockets;
 
 namespace eft_dma_radar.Tarkov.WebRadar
 {
@@ -29,10 +19,6 @@ namespace eft_dma_radar.Tarkov.WebRadar
     {
         private static readonly WebRadarUpdate _update = new();
         private static TimeSpan _tickRate;
-        private static IHost _webHost;
-
-        private static CancellationTokenSource _workerCts;
-        private static Thread _workerThread;
 
         private static bool _isRunning;
         private static int _upnpPort = -1;
@@ -86,58 +72,58 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 })
                 .ConfigureWebHostDefaults(web =>
                 {
-                        web.UseKestrel(options =>
-                        {
-                            options.Listen(IPAddress.Any, port);
-                        })
-                       .Configure(app =>
+                    web.UseKestrel(options =>
+                    {
+                        options.Listen(IPAddress.Any, port);
+                    })
+                   .Configure(app =>
+                   {
+                       app.UseDefaultFiles(new DefaultFilesOptions
                        {
-                            app.UseDefaultFiles(new DefaultFilesOptions
-                            {
-                                FileProvider = new PhysicalFileProvider(
-                                    Path.Combine(AppContext.BaseDirectory, "wwwroot"))
-                            });
-                            
-                            app.UseStaticFiles(new StaticFileOptions
-                            {
-                                FileProvider = new PhysicalFileProvider(
-                                    Path.Combine(AppContext.BaseDirectory, "wwwroot")),
-                                RequestPath = ""
-                            });
-                           app.UseRouting();
+                           FileProvider = new PhysicalFileProvider(
+                                   Path.Combine(AppContext.BaseDirectory, "wwwroot"))
+                       });
 
-                           app.UseEndpoints(endpoints =>
+                       app.UseStaticFiles(new StaticFileOptions
+                       {
+                           FileProvider = new PhysicalFileProvider(
+                                   Path.Combine(AppContext.BaseDirectory, "wwwroot")),
+                           RequestPath = ""
+                       });
+                       app.UseRouting();
+
+                       app.UseEndpoints(endpoints =>
+                       {
+                           endpoints.MapGet("/api/radar", async context =>
                            {
-                               endpoints.MapGet("/api/radar", async context =>
-                               {
-                                   context.Response.ContentType = "application/json";
-                                   await context.Response.WriteAsJsonAsync(_latest);
-                               });
+                               context.Response.ContentType = "application/json";
+                               await context.Response.WriteAsJsonAsync(_latest);
+                           });
 
-                               endpoints.MapGet("/health", async context =>
+                           endpoints.MapGet("/health", async context =>
+                           {
+                               context.Response.ContentType = "text/plain";
+                               await context.Response.WriteAsync("OK");
+                           });
+
+                           endpoints.MapGet("/api/default-data", async context =>
+                           {
+                               var path = Path.Combine(AppContext.BaseDirectory, "DEFAULT_DATA.json");
+
+                               if (!File.Exists(path))
                                {
+                                   context.Response.StatusCode = StatusCodes.Status404NotFound;
                                    context.Response.ContentType = "text/plain";
-                                   await context.Response.WriteAsync("OK");
-                               });
+                                   await context.Response.WriteAsync("DEFAULT_DATA.json not found.");
+                                   return;
+                               }
 
-                               endpoints.MapGet("/api/default-data", async context =>
-                               {
-                                   var path = Path.Combine(AppContext.BaseDirectory, "DEFAULT_DATA.json");
-
-                                   if (!File.Exists(path))
-                                   {
-                                       context.Response.StatusCode = StatusCodes.Status404NotFound;
-                                       context.Response.ContentType = "text/plain";
-                                       await context.Response.WriteAsync("DEFAULT_DATA.json not found.");
-                                       return;
-                                   }
-
-                                   context.Response.ContentType = "application/json";
-                                   context.Response.Headers.CacheControl = "public, max-age=3600";
-                                   await context.Response.SendFileAsync(path);
-                               });
+                               context.Response.ContentType = "application/json";
+                               context.Response.Headers.CacheControl = "public, max-age=3600";
+                               await context.Response.SendFileAsync(path);
                            });
                        });
+                   });
                 })
                 .Build();
 
@@ -227,7 +213,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
                     XMLogging.WriteLine(
                         $"[UPnP MAP] {m.Protocol} {m.PublicPort} -> {m.PrivateIP}:{m.PrivatePort}"
                     );
-                }                
+                }
                 return true;
             }
             catch (Exception ex)
@@ -267,10 +253,10 @@ namespace eft_dma_radar.Tarkov.WebRadar
         {
             while (!ct.IsCancellationRequested)
             {
-                    bool hasLocal   = Memory.LocalPlayer is not null;
-                    bool handsValid = hasLocal &&
-                                      Memory.LocalPlayer.Firearm.HandsController.Item1.IsValidVirtualAddress();                
-                if(!handsValid)
+                bool hasLocal = Memory.LocalPlayer is not null;
+                bool handsValid = hasLocal &&
+                                  Memory.LocalPlayer.Firearm.HandsController.Item1.IsValidVirtualAddress();
+                if (!handsValid)
                 {
                     _latest = new WebRadarUpdate();
                     Thread.Sleep(_tickRate);
@@ -278,12 +264,12 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 }
                 try
                 {
-                    _latest.InGame   = Memory.InRaid;
-                    _latest.InRaid   = Memory.InRaid;
-                    _latest.MapID    = Memory.MapID;
+                    _latest.InGame = Memory.InRaid;
+                    _latest.InRaid = Memory.InRaid;
+                    _latest.MapID = Memory.MapID;
                     _latest.SendTime = DateTime.UtcNow;
                     _latest.Version++;
-        
+
                     // =========================
                     // MAP (geometry only)
                     // =========================
@@ -291,24 +277,24 @@ namespace eft_dma_radar.Tarkov.WebRadar
                     _latest.Map = map != null
                         ? WebRadarMapConverter.Convert(map.Config)
                         : null;
-        
+
                     // =========================
                     // EXFILS (world entities)
                     // =========================
                     var exitManager = Memory?.Game?.Exits;
                     var localPlayer = Memory?.LocalPlayer;
                     var transitManager = exitManager;
-        
+
                     _latest.Exfils = exitManager?
                         .OfType<eft_dma_radar.Tarkov.GameWorld.Exits.Exfil>() // 👈 important
                         .Select(WebRadarExfil.CreateFromExfil)
                         .ToArray();
-        
+
                     _latest.Transits = transitManager?
                         .OfType<eft_dma_radar.Tarkov.GameWorld.Exits.TransitPoint>() // 👈 important
                         .Select(WebRadarTransit.CreateFromTransit)
                         .ToArray();
-        
+
                     // =========================
                     // PLAYERS
                     // =========================
@@ -316,14 +302,14 @@ namespace eft_dma_radar.Tarkov.WebRadar
                         .Where(p => p != null)
                         .Select(WebRadarPlayer.CreateFromPlayer)
                         .ToArray();
-        
+
                     // =========================
                     // LOOT
                     // =========================
                     _latest.Loot = Memory?.Loot?.UnfilteredLoot?
                         .Select(WebRadarLoot.CreateFromLoot)
                         .ToArray();
-        
+
                     // =========================
                     // DOORS
                     // =========================
@@ -335,12 +321,12 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 {
                     XMLogging.WriteLine($"[WebRadar] Worker error: {ex}");
                 }
-        
+
                 Thread.Sleep(_tickRate);
             }
         }
 
-    
+
 
 
         // =========================
@@ -456,7 +442,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 XMLogging.WriteLine($"[GetLocalIP] Error: {ex.Message}");
                 return null;
             }
-        }  
+        }
         /// <summary>
         /// Lookup the External IP Address via UPnP.
         /// </summary>
@@ -485,7 +471,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 return true;
 
             return false;
-        }  
+        }
         /// <summary>
         /// Get the Nat Device for the local UPnP Service.
         /// </summary>
@@ -495,12 +481,12 @@ namespace eft_dma_radar.Tarkov.WebRadar
             var dsc = new NatDiscoverer();
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             return await dsc.DiscoverDeviceAsync(PortMapper.Upnp, cts);
-        }                
+        }
         public static void OverridePassword(string password)
         {
             if (!string.IsNullOrWhiteSpace(password))
                 _password = password;
-        }                
+        }
     }
 
 }

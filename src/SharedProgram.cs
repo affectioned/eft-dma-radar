@@ -1,9 +1,5 @@
-﻿using eft_dma_radar.Misc;
-using System.Diagnostics;
+﻿using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Config;
-using eft_dma_radar.Common.Misc;
-using System.Net.Http.Headers;
-using System.Net;
 using System.IO;
 using System.Net.Http;
 

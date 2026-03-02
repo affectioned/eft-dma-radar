@@ -1,7 +1,6 @@
-using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
@@ -11,8 +10,8 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         private bool _lastEnabledState;
         private ulong _cachedValuePtr;
 
-        private const float DEFAULT_VALUE   = 0.2f;
-        private const float DISABLED_VALUE  = 0f;
+        private const float DEFAULT_VALUE = 0.2f;
+        private const float DISABLED_VALUE = 0f;
 
         public override bool Enabled
         {
@@ -113,7 +112,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         public override void OnRaidStart()
         {
             _lastEnabledState = false;
-            _cachedValuePtr   = 0;
+            _cachedValuePtr = 0;
         }
     }
 }

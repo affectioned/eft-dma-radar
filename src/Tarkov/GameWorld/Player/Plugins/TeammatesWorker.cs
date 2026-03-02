@@ -12,17 +12,12 @@
  * - Raid-safe via SessionID
  */
 
-using System.Collections.Concurrent;
-using System.Numerics;
-using System.Text.Json;
-using System.IO;
 using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.GameWorld;
-using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
+using System.IO;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using static SDK.Enums;
 
@@ -297,12 +292,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             var players = game.Players;
             if (players == null)
                 return;
-        
+
             foreach (var p in players)
             {
                 if (p == null || p.VoipId <= 0)
                     continue;
-        
+
                 // CASE 1: Latched teammate ¡ú force Teammate
                 if (_teammates.TryGetValue(p.VoipId, out var entry))
                 {
@@ -312,7 +307,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                     }
                     continue;
                 }
-        
+
                 // CASE 2: Previously latched but now removed ¡ú restore
                 if (p.Type == PlayerType.Teammate)
                 {
@@ -426,9 +421,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 
         private static bool IsActuallyInRaid()
         {
-            bool ready      = Memory.Ready;
-            bool inRaid     = Memory.InRaid;
-            bool hasLocal   = Memory.LocalPlayer is not null;
+            bool ready = Memory.Ready;
+            bool inRaid = Memory.InRaid;
+            bool hasLocal = Memory.LocalPlayer is not null;
             bool handsValid = hasLocal &&
                               Memory.LocalPlayer.Firearm.HandsController.Item1
                                   .IsValidVirtualAddress();

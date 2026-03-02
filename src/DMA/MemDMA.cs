@@ -1,24 +1,17 @@
 global using static eft_dma_radar.Tarkov.MemoryInterface;
-
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Runtime;
-using System.Threading;
 using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
 using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.UI.Misc;
-using IL2CPP = eft_dma_radar.Tarkov.Unity.IL2CPP;
+using System.Runtime;
 using Vmmsharp;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using IL2CPP = eft_dma_radar.Tarkov.Unity.IL2CPP;
 
 namespace eft_dma_radar.Tarkov
 {
@@ -93,11 +86,11 @@ namespace eft_dma_radar.Tarkov
         /// <summary>Current Map ID.</summary>
         public string MapID => Game?.MapID;
 
-        public override bool IsOffline      => LocalGameWorld.IsOffline;
+        public override bool IsOffline => LocalGameWorld.IsOffline;
         public override ulong LevelSettings => LocalGameWorld.LevelSettings;
 
         /// <summary>True if currently in a raid/match, otherwise False.</summary>
-        public override bool InRaid         => Game?.InRaid ?? false;
+        public override bool InRaid => Game?.InRaid ?? false;
 
         /// <summary>True if the raid countdown has completed and the raid has started.</summary>
         public override bool RaidHasStarted => Game?.RaidHasStarted ?? false;
@@ -115,14 +108,14 @@ namespace eft_dma_radar.Tarkov
         /// </summary>
         private string _lastMapIdForMemWrites;
 
-        public IReadOnlyCollection<Player>         Players    => Game?.Players;
+        public IReadOnlyCollection<Player> Players => Game?.Players;
         public IReadOnlyCollection<IExplosiveItem> Explosives => Game?.Explosives;
-        public IReadOnlyCollection<IExitPoint>     Exits      => Game?.Exits;
+        public IReadOnlyCollection<IExitPoint> Exits => Game?.Exits;
 
-        public LocalPlayer  LocalPlayer  => Game?.LocalPlayer;
-        public LootManager  Loot         => Game?.Loot;
+        public LocalPlayer LocalPlayer => Game?.LocalPlayer;
+        public LootManager Loot => Game?.Loot;
         public QuestManager QuestManager => Game?.QuestManager;
-        public LocalGameWorld Game       { get; private set; }
+        public LocalGameWorld Game { get; private set; }
 
         /// <summary>IL2CPP GameObjectManager address.</summary>
         public ulong GOM { get; private set; }
@@ -132,10 +125,10 @@ namespace eft_dma_radar.Tarkov
 
         public MemDMA() : base(Config.FpgaAlgo, Config.MemMapEnabled)
         {
-            GameStarted  += MemDMA_GameStarted;
-            GameStopped  += MemDMA_GameStopped;
-            RaidStarted  += MemDMA_RaidStarted;
-            RaidStopped  += MemDMA_RaidStopped;
+            GameStarted += MemDMA_GameStarted;
+            GameStopped += MemDMA_GameStopped;
+            RaidStarted += MemDMA_RaidStarted;
+            RaidStopped += MemDMA_RaidStopped;
 
             new Thread(MemoryPrimaryWorker)
             {
@@ -339,11 +332,11 @@ namespace eft_dma_radar.Tarkov
         private void MemDMA_GameStopped(object sender, EventArgs e)
         {
             _restartRadar = default;
-            _starting     = default;
-            _ready        = default;
-            UnityBase     = default;
-            MonoBase      = default;
-            GOM           = default;
+            _starting = default;
+            _ready = default;
+            UnityBase = default;
+            MonoBase = default;
+            GOM = default;
 
             _syncProcessRunning.Reset();
         }
@@ -495,7 +488,7 @@ namespace eft_dma_radar.Tarkov
                 var gfx = ReadPtr(UnityBase + UnityOffsets.ModuleBase.GfxDevice, false);
                 var res = ReadValue<Rectangle>(gfx + UnityOffsets.GfxDeviceClient.Viewport, false);
 
-                if (res.Width  <= 0 || res.Width  > 10000 ||
+                if (res.Width <= 0 || res.Width > 10000 ||
                     res.Height <= 0 || res.Height > 5000)
                 {
                     throw new ArgumentOutOfRangeException(nameof(res));
@@ -545,27 +538,27 @@ namespace eft_dma_radar.Tarkov
             _actualMemory = actualMemory;
         }
 
-        public QuestManager                  QuestManager => _actualMemory?.QuestManager;
-        public LootManager                   Loot         => _actualMemory?.Loot;
-        public LocalPlayer                   LocalPlayer  => _actualMemory?.LocalPlayer;
-        public IReadOnlyCollection<Player>   Players      => _actualMemory?.Players      ?? new List<Player>();
+        public QuestManager QuestManager => _actualMemory?.QuestManager;
+        public LootManager Loot => _actualMemory?.Loot;
+        public LocalPlayer LocalPlayer => _actualMemory?.LocalPlayer;
+        public IReadOnlyCollection<Player> Players => _actualMemory?.Players ?? new List<Player>();
         public IReadOnlyCollection<IExplosiveItem> Explosives => _actualMemory?.Explosives ?? new List<IExplosiveItem>();
-        public IReadOnlyCollection<IExitPoint>     Exits      => _actualMemory?.Exits      ?? new List<IExitPoint>();
-        public LocalGameWorld               Game          => _actualMemory?.Game;
-        public string                       MapID         => _actualMemory?.MapID;
-        public bool                         IsOffline     => _actualMemory?.IsOffline ?? false;
-        public ulong                        LevelSettings => _actualMemory?.LevelSettings ?? 0;
-        public bool                         InRaid        => _actualMemory?.InRaid ?? false;
-        public bool                         RaidHasStarted => _actualMemory?.RaidHasStarted ?? false;
-        public bool                         Ready          => _actualMemory?.Ready ?? false;
-        public ulong                        GameAssemblyBase => _actualMemory?.GameAssemblyBase ?? 0;
-        public bool                         Starting         => _actualMemory?.Starting ?? false;
+        public IReadOnlyCollection<IExitPoint> Exits => _actualMemory?.Exits ?? new List<IExitPoint>();
+        public LocalGameWorld Game => _actualMemory?.Game;
+        public string MapID => _actualMemory?.MapID;
+        public bool IsOffline => _actualMemory?.IsOffline ?? false;
+        public ulong LevelSettings => _actualMemory?.LevelSettings ?? 0;
+        public bool InRaid => _actualMemory?.InRaid ?? false;
+        public bool RaidHasStarted => _actualMemory?.RaidHasStarted ?? false;
+        public bool Ready => _actualMemory?.Ready ?? false;
+        public ulong GameAssemblyBase => _actualMemory?.GameAssemblyBase ?? 0;
+        public bool Starting => _actualMemory?.Starting ?? false;
 
-        public ulong      MonoBase  => _actualMemory?.MonoBase ?? 0;
-        public ulong      UnityBase => _actualMemory?.UnityBase ?? 0;
-        public ulong      GOM       => _actualMemory?.GOM ?? 0;
-        public VmmProcess Process   => _actualMemory?.Process;
-        public Vmm        VmmHandle => _actualMemory?.VmmHandle;
+        public ulong MonoBase => _actualMemory?.MonoBase ?? 0;
+        public ulong UnityBase => _actualMemory?.UnityBase ?? 0;
+        public ulong GOM => _actualMemory?.GOM ?? 0;
+        public VmmProcess Process => _actualMemory?.Process;
+        public Vmm VmmHandle => _actualMemory?.VmmHandle;
 
         public bool RestartRadar
         {
@@ -718,7 +711,7 @@ namespace eft_dma_radar.Tarkov
             }
 
             return _actualMemory.FindDataXref(targetAddress);
-            
+
         }
         /// <summary>
         /// Read memory into a buffer and validate the right bytes were received.
@@ -888,13 +881,13 @@ namespace eft_dma_radar.Tarkov
         public void WriteBehaviourEnabled(LocalGameWorld game, ulong behaviour, bool enabled)
         {
             behaviour.ThrowIfInvalidVirtualAddress();
-        
+
             // IL2CPP Behaviour.enabled ¡ú byte
             const uint BEHAVIOUR_ENABLED_OFFSET = 0x10;
-        
+
             WriteValue(game, behaviour + BEHAVIOUR_ENABLED_OFFSET, enabled ? (byte)1 : (byte)0);
         }
-        
+
         /// <summary>
         /// Enables or disables a GameObject via memwrite.
         /// Equivalent to GameObject.SetActive (bypasses Awake/OnEnable).
@@ -902,10 +895,10 @@ namespace eft_dma_radar.Tarkov
         public void WriteGameObjectActive(LocalGameWorld game, ulong gameObject, bool active)
         {
             gameObject.ThrowIfInvalidVirtualAddress();
-        
+
             // IL2CPP GameObject active flag
             const uint GAMEOBJECT_ACTIVE_OFFSET = 0x18;
-        
+
             WriteValue(game, gameObject + GAMEOBJECT_ACTIVE_OFFSET, active ? (byte)1 : (byte)0);
         }
         #endregion
@@ -1028,5 +1021,5 @@ namespace eft_dma_radar.Tarkov
         }
 
         #endregion
-    }  
+    }
 }

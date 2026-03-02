@@ -1,9 +1,5 @@
-﻿using eft_dma_radar.UI.ESP;
-using eft_dma_radar.Common.Misc;
-using SkiaSharp;
-using System.Drawing;
-using System.Numerics;
-using System.Runtime.CompilerServices;
+﻿using eft_dma_radar.Common.Misc;
+using eft_dma_radar.UI.ESP;
 
 namespace eft_dma_radar.Common.Unity
 {
@@ -69,7 +65,7 @@ namespace eft_dma_radar.Common.Unity
             {
                 int width = SharedProgram.Config.MonitorWidth;
                 int height = SharedProgram.Config.MonitorHeight;
-                
+
                 // Try to get actual monitor resolution from selected ESP target monitor
                 try
                 {
@@ -93,7 +89,7 @@ namespace eft_dma_radar.Common.Unity
                 {
                     XMLogging.WriteLine($"[CameraManager] Error getting monitor info: {ex.Message}, using {width}x{height}");
                 }
-                
+
                 Viewport = new Rectangle(0, 0, width, height);
             }
         }
@@ -114,7 +110,7 @@ namespace eft_dma_radar.Common.Unity
                 scrPos = default;
                 return false;
             }
-            
+
             float w = Vector3.Dot(_viewMatrix.Translation, worldPos) + _viewMatrix.M44; // Transposed
 
             if (w < 0.098f)

@@ -1,7 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
+﻿using System.Net.Http.Json;
 
 namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
 {
@@ -248,7 +245,7 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(100));
             using var response = await SharedProgram.HttpClient.PostAsJsonAsync(
-                requestUri: "https://api.tarkov.dev/graphql", 
+                requestUri: "https://api.tarkov.dev/graphql",
                 value: query,
                 cancellationToken: cts.Token);
             response.EnsureSuccessStatusCode();

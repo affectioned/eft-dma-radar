@@ -1,28 +1,16 @@
+using eft_dma_radar.Common.DMA;
+using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Misc.Pools;
+using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
-using eft_dma_radar.Tarkov.GameWorld;
+using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
 using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
-using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Config;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Misc.Pools;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.Collections;
-using eft_dma_radar.Common.Unity.LowLevel;
-using System;
-using System.Linq;
-using System.Windows.Shapes;
-using static System.Windows.Forms.LinkLabel;
-using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer
 {
@@ -93,7 +81,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             _groups.Clear();
             _rateLimit.Clear();
-            PlayerHistory.Reset();             
+            PlayerHistory.Reset();
             _playerScavNumber = 0;
         }
 
@@ -226,7 +214,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
             (Bones.HumanRCollarbone, Bones.HumanRForearm2),  // right elbow
             (Bones.HumanRForearm2, Bones.HumanRPalm),         // right hand
-        };        
+        };
         /// <summary>
         /// Player Class Base Address
         /// </summary>
@@ -236,7 +224,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// True if the Player is Active (in the player list).
         /// </summary>
         public bool IsActive { get; private set; }
-        
+
         /// <summary>
         /// TRUE if critical memory reads (position/rotation) have failed.
         /// </summary>
@@ -298,17 +286,17 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// Duration of consecutive errors.
         /// </summary>
         public Stopwatch ErrorTimer { get; } = new();
-        
+
         /// <summary>
         /// Cached position fallback to prevent players from disappearing when skeleton temporarily fails.
         /// </summary>
         protected Vector3 _cachedPosition;
-        
+
         /// <summary>
         /// Dynamic vertex count for skeleton reads (recalculated each frame if needed).
         /// </summary>
         protected int _verticesCount;
-        
+
         /// <summary>
         /// Flag to prevent skeleton error log spam.
         /// </summary>
@@ -609,7 +597,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         public virtual void OnRegRefresh(ScatterReadIndex index, IReadOnlySet<ulong> registered, bool? isActiveParam = null)
         {
             if (!this.TryInitSkeleton())
-                return; 
+                return;
 
             if (this is ObservedPlayer op &&
                 op.IsPmc &&
@@ -617,7 +605,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 op.VoipId > 0)
             {
                 PlayerListWorker.GetOrAssignDisplayName(op);
-            }            
+            }
             if (isActiveParam is not bool isActive)
                 isActive = registered.Contains(this);
             if (isActive)
@@ -1491,14 +1479,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 // PERF: cache once
                 var playerTypeKey = DeterminePlayerTypeKey();
-                var typeSettings  = Config.PlayerTypeSettings.GetSettings(playerTypeKey);
+                var typeSettings = Config.PlayerTypeSettings.GetSettings(playerTypeKey);
 
                 var dist = Vector3.Distance(localPlayer.Position, Position);
                 if (dist > typeSettings.RenderDistance)
                     return;
 
                 var mapPos = Position.ToMapPos(mapParams.Map);
-                var point  = mapPos.ToZoomedPos(mapParams);
+                var point = mapPos.ToZoomedPos(mapParams);
                 MouseoverPosition = new Vector2(point.X, point.Y);
 
                 if (!IsAlive)
@@ -1518,9 +1506,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 var height = Position.Y - localPlayer.Position.Y;
 
-                string nameText     = null;
+                string nameText = null;
                 string distanceText = null;
-                string heightText   = null;
+                string heightText = null;
 
                 // PERF: reuse list instead of recreating many temporaries
                 var rightSideInfo = new List<string>(8);
@@ -1630,7 +1618,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         }
 
         private void DrawAlternateHeightIndicator(SKCanvas canvas, SKPoint point, float heightDiff, ValueTuple<SKPaint, SKPaint> paints)
-        { 
+        {
             var baseX = point.X - (15.0f * MainWindow.UIScale);
             var baseY = point.Y + (3.5f * MainWindow.UIScale);
 
@@ -1991,9 +1979,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             else if (!IsAlive)
             {
                 lines.Add(($"{Type.GetDescription()}:{name}", SKPaints.TextMouseover));
-            
+
                 string g = null;
-            
+
                 if (this is ObservedPlayer op)
                 {
                     if (op.SpawnGroupID != -1)
@@ -2001,7 +1989,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     else if (op.NetworkGroupID != -1)
                         g = $"NG:{op.NetworkGroupID}";
                 }
-            
+
                 if (g != null)
                     lines.Add((g, SKPaints.TextMouseover));
 
@@ -2039,23 +2027,23 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             if (this == localPlayer || !IsActive || !IsAlive)
                 return;
-        
+
             if (!Skeleton.HasValidPosition)
                 return;
-        
+
             var espSettings = ESP.Config.PlayerTypeESPSettings
                 .GetSettings(DeterminePlayerTypeKey());
-        
+
             float dist = Vector3.Distance(localPlayer.Position, Position);
             if (dist > espSettings.RenderDistance)
                 return;
-        
+
             if (!CameraManagerBase.WorldToScreen(ref Position, out var baseScreen))
                 return;
-        
+
             var paints = GetESPPaints();
             var renderMode = espSettings.RenderMode;
-        
+
             // ---------------- BTR ----------------
             if (renderMode != ESPPlayerRenderMode.None && this is BtrOperator btr)
             {
@@ -2063,43 +2051,43 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     btrScreen.DrawESPText(canvas, btr, localPlayer, espSettings.ShowDistance, paints.Item2, "BTR");
                 return;
             }
-        
+
             // ---------------- BOX ----------------
             var box = Skeleton.GetESPBox(baseScreen);
             if (box == null)
                 return;
-        
+
             var playerBox = box.Value;
             var headPoint = new SKPoint(playerBox.MidX, playerBox.Top);
-        
+
             // ---------------- SKELETON ----------------
             if (renderMode == ESPPlayerRenderMode.Bones)
             {
                 if (!Skeleton.UpdateESPBuffer())
                     return;
-        
+
                 for (int i = 0; i < SkeletonSegments.Length; i++)
                 {
                     int idx = i * 2;
                     if (idx + 1 >= Skeleton.ESPBuffer.Length)
                         break;
-        
+
                     var p0 = Skeleton.ESPBuffer[idx];
                     var p1 = Skeleton.ESPBuffer[idx + 1];
-        
+
                     // HARD GUARD ¡ú prevents long diagonal lines
                     if (!p0.IsFinite() || !p1.IsFinite())
                         continue;
-        
+
                     var (b0, b1) = SkeletonSegments[i];
-        
+
                     bool v0 = BoneVisibility.TryGetValue(b0, out var s0) && s0;
                     bool v1 = BoneVisibility.TryGetValue(b1, out var s1) && s1;
-        
+
                     var paint = (v0 && v1)
                         ? SKPaints.PaintVisible
                         : paints.Item1;
-        
+
                     canvas.DrawLine(p0, p1, paint);
                 }
             }
@@ -2120,33 +2108,33 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     canvas.DrawCircle(headPoint, 1.5f * ESP.Config.FontScale, paints.Item1);
                 }
             }
-        
+
             if (BattleMode)
                 return;
-        
+
             // ---------------- TEXT ----------------
             var observed = this as ObservedPlayer;
             float textY = headPoint.Y - 5f * ESP.Config.FontScale;
             float lineHeight = paints.Item2.TextSize * 1.2f * ESP.Config.FontScale;
-        
+
             if (espSettings.ShowADS && IsAiming && observed != null)
             {
                 canvas.DrawText("ADS", new SKPoint(headPoint.X, textY), paints.Item2);
                 textY -= lineHeight;
             }
-        
+
             if (espSettings.ShowName)
             {
                 string name = Name;
                 if (IsHostilePmc)
                     name = (PlayerSide == Enums.EPlayerSide.Usec ? "U:" : "B:") + name;
-        
+
                 canvas.DrawText(name, new SKPoint(headPoint.X, textY), paints.Item2);
             }
-        
+
             if (espSettings.ShowHealth && observed != null)
                 DrawHealthBar(canvas, observed, playerBox);
-        
+
             // ---------------- BOTTOM INFO ----------------
             if (!espSettings.ShowDistance &&
                 !espSettings.ShowWeapon &&
@@ -2156,31 +2144,31 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 !espSettings.ShowThermal &&
                 !espSettings.ShowUBGL)
                 return;
-        
+
             var lines = new string[6];
             int count = 0;
-        
+
             if (espSettings.ShowDistance)
                 lines[count++] = $"{(int)dist}m";
-        
+
             if (espSettings.ShowWeapon && Hands?.CurrentItem != null)
                 lines[count++] = espSettings.ShowAmmoType && Hands.CurrentAmmo != null
                     ? $"{Hands.CurrentItem}/{Hands.CurrentAmmo}"
                     : Hands.CurrentItem;
-        
+
             if (espSettings.ShowKD && observed?.Profile?.Overall_KD is float kd &&
                 kd >= espSettings.MinKD)
                 lines[count++] = kd.ToString("n2");
-        
+
             if (espSettings.ShowNVG && Gear?.HasNVG == true)
                 lines[count++] = "NVG";
-        
+
             if (espSettings.ShowThermal && Gear?.HasThermal == true)
                 lines[count++] = "THERMAL";
-        
+
             if (espSettings.ShowUBGL && Gear?.HasUBGL == true)
                 lines[count++] = "UBGL";
-        
+
             if (count > 0)
             {
                 var label = string.Join("\n", lines[..count]);
@@ -2207,16 +2195,16 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             (Bones.HumanSpine3, Bones.HumanSpine2),
             (Bones.HumanSpine2, Bones.HumanSpine1),
             (Bones.HumanSpine1, Bones.HumanPelvis),
-        
+
             (Bones.HumanPelvis, Bones.HumanLThigh2),
             (Bones.HumanLThigh2, Bones.HumanLFoot),
-        
+
             (Bones.HumanPelvis, Bones.HumanRThigh2),
             (Bones.HumanRThigh2, Bones.HumanRFoot),
-        
+
             (Bones.HumanLCollarbone, Bones.HumanLForearm2),
             (Bones.HumanLForearm2, Bones.HumanLPalm),
-        
+
             (Bones.HumanRCollarbone, Bones.HumanRForearm2),
             (Bones.HumanRForearm2, Bones.HumanRPalm),
         };
@@ -2239,10 +2227,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             // For example, you might do something like:
             if (!this.Skeleton.Bones.TryGetValue(bone, out var transform))
                 return default;
-        
+
             if (!CameraManagerBase.WorldToScreen(ref transform.Position, out var screenPos))
                 return default;
-        
+
             return new SKPoint(screenPos.X, screenPos.Y);
         }
 

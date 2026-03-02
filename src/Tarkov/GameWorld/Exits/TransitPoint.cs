@@ -1,13 +1,11 @@
-﻿using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.UI.ESP;
-using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Common.Maps;
+﻿using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
-using static eft_dma_radar.Tarkov.GameWorld.Exits.Exfil;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.UI.ESP;
+using eft_dma_radar.UI.Misc;
 
 namespace eft_dma_radar.Tarkov.GameWorld.Exits
 {
@@ -27,7 +25,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             var parameters = Memory.ReadPtr(baseAddr + Offsets.TransitPoint.parameters, false);
             var locationPtr = Memory.ReadPtr(parameters + Offsets.TransitParameters.location, false);
             var location = Memory.ReadUnityString(locationPtr, 64, false);
-            
+
             if (GameData.MapNames.TryGetValue(location, out string destinationMapName))
             {
                 Name = $"Transit to {destinationMapName}";
@@ -36,7 +34,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             {
                 Name = $"Transit to {location}";
             }
-            
+
             // Get transit position from static JSON data
             _position = GetTransitPositionFromData(Name);
         }
@@ -47,14 +45,14 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
         private static string NormalizeForComparison(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
-            
+
             // Remove common prefixes and suffixes
             var result = input
                 .Replace("The ", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("?", "")
                 .Replace("!", "")
                 .Trim();
-            
+
             return result;
         }
 
@@ -95,7 +93,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
 
                     // Find matching transit by description - normalize strings for comparison
                     var searchTerm = NormalizeForComparison(transitName.Replace("Transit to ", ""));
-                    var transit = mapData.Transits.FirstOrDefault(t => 
+                    var transit = mapData.Transits.FirstOrDefault(t =>
                     {
                         if (t.Description == null) return false;
                         var normalizedDesc = NormalizeForComparison(t.Description);
@@ -103,7 +101,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                         return normalizedDesc.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                                searchTerm.Contains(normalizedDesc, StringComparison.OrdinalIgnoreCase);
                     });
-                    
+
                     if (transit?.Position != null)
                     {
                         return transit.Position.ToVector3();
@@ -122,7 +120,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             {
                 XMLogging.WriteLine($"[TransitPoint] Error getting static position: {ex.Message}");
             }
-            
+
             // Fallback: off-map position
             return new Vector3(0, -100, 0);
         }
@@ -211,7 +209,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             };
             Position.ToMapPos(mapParams.Map).ToZoomedPos(mapParams).DrawMouseoverText(canvas, lines);
         }
-        
+
         public void DrawESP(SKCanvas canvas, LocalPlayer localPlayer)
         {
             var dist = Vector3.Distance(localPlayer.Position, Position);

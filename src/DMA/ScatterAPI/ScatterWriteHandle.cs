@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using Vmmsharp;
+﻿using Vmmsharp;
 
 namespace eft_dma_radar.Common.DMA.ScatterAPI
 {

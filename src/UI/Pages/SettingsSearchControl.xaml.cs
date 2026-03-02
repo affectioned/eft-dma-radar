@@ -1,10 +1,5 @@
 ﻿using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.UI.Misc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;

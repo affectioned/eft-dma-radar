@@ -1,19 +1,12 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Numerics;
-using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.UI.ESP;
+﻿using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
-using SkiaSharp;
 
 namespace eft_dma_radar.Tarkov.GameWorld.Explosives
 {
@@ -41,7 +34,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
         private Vector3 _lastTrailPosition;
 
         private float TRAIL_DURATION_SECONDS => ESPSettings.TrailDuration;
-        private float MIN_TRAIL_DISTANCE     => ESPSettings.MinTrailDistance;
+        private float MIN_TRAIL_DISTANCE => ESPSettings.MinTrailDistance;
         private const int GRENADE_RADIUS_POINTS = 16;
 
         private UnityTransform _transform;
@@ -100,11 +93,11 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
             // allocate unique scatter IDs for this grenade
             var baseId = System.Threading.Interlocked.Add(ref _nextScatterBaseId, 2) - 2;
             _scatterIdIsDead = baseId;
-            _scatterIdPos    = baseId + 1;
+            _scatterIdPos = baseId + 1;
 
             TransformInternal = Memory.ReadPtrChain(baseAddr, UnityOffsets.TransformChain, false);
-            PosAddr           = Memory.ReadPtrChain(baseAddr, _toPosChain, false);
-            _transform        = new UnityTransform(TransformInternal, false);
+            PosAddr = Memory.ReadPtrChain(baseAddr, _toPosChain, false);
+            _transform = new UnityTransform(TransformInternal, false);
 
             ////Log($$"TransformInternal=0x{TransformInternal:X}, PosAddr=0x{PosAddr:X}");
 
@@ -221,7 +214,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
         // ─────────────────────────────────────────────────────
         // FAST PATH (scatter) — apply results
         // ─────────────────────────────────────────────────────
-         public void OnRefresh(ScatterReadIndex idx)
+        public void OnRefresh(ScatterReadIndex idx)
         {
             if (!IsActive)
             {

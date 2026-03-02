@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿using eft_dma_radar.Common.Misc;
 using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Forms;
-using eft_dma_radar.Common.Misc;
 
 namespace eft_dma_radar.UI.Misc
 {

@@ -1,17 +1,8 @@
-using eft_dma_radar;
-using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.UI.ESP;
-using eft_dma_radar.UI.Misc;
-using eft_dma_radar.UI.Pages;
-using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.Collections;
+using eft_dma_radar.UI.Misc;
 using System.Collections.Frozen;
-using System.Diagnostics;
-
 using TaskElement = eft_dma_radar.Common.Misc.Data.EftDataManager.TaskElement;
 
 namespace eft_dma_radar.Tarkov.GameWorld
@@ -139,21 +130,21 @@ namespace eft_dma_radar.Tarkov.GameWorld
             try
             {
                 var questsData = Memory.ReadPtr(_profile + Offsets.Profile.QuestsData, false);
-                
+
                 // Quest data can be temporarily null mid-raid (expected behavior)
                 if (questsData == 0 || !questsData.IsValidVirtualAddress())
                 {
                     _rateLimit.Restart();
                     return;
                 }
-                
+
                 var listItemsPtr = Memory.ReadPtr(questsData + UnityOffsets.ManagedList.ItemsPtr, false);
                 if (listItemsPtr == 0 || !listItemsPtr.IsValidVirtualAddress())
                 {
                     _rateLimit.Restart();
                     return;
                 }
-                
+
                 var listCount = Memory.ReadValue<int>(questsData + UnityOffsets.ManagedList.Count, false);
 
                 if (listCount <= 0 || listCount > 500)
@@ -191,14 +182,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         // Read completed conditions using correct inline HashSet parsing
                         var completedCollectionPtr = Memory.ReadPtr(qDataEntry + QUEST_DATA_COMPLETED_CONDITIONS, false);
                         var questCompletedConditions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        
+
                         if (completedCollectionPtr != 0)
                         {
                             // CompletedConditionsCollection has two HashSets:
                             // Read CompletedConditionsCollection using centralized offsets
                             var backendPtr = Memory.ReadPtr(completedCollectionPtr + Offsets.CompletedConditionsCollection.BackendData, false);
                             var localPtr = Memory.ReadPtr(completedCollectionPtr + Offsets.CompletedConditionsCollection.LocalChanges, false);
-                            
+
                             ReadHashSetMongoIds(backendPtr, questCompletedConditions, allCompletedConditions, qID, "backend");
                             ReadHashSetMongoIds(localPtr, questCompletedConditions, allCompletedConditions, qID, "local");
                         }
@@ -245,10 +236,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// Reads MongoIDs from a HashSet<MongoID> using inline storage pattern.
         /// </summary>
         private static void ReadHashSetMongoIds(
-            ulong hashSetPtr, 
-            HashSet<string> questConditions, 
-            HashSet<string> allConditions, 
-            string questId, 
+            ulong hashSetPtr,
+            HashSet<string> questConditions,
+            HashSet<string> allConditions,
+            string questId,
             string source)
         {
             if (hashSetPtr == 0) return;
@@ -263,9 +254,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 //   +0x08: MongoID._bytes (12 bytes raw, inline)
                 //   +0x14: padding (4 bytes)
                 //   +0x18: MongoID._stringID pointer (8 bytes)
-                
+
                 var bucketCount = Memory.ReadValue<int>(hashSetPtr + HASHSET_BUCKET_OFFSET, false);
-                
+
                 // Bucket count should be a small prime: 3, 7, 11, 17, 23, etc.
                 if (bucketCount <= 0 || bucketCount > 100)
                     return;
@@ -274,15 +265,15 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 for (int i = 0; i < bucketCount && foundCount < 50; i++)
                 {
                     var entryBase = hashSetPtr + HASHSET_ENTRIES_START + (ulong)(i * HASHSET_ENTRY_SIZE);
-                    
+
                     // Check if entry is valid (hashCode != -1)
                     var hashCode = Memory.ReadValue<int>(entryBase, false);
                     if (hashCode == -1 || hashCode == 0) continue;
-                    
+
                     // Read string pointer at entry + 0x18
                     var stringPtr = Memory.ReadPtr(entryBase + HASHSET_STRING_OFFSET, false);
                     if (stringPtr == 0 || stringPtr < 0x10000000) continue;
-                    
+
                     var conditionId = Memory.ReadUnityString(stringPtr);
                     if (!string.IsNullOrEmpty(conditionId) && conditionId.Length > 10 && conditionId.Length < 100)
                     {
@@ -314,7 +305,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             // Try to read conditions from memory
             bool memorySuccess = TryReadConditionsFromMemory(qDataEntry, questId, completedConditions, quest);
-            
+
             // If memory parsing failed or returned no objectives, use API data
             if (!memorySuccess || quest.Objectives.Count == 0)
             {
@@ -423,7 +414,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 // Read condition ID (MongoID is inline at CONDITION_ID)
                 var condIdStringPtr = Memory.ReadPtr(conditionPtr + CONDITION_ID + CONDITION_ID_STRING, false);
                 var condId = condIdStringPtr != 0 ? Memory.ReadUnityString(condIdStringPtr) : "";
-                
+
                 if (string.IsNullOrEmpty(condId))
                     return null;
 
@@ -432,7 +423,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 var condTypeName = klassPtr != 0 ? ObjectClass.ReadName(klassPtr) : "Unknown";
 
                 var isCompleted = completedConditions.Contains(condId);
-                
+
                 // Check API for optional flag (memory doesn't have this easily)
                 var isOptional = false;
                 string description = "";
@@ -619,7 +610,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 _ => QuestObjectiveType.Other
             };
         }
-        
+
         /// <summary>
         /// Gets all required item IDs from an API objective.
         /// Checks both 'item' (regular items) and 'questItem' (quest-specific items like Jaeger's Letter).
@@ -627,19 +618,19 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static List<string> GetRequiredItemIdsFromApi(TaskElement.ObjectiveElement apiObj)
         {
             var itemIds = new List<string>();
-            
+
             // Regular item (e.g., "Find 3 Morphine")
             if (!string.IsNullOrEmpty(apiObj.Item?.Id))
                 itemIds.Add(apiObj.Item.Id);
-            
+
             // Quest-specific item (e.g., "Jaeger's Letter", "Pocket Watch")
             if (!string.IsNullOrEmpty(apiObj.QuestItem?.Id))
                 itemIds.Add(apiObj.QuestItem.Id);
-            
+
             // Marker item (e.g., items to place)
             if (!string.IsNullOrEmpty(apiObj.MarkerItem?.Id))
                 itemIds.Add(apiObj.MarkerItem.Id);
-            
+
             return itemIds;
         }
 

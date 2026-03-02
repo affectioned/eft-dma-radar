@@ -1,8 +1,3 @@
-using System;
-using System.Buffers.Binary;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
 using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
 
@@ -80,8 +75,8 @@ namespace eft_dma_shared.Common.Unity.LowLevel.Hooks
             ulong function,
             ulong rcx = 0,
             ulong rdx = 0,
-            ulong r8  = 0,
-            ulong r9  = 0)
+            ulong r8 = 0,
+            ulong r9 = 0)
         {
             lock (SyncRoot)
             {
@@ -93,8 +88,8 @@ namespace eft_dma_shared.Common.Unity.LowLevel.Hooks
                     Function = function,
                     RcX = rcx,
                     RdX = rdx,
-                    R8  = r8,
-                    R9  = r9,
+                    R8 = r8,
+                    R9 = r9,
                     Executed = 0
                 };
 

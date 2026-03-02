@@ -1,12 +1,11 @@
-﻿using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.Loot;
-using eft_dma_radar.UI.ESP;
-using eft_dma_radar.UI.Pages;
-using eft_dma_radar.Common.Maps;
+﻿using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
-using System.Collections.Generic;
+using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Tarkov.Loot;
+using eft_dma_radar.UI.ESP;
+using eft_dma_radar.UI.Pages;
 
 namespace eft_dma_radar.UI.Misc
 {
@@ -224,7 +223,7 @@ namespace eft_dma_radar.UI.Misc
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Quest ID: {Id}");
             sb.AppendLine($"Name: {Name}");
-            
+
             // Get quest data from QuestManager if available
             if (Memory.Game is Tarkov.GameWorld.LocalGameWorld lgw && lgw.QuestManager != null)
             {
@@ -252,7 +251,7 @@ namespace eft_dma_radar.UI.Misc
                         if (obj.RequiredItemIds.Any())
                             sb.AppendLine($"   Items: {string.Join(", ", obj.RequiredItemIds)}");
                     }
-                    
+
                     if (quest.CompletedConditions.Any())
                     {
                         sb.AppendLine();
@@ -270,7 +269,7 @@ namespace eft_dma_radar.UI.Misc
             {
                 sb.AppendLine("(QuestManager not available)");
             }
-            
+
             DebugTooltip = sb.ToString().TrimEnd();
         }
 

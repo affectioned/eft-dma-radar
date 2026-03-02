@@ -1,6 +1,4 @@
-﻿using OpenTK.Graphics.OpenGL;
-using System.Collections.Frozen;
-using System.Numerics;
+﻿using System.Collections.Frozen;
 
 namespace eft_dma_radar.Common.Misc.Data
 {

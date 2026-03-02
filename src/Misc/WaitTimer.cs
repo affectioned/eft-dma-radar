@@ -1,8 +1,4 @@
-﻿using eft_dma_radar.Common.Misc;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-
-namespace eft_dma_radar.Common.Misc
+﻿namespace eft_dma_radar.Common.Misc
 {
     /// <summary>
     /// Encapsulates a timer based on the CreateWaitableTimerEx Win32 API.

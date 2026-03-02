@@ -1,11 +1,9 @@
-﻿using System.Numerics;
-using eft_dma_radar.Common.DMA.ScatterAPI;
+﻿using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
-using SkiaSharp;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer
 {
@@ -19,7 +17,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         private Vector3 _position;
         public static EntityTypeSettingsESP ESPSettings => ESP.Config.EntityTypeESPSettings.GetSettings("BTR");
         public static EntityTypeSettings Settings =>
-            Program.Config.EntityTypeSettings.GetSettings("BTR");        
+            Program.Config.EntityTypeSettings.GetSettings("BTR");
         // ─────────────────────────────────────────────
         // Identity overrides
         // ─────────────────────────────────────────────
@@ -180,22 +178,22 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             if (_position == Vector3.Zero)
                 return;
-        
+
             var dist = Vector3.Distance(localPlayer.Position, _position);
             if (dist > Settings.RenderDistance)
                 return;
-        
+
             var heightDiff = _position.Y - localPlayer.Position.Y;
             var point = _position.ToMapPos(mapParams.Map).ToZoomedPos(mapParams);
             MouseoverPosition = new Vector2(point.X, point.Y);
-        
+
             var paints = GetPaints();
-        
+
             SKPaints.ShapeOutline.StrokeWidth = 1f;
-        
+
             float distanceYOffset;
             float nameYOffset;
-        
+
             if (heightDiff > 1.85f)
             {
                 using var path = point.GetUpArrow(5f);
@@ -219,7 +217,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 distanceYOffset = 12f * MainWindow.UIScale;
                 nameYOffset = 0f;
             }
-        
+
             if (Settings.ShowName)
             {
                 var namePoint = point;
@@ -227,7 +225,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 canvas.DrawText("BTR", namePoint, SKPaints.TextOutline);
                 canvas.DrawText("BTR", namePoint, paints.Item2);
             }
-        
+
             if (Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
@@ -235,7 +233,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 var distPoint = new SKPoint(
                     point.X - (width / 2),
                     point.Y + distanceYOffset);
-        
+
                 canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
                 canvas.DrawText(distText, distPoint, paints.Item2);
             }

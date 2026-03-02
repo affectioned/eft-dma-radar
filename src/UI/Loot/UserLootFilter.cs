@@ -1,11 +1,6 @@
-﻿using System.ComponentModel;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Common.Misc;
+﻿using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
+using System.IO;
 
 namespace eft_dma_radar.UI.LootFilters
 {

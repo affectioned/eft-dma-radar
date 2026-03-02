@@ -1,6 +1,5 @@
 ﻿using MessagePack;
 using MessagePack.Formatters;
-using System.Numerics;
 
 namespace eft_dma_radar.Common.Misc.MessagePack.ESPServerMessagePack
 {

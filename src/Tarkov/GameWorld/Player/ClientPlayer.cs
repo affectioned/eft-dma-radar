@@ -1,11 +1,8 @@
-﻿using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
-using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity;
-using static SDK.Enums;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+﻿using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using static SDK.Enums;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer
 {
@@ -84,8 +81,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         }
         private Skeleton _skeleton;
         private bool _skeletonFailed;
-        public override int VoipId { get; }   
-        
+        public override int VoipId { get; }
+
         private static int ParseVoipId(ulong baseAddr)
         {
             try
@@ -104,7 +101,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 return -1;
             }
-        }            
+        }
         internal ClientPlayer(ulong playerBase) : base(playerBase)
         {
             Profile = Memory.ReadPtr(this + Offsets.Player.Profile);
@@ -135,8 +132,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (isAI)
                 {
                     IsHuman = false;
-                        Name = "AI";
-                        Type = PlayerType.AIScav;
+                    Name = "AI";
+                    Type = PlayerType.AIScav;
                 }
                 else
                 {
@@ -184,7 +181,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             _skeletonFailed = false; // allow retry
             base.OnRealtimeLoop(index);
-        }        
+        }
         /// <summary>
         /// Gets player's Group Number.
         /// </summary>

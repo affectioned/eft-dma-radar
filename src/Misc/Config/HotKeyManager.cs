@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace eft_dma_radar.Common.Misc.Data
+﻿namespace eft_dma_radar.Common.Misc.Data
 {
     public enum HotkeyMode
     {
@@ -51,7 +49,7 @@ namespace eft_dma_radar.Common.Misc.Data.EFT
         [JsonPropertyName("showWishlistLoot")] public HotkeyEntry ShowWishlistLoot { get; set; } = new();
         [JsonPropertyName("showMeds")] public HotkeyEntry ShowMeds { get; set; } = new();
         [JsonPropertyName("showFood")] public HotkeyEntry ShowFood { get; set; } = new();
-        [JsonPropertyName("showWeapons")] public HotkeyEntry ShowWeapons{ get; set; } = new();
+        [JsonPropertyName("showWeapons")] public HotkeyEntry ShowWeapons { get; set; } = new();
         [JsonPropertyName("showBackpacks")] public HotkeyEntry ShowBackpacks { get; set; } = new();
         [JsonPropertyName("showContainers")] public HotkeyEntry ShowContainers { get; set; } = new();
         [JsonPropertyName("importantCorpseLoot")] public HotkeyEntry ImportantCorpseLoot { get; set; } = new();

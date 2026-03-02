@@ -1,9 +1,7 @@
-using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.GameWorld;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {
@@ -58,11 +56,11 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 return _cachedHandsContainer;
 
             var PWA = localPlayer.PWA;
-            if (!PWA.IsValidVirtualAddress()) 
+            if (!PWA.IsValidVirtualAddress())
                 return 0x0;
 
             var handsContainer = Memory.ReadPtr(PWA + Offsets.ProceduralWeaponAnimation.HandsContainer);
-            if (!handsContainer.IsValidVirtualAddress()) 
+            if (!handsContainer.IsValidVirtualAddress())
                 return 0x0;
 
             _cachedHandsContainer = handsContainer;

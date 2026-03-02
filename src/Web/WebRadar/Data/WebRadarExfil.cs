@@ -35,7 +35,7 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
                 IsAvailableForPlayer = exfil.IsAvailableForPlayer(Memory.LocalPlayer),
                 IsSecret = exfil.IsSecret
             };
-        } 
+        }
     }
 
     public enum WebRadarExfilStatus
@@ -43,5 +43,5 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
         Open,
         Pending,
         Closed
-    }   
+    }
 }
