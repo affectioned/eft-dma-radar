@@ -20,7 +20,6 @@ Download the latest release from [MemProcFS Releases](https://github.com/ufrisk/
 | `leechcore.dll` | LeechCore memory acquisition |
 | `leechcore_driver.dll` | LeechCore driver |
 | `tinylz4.dll` | LZ4 compression (bundled with MemProcFS) |
-| `VmmSharp.dll` | C# managed wrapper for MemProcFS |
 | `FTD3XX.dll` | FTDI FT60x USB 3.0 bridge driver (bundled with MemProcFS) |
 
 ### Windows Debugging Tools
