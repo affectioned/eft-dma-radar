@@ -5,7 +5,7 @@
 ## What is this?
 - This is an up-to-date build of Lone DMA EFT/Arena Radar. This is a standalone copy of the software with *No Restrictions*.
 
-## Fork Changes (affectioned)
+## Fork Changes
 
 This fork makes the following changes on top of the upstream project:
 
