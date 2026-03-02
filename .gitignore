@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /src/bin
 /.claude
+
+# Third-party native DLLs (must be placed next to the exe manually — see README)
+*.dll

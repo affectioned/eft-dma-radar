@@ -7,12 +7,55 @@
 ## What is this?
 - This is an up-to-date build of Lone DMA EFT/Arena Radar. This is a standalone copy of the software with *No Restrictions*.
 
+## Required DLLs
+
+The following native DLLs are **not included** in the repository and must be placed in the same directory as the compiled `.exe` before running.
+
+### MemProcFS / LeechCore
+Download the latest release from [MemProcFS Releases](https://github.com/ufrisk/MemProcFS/releases) and copy these files next to the exe:
+
+| File | Description |
+|------|-------------|
+| `vmm.dll` | MemProcFS core |
+| `leechcore.dll` | LeechCore memory acquisition |
+| `leechcore_driver.dll` | LeechCore driver |
+| `tinylz4.dll` | LZ4 compression (bundled with MemProcFS) |
+| `VmmSharp.dll` | C# managed wrapper for MemProcFS |
+
+### FTDI D3XX Driver
+Download from [FTDI D3XX Drivers](https://ftdichip.com/drivers/d3xx-drivers/) (or from your FPGA hardware vendor's firmware package):
+
+| File | Description |
+|------|-------------|
+| `FTD3XX.dll` | FTDI FT60x USB 3.0 bridge driver |
+
+### Windows Debugging Tools
+Download **Debugging Tools for Windows** via the [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) (select only "Debugging Tools for Windows" during install) and copy from its install directory:
+
+| File | Description |
+|------|-------------|
+| `dbghelp.dll` | Windows Debug Help Library |
+| `symsrv.dll` | Symbol server client |
+
+### Microsoft DIA SDK (`Resources\` folder)
+Copy from your Visual Studio 2022 installation — typically found at:
+`C:\Program Files\Microsoft Visual Studio\2022\Community\DIA SDK\bin\amd64\msdia140.dll`
+
+Place it inside the `Resources\` subfolder next to the exe.
+
+### Visual C++ Runtime
+Download **Visual C++ Redistributable 2015–2022 (x64)** from [Microsoft](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+Installing it system-wide is sufficient; copying `vcruntime140.dll` manually is only needed for a fully portable setup.
+
+---
+
 ## How do I start using this?
 1. Download & extract the solution
 2. Open solution with visual studio
 3. Publish the `eft-dma-radar` or `arena-dma-radar` project
-4. If required, locate & move the `libSkiaSharp.dll` & `libHarfBuzzSharp.dll` from the `publish/runtimes` folder into `publish` folder
-5. Run `eft-dma-radar.exe` or `arena-dma-radar.exe` depending on what you've published
+4. Place all required DLLs listed above next to the published `.exe`
+5. If required, locate & move the `libSkiaSharp.dll` & `libHarfBuzzSharp.dll` from the `publish/runtimes` folder into `publish` folder
+6. Run `eft-dma-radar.exe` or `arena-dma-radar.exe` depending on what you've published
 
 ## Arena
 - Arena is supported and will be maintained going forward.
