@@ -988,7 +988,6 @@ namespace eft_dma_radar
         {
             try
             {
-                var memWritesEnabled = MemWrites.Enabled;
                 string label = null;
 
                 if (label is null)
@@ -1898,7 +1897,6 @@ namespace eft_dma_radar
                 ESPControl.BringToFrontRequested += (s, args) => BringPanelToFront(ESPCanvas);
                 GeneralSettingsControl.BringToFrontRequested += (s, args) => BringPanelToFront(GeneralSettingsCanvas);
                 LootSettingsControl.BringToFrontRequested += (s, args) => BringPanelToFront(LootSettingsCanvas);
-                MemoryWritingControl.BringToFrontRequested += (s, args) => BringPanelToFront(MemoryWritingCanvas);
                 LootFilterControl.BringToFrontRequested += (s, args) => BringPanelToFront(LootFilterCanvas);
                 WatchlistControl.BringToFrontRequested += (s, args) => BringPanelToFront(WatchlistCanvas);
                 PlayerHistoryControl.BringToFrontRequested += (s, args) => BringPanelToFront(PlayerHistoryCanvas);
@@ -2351,10 +2349,6 @@ namespace eft_dma_radar
             PlayerHistoryControl.DragRequested += sharedDragHandler;
             PlayerHistoryControl.ResizeRequested += sharedResizeHandler;
             PlayerHistoryControl.CloseRequested += sharedCloseHandler;
-
-            MemoryWritingControl.DragRequested += sharedDragHandler;
-            MemoryWritingControl.ResizeRequested += sharedResizeHandler;
-            MemoryWritingControl.CloseRequested += sharedCloseHandler;
 
             ESPControl.DragRequested += sharedDragHandler;
             ESPControl.ResizeRequested += sharedResizeHandler;
