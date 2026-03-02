@@ -1,5 +1,7 @@
 # Lone's EFT DMA Radar (affectioned fork)
 
+> **Educational Disclaimer:** This project is intended solely for educational and research purposes — to study DMA (Direct Memory Access) hardware, memory reading techniques, and game overlay systems. It is not intended to be used in live online gameplay or in any way that violates the terms of service of Escape from Tarkov or any other software. The authors do not condone cheating and accept no responsibility for misuse of this software.
+
 <img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/e2bb2567-539c-43c7-87c5-1ffe59e97d4d" />
 
 ## What is this?
