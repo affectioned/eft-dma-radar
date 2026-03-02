@@ -429,21 +429,22 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             canvas.DrawRect(TitleBar, TitleBarPaint);
             var titleCenterY = TitleBar.Top + (TitleBar.Height / 2);
-            var titleYOffset = (TitleBarText.FontMetrics.Ascent + TitleBarText.FontMetrics.Descent) / 2;
+            var titleMetrics = TitleBarFont.Metrics;
+            var titleYOffset = (titleMetrics.Ascent + titleMetrics.Descent) / 2;
 
             canvas.DrawText(Title,
                 new(TitleBar.Left + 2.5f * ScaleFactor,
                 titleCenterY - titleYOffset),
-                TitleBarText);
+                SKTextAlign.Left, TitleBarFont, TitleBarText);
 
             if (!string.IsNullOrEmpty(RightTitleInfo))
             {
-                var rightInfoWidth = RightTitleInfoText.MeasureText(RightTitleInfo);
+                var rightInfoWidth = RightTitleInfoFont.MeasureText(RightTitleInfo);
                 var rightX = TitleBar.Right - rightInfoWidth - 2.5f * ScaleFactor - TitleBarHeight; // Leave space for minimize button
 
                 canvas.DrawText(RightTitleInfo,
                     new(rightX, titleCenterY - titleYOffset),
-                    RightTitleInfoText);
+                    SKTextAlign.Left, RightTitleInfoFont, RightTitleInfoText);
             }
 
             canvas.DrawRect(MinimizeButton, ButtonBackgroundPaint);
@@ -459,8 +460,8 @@ namespace eft_dma_radar.UI.SKWidgetControl
             ScaleFactor = newScale;
             InitializeResizeTriangle();
 
-            TitleBarText.TextSize = 12F * newScale;
-            RightTitleInfoText.TextSize = 12F * newScale;
+            TitleBarFont.Size = 12F * newScale;
+            RightTitleInfoFont.Size = 12F * newScale;
             SymbolPaint.StrokeWidth = 2f * newScale;
         }
         #endregion
@@ -563,26 +564,28 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
         private static readonly SKPaint TitleBarText = new SKPaint()
         {
-            SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 12f,
-            TextAlign = SKTextAlign.Left,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            FilterQuality = SKFilterQuality.High
+        };
+
+        private static readonly SKFont TitleBarFont = new SKFont
+        {
+            Subpixel = true,
+            Size = 12f,
         };
 
         private static readonly SKPaint RightTitleInfoText = new SKPaint()
         {
-            SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 12f,
-            TextAlign = SKTextAlign.Left,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            FilterQuality = SKFilterQuality.High
+        };
+
+        private static readonly SKFont RightTitleInfoFont = new SKFont
+        {
+            Subpixel = true,
+            Size = 12f,
         };
         #endregion
 

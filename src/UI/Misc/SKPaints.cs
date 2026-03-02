@@ -2264,5 +2264,19 @@ namespace eft_dma_radar.UI.Misc
         #endregion
 
         #endregion
+
+        #region Companion Fonts
+
+        /// <summary>
+        /// Companion SKFont for radar text paints that use SKFontFamilyRegular at 12pt
+        /// (TextOutline, TextRaider, TextLoot, TextContainer, TextExplosives, etc.).
+        /// Pass alongside the matching Text* paint to DrawText / MeasureText.
+        /// </summary>
+        public static SKFont FontRadarLabel { get; } = new SKFont(CustomFonts.SKFontFamilyRegular, 12f)
+        {
+            Subpixel = true,
+        };
+
+        #endregion
     }
 }

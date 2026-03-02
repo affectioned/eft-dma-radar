@@ -212,8 +212,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             else
             {
-                canvas.DrawText("■", point, SKPaints.TextOutline);
-                canvas.DrawText("■", point, paints.Item2);
+                canvas.DrawText("■", point, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
+                canvas.DrawText("■", point, SKTextAlign.Left, SKPaints.FontRadarLabel, paints.Item2);
                 distanceYOffset = 12f * MainWindow.UIScale;
                 nameYOffset = 0f;
             }
@@ -222,20 +222,20 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 var namePoint = point;
                 namePoint.Offset(7f * MainWindow.UIScale, nameYOffset);
-                canvas.DrawText("BTR", namePoint, SKPaints.TextOutline);
-                canvas.DrawText("BTR", namePoint, paints.Item2);
+                canvas.DrawText("BTR", namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
+                canvas.DrawText("BTR", namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, paints.Item2);
             }
 
             if (Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
-                var width = paints.Item2.MeasureText(distText);
+                var width = SKPaints.FontRadarLabel.MeasureText(distText);
                 var distPoint = new SKPoint(
                     point.X - (width / 2),
                     point.Y + distanceYOffset);
 
-                canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, paints.Item2);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, paints.Item2);
             }
         }
         private ValueTuple<SKPaint, SKPaint> GetPaints()

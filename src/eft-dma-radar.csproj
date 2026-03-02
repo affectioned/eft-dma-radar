@@ -121,12 +121,5 @@
 		<Copy SourceFiles="@(SystemManagementDll)" DestinationFolder="$(OutputPath)runtimes\win\lib\net9.0\" Condition="Exists('$(NuGetPackageRoot)system.management\9.0.0\runtimes\win\lib\net9.0\System.Management.dll')" />
 	</Target>
 
-	<ItemGroup>
-	  <None Remove="C:\Users\admin\.nuget\packages\reloaded.assembler\1.0.16\build\FASM.DLL" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\admin\.nuget\packages\reloaded.assembler\1.0.16\build\FASMX64.DLL" />
-	</ItemGroup>
 </Project>
 

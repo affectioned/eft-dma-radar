@@ -161,20 +161,20 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             {
                 var namePoint = point;
                 namePoint.Offset(nameXOffset, nameYOffset);
-                canvas.DrawText(Name, namePoint, SKPaints.TextOutline);
-                canvas.DrawText(Name, namePoint, SKPaints.TextLoot);
+                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
+                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextLoot);
             }
 
             if (Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
-                var distWidth = SKPaints.TextLoot.MeasureText($"{(int)dist}");
+                var distWidth = SKPaints.FontRadarLabel.MeasureText($"{(int)dist}");
                 var distPoint = new SKPoint(
                     point.X - (distWidth / 2),
                     point.Y + distanceYOffset
                 );
-                canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, SKPaints.TextLoot);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextLoot);
             }
         }
 
