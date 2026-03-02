@@ -43,34 +43,10 @@
 
 	<!-- Native DLLs and Resources -->
 	<ItemGroup Condition="'$(Configuration)' != 'Commercial'">
-		<Content Include="..\leechcore_driver.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\dbghelp.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\FTD3XX.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\leechcore.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
 		<Content Include="..\resources\DEFAULT_DATA.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="..\resources\EXAMPLE_FILTERS.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\symsrv.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\vcruntime140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\vmm.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\tinylz4.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="..\LICENSE">
@@ -145,9 +121,11 @@
 	</Target>
 
 	<ItemGroup>
-		<Reference Include="VmmSharp">
-			<HintPath>..\VmmSharp.dll</HintPath>
-		</Reference>
+	  <None Remove="C:\Users\admin\.nuget\packages\reloaded.assembler\1.0.16\build\FASM.DLL" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\admin\.nuget\packages\reloaded.assembler\1.0.16\build\FASMX64.DLL" />
 	</ItemGroup>
 </Project>
 
