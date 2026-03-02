@@ -1,4 +1,4 @@
-# Lone's EFT DMA Radar
+# Lone's EFT DMA Radar (affectioned fork)
 
 ### As of 1/03/2026, no more features will be added & only offsets will be maintained
 
@@ -6,6 +6,22 @@
 
 ## What is this?
 - This is an up-to-date build of Lone DMA EFT/Arena Radar. This is a standalone copy of the software with *No Restrictions*.
+
+## Fork Changes (affectioned)
+
+This fork makes the following changes on top of the upstream project:
+
+### Memory Writes Removed — ESP Only
+All memory writing features have been completely removed. This includes aimbot, no-recoil, speed hacks, chams, and every other feature that wrote to game memory. **This fork is read-only / ESP only.** The only remaining memory interaction is reading game state for the radar overlay.
+
+### Privacy Improvements
+- **eft-api.tech removed** — All calls to `eft-api.tech` have been eliminated. This endpoint was used by the upstream project for various lookups and telemetry.
+- **Analytics removed** — Any other analytics or tracking calls have been stripped out.
+- **tarkov.dev only** — Item/loot data is fetched anonymously from [tarkov.dev](https://tarkov.dev), a community-run open API. No account, key, or identifying information is sent.
+
+### Dependency & Build Improvements
+- **No bundled DLLs** — All native DLLs (MemProcFS, LeechCore, etc.) have been removed from the repository. Users download them directly from their official sources, meaning you always get unmodified, verifiable binaries rather than trusting pre-bundled copies.
+- **VmmSharp via NuGet** — The VmmSharp managed wrapper is now referenced as a NuGet package instead of a bundled/compiled binary. This keeps the dependency versioned, auditable, and automatically resolvable by the .NET toolchain.
 
 ## Required DLLs
 
