@@ -6,7 +6,6 @@ using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.WebRadar;
 using eft_dma_radar.UI.Controls;
@@ -24,7 +23,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using static eft_dma_radar.Tarkov.Features.MemoryWrites.Aimbot;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
 using Clipboard = System.Windows.Clipboard;
@@ -357,7 +355,6 @@ namespace eft_dma_radar.UI.Pages
                                         mainWindow.MemoryWritingControl.LoadSettings();
                                         await Task.Delay(50);
 
-                                        mainWindow.MemoryWritingControl.FeatureInstanceCheck();
                                         await Task.Delay(50);
                                     }
 
@@ -467,9 +464,6 @@ namespace eft_dma_radar.UI.Pages
             {
                 var mainWindow = MainWindow.Window;
                 MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
-
-                if (mainWindow?.MemoryWritingControl != null)
-                    mainWindow.MemoryWritingControl.FeatureInstanceCheck();
 
                 XMLogging.WriteLine("[Config] Feature instances updated successfully");
             }
@@ -2774,24 +2768,9 @@ namespace eft_dma_radar.UI.Pages
                     Config.MemWrites.Aimbot.Enabled = isActive;
                     mainWindow.MemoryWritingControl.chkEnableAimbot.IsChecked = isActive;
                     break;
-                case nameof(HotkeyConfig.EngageAimbot):
-                    XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageAimbot = {isActive}");
-                    Aimbot.Engaged = isActive;
-                    break;
-                case nameof(HotkeyConfig.EngageLTW):
-                    LootThroughWalls.ZoomEngaged = isActive;
-                    break;
                 case nameof(HotkeyConfig.EngageTeammate):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;
-                    break;
-                case nameof(HotkeyConfig.ToggleAimbotMode):
-                    if (isActive)
-                    {
-                        Config.MemWrites.Aimbot.TargetingMode = Config.MemWrites.Aimbot.TargetingMode == AimbotTargetingMode.FOV
-                            ? AimbotTargetingMode.CQB
-                            : AimbotTargetingMode.FOV;
-                    }
                     break;
                 case nameof(HotkeyConfig.AimbotBone):
                     if (isActive)
@@ -2826,15 +2805,6 @@ namespace eft_dma_radar.UI.Pages
                 case nameof(HotkeyConfig.WideLean):
                     Config.MemWrites.WideLean.Enabled = isActive;
                     mainWindow.MemoryWritingControl.chkWideLean.IsChecked = isActive;
-                    break;
-                case nameof(HotkeyConfig.WideLeanUp):
-                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Up : WideLean.EWideLeanDirection.Off);
-                    break;
-                case nameof(HotkeyConfig.WideLeanLeft):
-                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Left : WideLean.EWideLeanDirection.Off);
-                    break;
-                case nameof(HotkeyConfig.WideLeanRight):
-                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Right : WideLean.EWideLeanDirection.Off);
                     break;
                 // Camera
                 case nameof(HotkeyConfig.NoVisor):
@@ -2923,17 +2893,6 @@ namespace eft_dma_radar.UI.Pages
                     });
                 }
             }
-        }
-
-        private void SetWideLeanDirection(WideLean.EWideLeanDirection dir)
-        {
-            if (!Config.MemWrites.WideLean.Enabled)
-            {
-                WideLean.Direction = WideLean.EWideLeanDirection.Off;
-                return;
-            }
-
-            WideLean.Direction = WideLean.Direction == dir ? WideLean.EWideLeanDirection.Off : dir;
         }
 
         private void RefreshHotkeyDisplay()
@@ -3172,7 +3131,6 @@ namespace eft_dma_radar.UI.Pages
                         MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
                         mainWindow.MemoryWritingControl.LoadSettings();
                         await Task.Delay(50);
-                        mainWindow.MemoryWritingControl.FeatureInstanceCheck();
                     }
 
                     if (mainWindow.LootSettingsControl != null)

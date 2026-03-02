@@ -5,7 +5,6 @@ using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
 using eft_dma_radar.Tarkov.Loot;
@@ -238,21 +237,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
             _worldInteractablesManager = new WorldInteractablesManager(Base);
 
             XMLogging.WriteLine("[Raid] Game data initialized successfully!");
-
-            if (Config.MemWrites.Aimbot.Enabled && Config.MemWrites.MemWritesEnabled)
-            {
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        Features.MemoryWrites.Aimbot.RunBallisticsDiagnosticOnce();
-                    }
-                    catch (Exception ex)
-                    {
-                        XMLogging.WriteLine($"[Raid] Ballistics diagnostic failed: {ex.Message}");
-                    }
-                });
-            }
         }
 
         /// <summary>
@@ -686,7 +670,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 XMLogging.WriteLine("Realtime thread starting...");
                 while (InRaid)
                 {
-                    if (Config.RatelimitRealtimeReads || !CameraManagerBase.EspRunning || (MemWriteFeature<Aimbot>.Instance.Enabled && Aimbot.Engaged))
+                    if (Config.RatelimitRealtimeReads || !CameraManagerBase.EspRunning)
                     {
                         _refreshWait.AutoWait(TimeSpan.FromMilliseconds(1), 1000);
                     }

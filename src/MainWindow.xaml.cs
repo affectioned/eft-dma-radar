@@ -6,7 +6,6 @@ using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
@@ -990,37 +989,7 @@ namespace eft_dma_radar
             try
             {
                 var memWritesEnabled = MemWrites.Enabled;
-                var aimEnabled = Aimbot.Config.Enabled;
-                var mode = Aimbot.Config.TargetingMode;
                 string label = null;
-
-                if (memWritesEnabled && Config.MemWrites.RageMode)
-                    label = MemWriteFeature<Aimbot>.Instance.Enabled ? $"{mode.GetDescription()}: RAGE MODE" : "RAGE MODE";
-
-                if (memWritesEnabled && aimEnabled)
-                {
-                    if (Aimbot.Config.RandomBone.Enabled)
-                        label = $"{mode.GetDescription()}: Random Bone";
-                    else if (Aimbot.Config.SilentAim.AutoBone)
-                        label = $"{mode.GetDescription()}: Auto Bone";
-                    else
-                    {
-                        var defaultBone = MemoryWritingControl.cboTargetBone.Text;
-                        label = $"{mode.GetDescription()}: {defaultBone}";
-                    }
-                }
-
-                if (memWritesEnabled)
-                {
-                    if (MemWriteFeature<WideLean>.Instance.Enabled)
-                    {
-                        if (label is null)
-                            label = "Lean";
-                        else
-                            label += " (Lean)";
-                    }
-
-                }
 
                 if (label is null)
                     return;

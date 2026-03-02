@@ -1,6 +1,5 @@
 ﻿using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
 
@@ -394,8 +393,6 @@ namespace eft_dma_radar.UI.ESP
                     // Memory Writes - Aimbot
                     case "Toggle Aimbot":
                         return Config.MemWrites.Aimbot.Enabled;
-                    case "Engage Aimbot":
-                        return Aimbot.Engaged;
                     case "Toggle Aimbot Mode":
                         return false;
                     case "Aimbot Bone":
@@ -424,12 +421,6 @@ namespace eft_dma_radar.UI.ESP
                         return Config.MemWrites.InfStamina;
                     case "Wide Lean":
                         return Config.MemWrites.WideLean.Enabled;
-                    case "Wide Lean Up":
-                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Up;
-                    case "Wide Lean Right":
-                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Right;
-                    case "Wide Lean Left":
-                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Left;
                     //case "Move Speed":
                     //    return Config.MemWrites.MoveSpeed.Enabled;
 
