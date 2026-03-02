@@ -21,13 +21,7 @@ Download the latest release from [MemProcFS Releases](https://github.com/ufrisk/
 | `leechcore_driver.dll` | LeechCore driver |
 | `tinylz4.dll` | LZ4 compression (bundled with MemProcFS) |
 | `VmmSharp.dll` | C# managed wrapper for MemProcFS |
-
-### FTDI D3XX Driver
-Download from [FTDI D3XX Drivers](https://ftdichip.com/drivers/d3xx-drivers/) (or from your FPGA hardware vendor's firmware package):
-
-| File | Description |
-|------|-------------|
-| `FTD3XX.dll` | FTDI FT60x USB 3.0 bridge driver |
+| `FTD3XX.dll` | FTDI FT60x USB 3.0 bridge driver (bundled with MemProcFS) |
 
 ### Windows Debugging Tools
 Download **Debugging Tools for Windows** via the [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) (select only "Debugging Tools for Windows" during install) and copy from its install directory:
