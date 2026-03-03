@@ -35,7 +35,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
     /// Memory path: Profile + 0x98 (QuestsData) -> UnityList&lt;QuestStatusData&gt;
     ///   Each entry: Id (0x10), Status (0x1C), CompletedConditions (0x28)
     ///
-    /// Context: This class reads quest STATUS for mission planning (lobby + in-raid fallback).
+    /// Context: This class reads quest STATUS for quest planning (lobby + in-raid fallback).
     /// It is completely independent of QuestManagerV2, which reads quest ZONES
     /// from LocalGameWorld during raids for radar display.
     ///

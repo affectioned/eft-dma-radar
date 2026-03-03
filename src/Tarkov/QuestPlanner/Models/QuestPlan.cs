@@ -1,7 +1,7 @@
 namespace eft_dma_radar.Tarkov.QuestPlanner.Models;
 
 /// <summary>
-/// Per-objective data within a mission plan, carrying completion state from memory.
+/// Per-objective data within a quest plan, carrying completion state from memory.
 /// </summary>
 public sealed record ObjectiveInfo(
     /// <summary>Objective condition ID, matched against QuestData.CompletedConditions.</summary>
@@ -57,23 +57,23 @@ public sealed record HandOverItemInfo(
 }
 
 /// <summary>
-/// Per-mission data within a map plan.
+/// Per-quest data within a map plan.
 /// Contains the quest name, its objectives on this map, and specific items to bring.
 /// </summary>
 public sealed class QuestPlan
 {
     /// <summary>
-    /// The quest/mission name.
+    /// The quest name.
     /// </summary>
     public string QuestName { get; init; } = string.Empty;
 
     /// <summary>
-    /// List of objectives for this mission on the current map with completion state.
+    /// List of objectives for this quest on the current map with completion state.
     /// </summary>
     public IReadOnlyList<ObjectiveInfo> Objectives { get; init; } = [];
 
     /// <summary>
-    /// Items specific to this mission that should be brought into the raid.
+    /// Items specific to this quest that should be brought into the raid.
     /// Filtered to exclude items that must be found/handed during raid (FIR items).
     /// </summary>
     public IReadOnlyList<BringItem> BringItems { get; init; } = [];

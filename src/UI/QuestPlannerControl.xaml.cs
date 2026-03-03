@@ -82,7 +82,7 @@ public partial class QuestPlannerControl : UserControl
         }
         else if (state == QuestConnectionState.Lobby && isStale)
         {
-            StatusBannerText.Text = "Could not refresh mission data - showing last known plan";
+            StatusBannerText.Text = "Could not refresh quest data - showing last known plan";
             StatusBanner.Visibility = Visibility.Visible;
         }
         else

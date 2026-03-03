@@ -518,8 +518,8 @@ public static class QuestService
     }
 
     /// <summary>
-    /// Builds per-mission data for a specific map.
-    /// Groups completable objectives by quest, with filtered bring items per mission.
+    /// Builds per-quest data for a specific map.
+    /// Groups completable objectives by quest, with filtered bring items per quest.
     /// Applies findQuestItem/giveQuestItem pairing filter to hide giveQuestItem until findQuestItem is complete.
     /// </summary>
     private static List<QuestPlan> BuildQuestsForMap(
@@ -572,7 +572,7 @@ public static class QuestService
         foreach (var (taskId, objectives) in objectivesByTask)
         {
             var taskName = taskNames.GetValueOrDefault(taskId, taskId);
-            var bringItems = BuildBringListForMission(objectives, taskName, stash);
+            var bringItems = BuildBringListForQuest(objectives, taskName, stash);
 
             // Build findQuestItem pairing lookup from ALL task objectives (not just map-filtered ones)
             var taskRef = taskRefById.GetValueOrDefault(taskId);
@@ -620,7 +620,7 @@ public static class QuestService
     }
 
     /// <summary>
-    /// Builds filtered bring list for a specific mission's objectives.
+    /// Builds filtered bring list for a specific quest's objectives.
     /// FILTER RULE: Only include items that must be BROUGHT INTO raid:
     /// - INCLUDE: RequiredKeys (keys to access areas)
     /// - INCLUDE: QuestItem where objective type is "giveQuestItem" or "plant" (items to hand over or place)
@@ -628,7 +628,7 @@ public static class QuestService
     /// - EXCLUDE: objective.Item (these are FIR items to FIND in raid)
     /// - EXCLUDE: QuestItem for "findQuestItem" type (need to find, not bring)
     /// </summary>
-    private static List<BringItem> BuildBringListForMission(
+    private static List<BringItem> BuildBringListForQuest(
         List<TaskElement.ObjectiveElement> objectives,
         string taskName,
         IStashFilter stash)
@@ -889,7 +889,7 @@ public static class QuestService
                 {
                     QuestName = taskName,
                     Objectives = filteredObjectives2,
-                    BringItems = BuildBringListForMission(objectives, taskName, stash)
+                    BringItems = BuildBringListForQuest(objectives, taskName, stash)
                 });
             }
         }

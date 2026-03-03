@@ -470,7 +470,7 @@ namespace eft_dma_radar.UI.Misc
         public bool ShowQuestInfoWidget { get; set; } = false;
 
         /// <summary>
-        /// Shows Quest Planner Widget (compact mission summary overlay).
+        /// Shows Quest Planner Widget (compact quest summary overlay).
         /// </summary>
         [JsonPropertyName("showQuestPlannerWidget")]
         public bool ShowQuestPlannerWidget { get; set; } = false;

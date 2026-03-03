@@ -15,7 +15,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
     /// FALLBACK PATH (in-raid):
     ///   ClientLocalGameWorld.MainPlayer (0x208) -> Player.Profile (0x900)
     ///
-    /// Context: This class reads quest STATUS from the lobby for mission planning.
+    /// Context: This class reads quest STATUS from the lobby for quest planning.
     /// It is completely independent of QuestManagerV2, which reads quest ZONES
     /// from LocalGameWorld during raids for radar display.
     /// </summary>

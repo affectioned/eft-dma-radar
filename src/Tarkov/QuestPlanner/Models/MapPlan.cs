@@ -2,7 +2,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner.Models;
 
 /// <summary>
 /// Per-map entry in the session plan.
-/// Contains map identification, objective/quest counts, missions, items to bring, and unlock info.
+/// Contains map identification, objective/quest counts, quests, items to bring, and unlock info.
 /// </summary>
 public sealed class MapPlan
 {
@@ -42,7 +42,7 @@ public sealed class MapPlan
     public IReadOnlyList<UnlockedQuest> UnlockedQuests { get; init; } = [];
 
     /// <summary>
-    /// Aggregated bring list at map level (deduplicated items from all missions).
+    /// Aggregated bring list at map level (deduplicated items from all quests).
     /// Excludes items that must be FOUND/HANDED during raid (only items to bring IN).
     /// </summary>
     public IReadOnlyList<BringItem> FilteredBringList { get; init; } = [];

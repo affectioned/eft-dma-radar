@@ -47,13 +47,13 @@ internal static class QuestPlannerService
     private static readonly ManualResetEventSlim _wakeSignal = new(false);
 
     /// <summary>
-    /// The latest computed mission summary, or null when not in lobby.
+    /// The latest computed quest summary, or null when not in lobby.
     /// Read by Phase 3 UI tab.
     /// </summary>
     public static QuestSummary? Current { get; private set; }
 
     /// <summary>
-    /// Current connection state from the mission planner's perspective.
+    /// Current connection state from the quest planner's perspective.
     /// </summary>
     public static QuestConnectionState State { get; private set; } = QuestConnectionState.Disconnected;
 
@@ -211,7 +211,7 @@ internal static class QuestPlannerService
             return;
         }
 
-        // 7. Recompute mission summary
+        // 7. Recompute quest summary
         XMLogging.WriteLine($"[QuestPlannerService] Recomputing plan ({quests.Started.Count} active quests)");
 
         if (!EftDataManager.IsInitialized)
