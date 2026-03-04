@@ -2936,7 +2936,7 @@ namespace eft_dma_radar.UI.Pages
                     UpdateSpecificWidgetOption("Loot Info Widget", isActive);
                     break;
                 case nameof(HotkeyConfig.QuestInfoWidget):
-                    Config.ShowLootInfoWidget = isActive;
+                    Config.ShowQuestInfoWidget = isActive;
                     UpdateSpecificWidgetOption("Quest Info Widget", isActive);
                     break;
                 case nameof(HotkeyConfig.QuestPlannerWidget):
