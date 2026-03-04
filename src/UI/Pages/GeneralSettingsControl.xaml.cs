@@ -125,6 +125,7 @@ namespace eft_dma_radar.UI.Pages
             "Player Info Widget",
             "Loot Info Widget",
             "Quest Info Widget",
+            "Quest Planner Widget",
             "HotKey Info Widget"
         };
 
@@ -252,16 +253,16 @@ namespace eft_dma_radar.UI.Pages
 
                 var warningResult = MessageBox.Show(
                         "WARNING: Importing a configuration will replace current settings including:\n\n" +
-                        "�? General settings & UI preferences\n" +
-                        "�? Player/Entity display settings\n" +
-                        "�? Color configurations\n" +
-                        "�? Hotkey assignments\n" +
-                        "�? ESP configurations\n" +
-                        "�? Panel and toolbar positions\n" +
-                        "�? Memory writing settings\n" +
-                        "�? Loot settings\n" +
-                        "�? Quest helper settings\n" +
-                        "�? Container settings\n\n" +
+                        "ï¿? General settings & UI preferences\n" +
+                        "ï¿? Player/Entity display settings\n" +
+                        "ï¿? Color configurations\n" +
+                        "ï¿? Hotkey assignments\n" +
+                        "ï¿? ESP configurations\n" +
+                        "ï¿? Panel and toolbar positions\n" +
+                        "ï¿? Memory writing settings\n" +
+                        "ï¿? Loot settings\n" +
+                        "ï¿? Quest helper settings\n" +
+                        "ï¿? Container settings\n\n" +
                         "NOTE: Cache & Web Radar data will not be preserved.\n\n" +
                         "This action cannot be undone. Continue?",
                         "Import Configuration Warning",
@@ -1473,7 +1474,7 @@ namespace eft_dma_radar.UI.Pages
             if (hasKey)
             {
                 txtApiStatus.Text = $"API key loaded successfully";
-                btnCreateApiFile.Content = "Edit API File�?";
+                btnCreateApiFile.Content = "Edit API Fileï¿?";
                 btnCreateApiFile.ToolTip = "Replace the stored API key";
                 btnClearApiFile.IsEnabled = true;
                 btnOpenApiFolder.IsEnabled = true;
@@ -1481,7 +1482,7 @@ namespace eft_dma_radar.UI.Pages
             else
             {
                 txtApiStatus.Text = "No API key saved.";
-                btnCreateApiFile.Content = "Create API File�?";
+                btnCreateApiFile.Content = "Create API Fileï¿?";
                 btnCreateApiFile.ToolTip = "Create and store an API key securely";
                 btnClearApiFile.IsEnabled = false;
                 btnOpenApiFolder.IsEnabled = false;
@@ -1932,6 +1933,7 @@ namespace eft_dma_radar.UI.Pages
                     case "Quest Info Widget":
                         Config.ShowQuestInfoWidget = isSelected;
                         break;
+
                     case "HotKey Info Widget":
                         Config.ESP.ShowHotkeyInfoWidget = isSelected;
                         break;
@@ -2067,6 +2069,7 @@ namespace eft_dma_radar.UI.Pages
             btnClosestPlayerColor.Click += ColorButton_Clicked;
             btnTopLootColor.Click += ColorButton_Clicked;
             btnMiniRadarThemeColor.Click += ColorButton_Clicked;
+            btnOverridePlayerTextColor.Click += ColorButton_Clicked;
 
             // Interface
             btnAccentColor.Click += ColorButton_Clicked;
@@ -2218,6 +2221,7 @@ namespace eft_dma_radar.UI.Pages
             _brushFields["ClosestPlayer"] = closestPlayerBrush;
             _brushFields["TopLoot"] = topLootBrush;
             _brushFields["MiniRadarTheme"] = miniRadarThemeBrush;
+            _brushFields["OverridePlayerText"] = overridePlayerTextBrush;
 
             // Interface colors
             _brushFields["Interface.Accent"] = accentColor;
@@ -2929,9 +2933,10 @@ namespace eft_dma_radar.UI.Pages
                     UpdateSpecificWidgetOption("Loot Info Widget", isActive);
                     break;
                 case nameof(HotkeyConfig.QuestInfoWidget):
-                    Config.ShowLootInfoWidget = isActive;
+                    Config.ShowQuestInfoWidget = isActive;
                     UpdateSpecificWidgetOption("Quest Info Widget", isActive);
                     break;
+
                 //case nameof(HotkeyConfig.ConnectGroups):
                 //    Config.ConnectGroups = isActive;
                 //    UpdateSpecificGeneralOption("Connect Groups", isActive);
@@ -3435,16 +3440,16 @@ namespace eft_dma_radar.UI.Pages
 
                 var confirm = MessageBox.Show(
                     "WARNING: Importing a configuration will replace current settings including:\n\n" +
-                    "�? General settings & UI preferences\n" +
-                    "�? Player/Entity display settings\n" +
-                    "�? Color configurations\n" +
-                    "�? Hotkey assignments\n" +
-                    "�? ESP configurations\n" +
-                    "�? Panel and toolbar positions\n" +
-                    "�? Memory writing settings\n" +
-                    "�? Loot settings\n" +
-                    "�? Quest helper settings\n" +
-                    "�? Container settings\n\n" +
+                    "ï¿? General settings & UI preferences\n" +
+                    "ï¿? Player/Entity display settings\n" +
+                    "ï¿? Color configurations\n" +
+                    "ï¿? Hotkey assignments\n" +
+                    "ï¿? ESP configurations\n" +
+                    "ï¿? Panel and toolbar positions\n" +
+                    "ï¿? Memory writing settings\n" +
+                    "ï¿? Loot settings\n" +
+                    "ï¿? Quest helper settings\n" +
+                    "ï¿? Container settings\n\n" +
                     "NOTE: Cache data will not be preserved.\n\n" +
                     "This action cannot be undone. Continue?",
                     "Import Configuration Warning",

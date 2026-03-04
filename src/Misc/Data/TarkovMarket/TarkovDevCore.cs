@@ -73,7 +73,15 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                   tasks {
                     id
                     name
+                    trader {
+                      name
+                    }
                     kappaRequired
+                    map {
+                      id
+                      normalizedName
+                      name
+                    }
                     objectives {
                       id
                       type
@@ -241,6 +249,12 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                         }
                       }
                     }
+                    taskRequirements {
+                      task {
+                        id
+                      }
+                      status
+                    }
                   }
                 }
                 """
@@ -248,7 +262,7 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(100));
             using var response = await SharedProgram.HttpClient.PostAsJsonAsync(
-                requestUri: "https://api.tarkov.dev/graphql", 
+                requestUri: "https://api.tarkov.dev/graphql",
                 value: query,
                 cancellationToken: cts.Token);
             response.EnsureSuccessStatusCode();

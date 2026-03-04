@@ -54,6 +54,12 @@ namespace SDK
         {
             public const uint Value = 0x10; // Value : EFT.HealthSystem.ValueStruct
         }
+
+        public readonly partial struct TaskConditionCounter
+        {
+            public const uint Value = 0x40; // Int32 — _value field (DEC 1)
+        }
+
     }
 
     public readonly partial struct Enums
