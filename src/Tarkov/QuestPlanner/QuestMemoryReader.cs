@@ -29,8 +29,8 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
     }
 
     /// <summary>
-    /// Reads active quest state from EFT player Profile memory.
-    /// Returns quests with Status=Started (EQuestStatus 2) and their completed conditions.
+    /// Reads quest state from EFT player Profile memory.
+    /// Returns quests grouped by status: AvailableForStart (1), Started (2), AvailableForFinish (3).
     ///
     /// Memory path: Profile + 0x98 (QuestsData) -> UnityList&lt;QuestStatusData&gt;
     ///   Each entry: Id (0x10), Status (0x1C), CompletedConditions (0x28)
@@ -110,7 +110,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
 
                         // Read completed conditions
                         var completedPtr = Memory.ReadPtr(qDataEntry + Offsets.QuestData.CompletedConditions);
-                        var completed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var completed = new HashSet<string>(StringComparer.Ordinal);
 
                         if (completedPtr != 0)
                         {
@@ -163,21 +163,6 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
         }
 
         /// <summary>
-        /// Reads all active (Started) quests from the player's profile.
-        /// Filters to only return quests with Status=Started (2).
-        /// This is a convenience method that calls ReadAvailableQuests internally.
-        /// </summary>
-        /// <param name="profile">The profile pointer address.</param>
-        /// <returns>
-        /// List of QuestData for active quests.
-        /// Returns empty list on error or if no active quests.
-        /// </returns>
-        public static List<QuestData> ReadQuests(ulong profile)
-        {
-            return ReadAvailableQuests(profile).Started;
-        }
-
-        /// <summary>
         /// Reads TaskConditionCounters from the player profile.
         /// Memory path: Profile + 0x90 -> Dictionary&lt;MongoID, TaskConditionCounter&gt;
         /// Each TaskConditionCounter value pointer -> object + 0x40 -> _value (int)
@@ -186,7 +171,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
         /// <returns>Dictionary mapping condition ID string to current counter value.</returns>
         public static Dictionary<string, int> ReadConditionCounters(ulong profile)
         {
-            var counters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var counters = new Dictionary<string, int>(StringComparer.Ordinal);
 
             if (profile == 0)
                 return counters;
