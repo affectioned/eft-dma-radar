@@ -563,7 +563,7 @@ public static class QuestPlanBuilder
                 {
                     items.Add(new BringItem { Alternatives = [obj.MarkerItem.Name], QuestName = taskName, Type = BringItemType.QuestItem });
                 }
-                else if (obj.MarkerItem == null)
+                else
                 {
                     // Fallback: some mark objectives might not have MarkerItem set
                     items.Add(new BringItem { Alternatives = ["MS2000 Marker"], QuestName = taskName, Type = BringItemType.QuestItem });
