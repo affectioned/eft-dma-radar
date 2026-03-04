@@ -5,14 +5,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner.Models;
 /// </summary>
 public enum BringItemType
 {
-    /// <summary>
-    /// A key required to access an area or container.
-    /// </summary>
     Key,
-
-    /// <summary>
-    /// A quest item required to complete an objective.
-    /// </summary>
     QuestItem
 }
 
@@ -22,23 +15,10 @@ public enum BringItemType
 public sealed class BringItem
 {
     /// <summary>
-    /// Single item or key alternatives (e.g., ["Factory key"] or ["Key A", "Key B"]).
-    /// Multiple entries indicate any of the alternatives will work.
+    /// Item or key alternatives — any one suffices (e.g., ["Key A", "Key B"]).
     /// </summary>
     public IReadOnlyList<string> Alternatives { get; init; } = [];
-
-    /// <summary>
-    /// The quest requiring this item.
-    /// </summary>
     public string QuestName { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The type of item (Key or QuestItem).
-    /// </summary>
     public BringItemType Type { get; init; }
-
-    /// <summary>
-    /// Number of this item required (e.g., 3 for a quest needing 3 MS2000 Markers).
-    /// </summary>
     public int Count { get; init; } = 1;
 }

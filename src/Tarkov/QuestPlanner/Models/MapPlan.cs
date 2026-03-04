@@ -1,50 +1,24 @@
 namespace eft_dma_radar.Tarkov.QuestPlanner.Models;
 
 /// <summary>
-/// Per-map entry in the session plan.
-/// Contains map identification, objective/quest counts, quests, items to bring, and unlock info.
+/// Per-map entry in the session plan, ordered by priority.
 /// </summary>
 public sealed class MapPlan
 {
-    /// <summary>
-    /// Canonical map key from TaskMapElement.NameId (e.g., "factory4_day").
-    /// </summary>
     public string MapId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// Display name from TaskMapElement.Name (e.g., "Factory").
-    /// </summary>
     public string MapName { get; init; } = string.Empty;
 
     /// <summary>
-    /// True for the top-ranked map in the session plan (highest priority recommendation).
+    /// True for the top-ranked map (highest priority recommendation).
     /// </summary>
     public bool IsRecommended { get; init; }
-
-    /// <summary>
-    /// How many objectives can be completed on this map.
-    /// </summary>
     public int CompletableObjectiveCount { get; init; }
-
-    /// <summary>
-    /// How many distinct quests have objectives on this map.
-    /// </summary>
     public int ActiveQuestCount { get; init; }
-
-    /// <summary>
-    /// Quests that have objectives on this map, with their specific objectives and bring items.
-    /// </summary>
     public IReadOnlyList<QuestPlan> Quests { get; init; } = [];
-
-    /// <summary>
-    /// Quests that will be unlocked by completing quests on this map.
-    /// </summary>
     public IReadOnlyList<UnlockedQuest> UnlockedQuests { get; init; } = [];
 
     /// <summary>
-    /// Aggregated bring list at map level (deduplicated items from all quests).
-    /// Excludes items that must be FOUND/HANDED during raid (only items to bring IN).
+    /// Deduplicated bring list across all quests. Excludes FIR/hand-over items.
     /// </summary>
     public IReadOnlyList<BringItem> FilteredBringList { get; init; } = [];
-
 }
