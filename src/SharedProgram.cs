@@ -82,26 +82,28 @@ namespace eft_dma_radar
         /// </summary>
         private static void VerifyDependencies()
         {
-            var dependencies = new List<string>
-            {
-                "vmm.dll",
-                "leechcore.dll",
-                "FTD3XX.dll",
-                "symsrv.dll",
-                "dbghelp.dll",
-                "vcruntime140.dll",
-                "tinylz4.dll",
-                "libSkiaSharp.dll",
-                "libHarfBuzzSharp.dll"
-            };
+            // MemProcFS / LeechCore
+            CheckDep("vmm.dll");
+            CheckDep("leechcore.dll");
+            CheckDep("leechcore_driver.dll");
+            CheckDep("FTD3XX.dll");
+            CheckDep("tinylz4.dll");
+            CheckDep("dbghelp.dll");
+            // VC++ runtime (portable — not required if installed system-wide)
+            CheckDep("vcruntime140.dll");
+            // SkiaSharp
+            CheckDep("libSkiaSharp.dll");
+            CheckDep("libHarfBuzzSharp.dll");
+        }
 
-            foreach (var dep in dependencies)
-                if (!File.Exists(dep))
-                    throw new FileNotFoundException($"Missing Dependency '{dep}'\n\n" +
-                                                    $"==Troubleshooting==\n" +
-                                                    $"1. Make sure that you unzipped the Client Files, and that all files are present in the same folder as the Radar Client (EXE).\n" +
-                                                    $"2. If using a shortcut, make sure the Current Working Directory (CWD) is set to the " +
-                                                    $"same folder that the Radar Client (EXE) is located in.");
+        private static void CheckDep(string fileName)
+        {
+            if (!File.Exists(fileName))
+                throw new FileNotFoundException($"Missing Dependency '{fileName}'\n\n" +
+                                                $"==Troubleshooting==\n" +
+                                                $"1. Make sure that you unzipped the Client Files, and that all files are present in the same folder as the Radar Client (EXE).\n" +
+                                                $"2. If using a shortcut, make sure the Current Working Directory (CWD) is set to the " +
+                                                $"same folder that the Radar Client (EXE) is located in.");
         }
 
         /// <summary>

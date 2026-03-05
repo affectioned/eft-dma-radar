@@ -35,16 +35,11 @@ Download the latest release from [MemProcFS Releases](https://github.com/ufrisk/
 | `vmm.dll` | MemProcFS core |
 | `leechcore.dll` | LeechCore memory acquisition |
 | `leechcore_driver.dll` | LeechCore driver |
-| `tinylz4.dll` | LZ4 compression (bundled with MemProcFS) |
-| `FTD3XX.dll` | FTDI FT60x USB 3.0 bridge driver (bundled with MemProcFS) |
-
-### Windows Debugging Tools
-Download **Debugging Tools for Windows** via the [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) (select only "Debugging Tools for Windows" during install) and copy from its install directory:
-
-| File | Description |
-|------|-------------|
+| `tinylz4.dll` | LZ4 compression |
+| `FTD3XX.dll` | FTDI FT60x USB 3.0 bridge driver |
 | `dbghelp.dll` | Windows Debug Help Library |
-| `symsrv.dll` | Symbol server client |
+
+All of the above are included in the MemProcFS release archive.
 
 ### Visual C++ Runtime
 Download **Visual C++ Redistributable 2015–2022 (x64)** from [Microsoft](https://aka.ms/vs/17/release/vc_redist.x64.exe).
