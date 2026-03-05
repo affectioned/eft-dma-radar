@@ -38,7 +38,6 @@ namespace eft_dma_radar
             if (!singleton)
                 throw new ApplicationException("The Application Is Already Running!");
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-            SetHighPerformanceMode();
             SetupHttpClient();
 #if !DEBUG
             VerifyDependencies();
@@ -61,20 +60,6 @@ namespace eft_dma_radar
             client.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
             client.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
             SharedProgram.HttpClient = client;
-        }
-
-        /// <summary>
-        /// Sets High Performance mode in Windows Power Plans and Process Priority.
-        /// </summary>
-        private static void SetHighPerformanceMode()
-        {
-            /// Prepare Process for High Performance Mode
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
-            Native.SetThreadExecutionState(Native.EXECUTION_STATE.ES_CONTINUOUS | Native.EXECUTION_STATE.ES_SYSTEM_REQUIRED |
-                                           Native.EXECUTION_STATE.ES_DISPLAY_REQUIRED);
-            var highPerformanceGuid = new Guid("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
-            if (Native.PowerSetActiveScheme(IntPtr.Zero, ref highPerformanceGuid) != 0)
-                XMLogging.WriteLine("WARNING: Unable to set High Performance Power Plan");
         }
 
         /// <summary>
