@@ -1228,56 +1228,6 @@ namespace eft_dma_radar
         }
         #endregion
 
-        #region Memory Writing Settings
-        /// <summary>
-        /// Handles setting memory writing panel visibility
-        /// </summary>
-        private void btnMemoryWritingSettings_Click(object sender, RoutedEventArgs e)
-        {
-            NotifyUIActivity();
-            TogglePanelVisibility("MemoryWriting");
-        }
-
-        /// <summary>
-        /// Handle close request from memory writing control
-        /// </summary>
-        private void MemoryWritingControl_CloseRequested(object sender, EventArgs e)
-        {
-            MemoryWritingPanel.Visibility = Visibility.Collapsed;
-        }
-
-        /// <summary>
-        /// Handle drag request from memory writing control
-        /// </summary>
-        private void MemoryWritingControl_DragRequested(object sender, PanelDragEventArgs e)
-        {
-            var left = Canvas.GetLeft(MemoryWritingPanel) + e.OffsetX;
-            var top = Canvas.GetTop(MemoryWritingPanel) + e.OffsetY;
-
-            Canvas.SetLeft(MemoryWritingPanel, left);
-            Canvas.SetTop(MemoryWritingPanel, top);
-
-            EnsurePanelInBounds(MemoryWritingPanel, mainContentGrid, adjustSize: false);
-        }
-
-        /// <summary>
-        /// Handle resize request from memory writing control
-        /// </summary>
-        private void MemoryWritingControl_ResizeRequested(object sender, PanelResizeEventArgs e)
-        {
-            var width = MemoryWritingPanel.Width + e.DeltaWidth;
-            var height = MemoryWritingPanel.Height + e.DeltaHeight;
-
-            width = Math.Max(width, MIN_MEMORY_WRITING_PANEL_WIDTH);
-            height = Math.Max(height, MIN_MEMORY_WRITING_PANEL_HEIGHT);
-
-            MemoryWritingPanel.Width = width;
-            MemoryWritingPanel.Height = height;
-
-            EnsurePanelInBounds(MemoryWritingPanel, mainContentGrid, adjustSize: false);
-        }
-        #endregion
-
         #region ESP Settings
         /// <summary>
         /// Handles setting ESP panel visibility
@@ -1877,7 +1827,6 @@ namespace eft_dma_radar
         {
             var coordinator = PanelCoordinator.Instance;
             coordinator.RegisterRequiredPanel("GeneralSettings");
-            coordinator.RegisterRequiredPanel("MemoryWriting");
             coordinator.RegisterRequiredPanel("ESP");
             coordinator.RegisterRequiredPanel("LootFilter");
             coordinator.RegisterRequiredPanel("LootSettings");
@@ -2137,7 +2086,6 @@ namespace eft_dma_radar
             {
                 "GeneralSettingsPanel" => MIN_SETTINGS_PANEL_WIDTH,
                 "LootSettingsPanel" => MIN_LOOT_PANEL_WIDTH,
-                "MemoryWritingPanel" => MIN_MEMORY_WRITING_PANEL_WIDTH,
                 "ESPPanel" => MIN_ESP_PANEL_WIDTH,
                 "WatchlistPanel" => MIN_WATCHLIST_PANEL_WIDTH,
                 "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_WIDTH,
@@ -2153,7 +2101,6 @@ namespace eft_dma_radar
             {
                 "GeneralSettingsPanel" => MIN_SETTINGS_PANEL_HEIGHT,
                 "LootSettingsPanel" => MIN_LOOT_PANEL_HEIGHT,
-                "MemoryWritingPanel" => MIN_MEMORY_WRITING_PANEL_HEIGHT,
                 "ESPPanel" => MIN_ESP_PANEL_HEIGHT,
                 "WatchlistPanel" => MIN_WATCHLIST_PANEL_HEIGHT,
                 "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_HEIGHT,
@@ -2180,7 +2127,6 @@ namespace eft_dma_radar
             {
                 GeneralSettingsCanvas,
                 LootSettingsCanvas,
-                MemoryWritingCanvas,
                 ESPCanvas,
                 WatchlistCanvas,
                 PlayerHistoryCanvas,
@@ -2208,7 +2154,6 @@ namespace eft_dma_radar
         {
             AttachPreviewMouseDown(GeneralSettingsPanel, GeneralSettingsCanvas);
             AttachPreviewMouseDown(LootSettingsPanel, LootSettingsCanvas);
-            AttachPreviewMouseDown(MemoryWritingPanel, MemoryWritingCanvas);
             AttachPreviewMouseDown(ESPPanel, ESPCanvas);
             AttachPreviewMouseDown(WatchlistPanel, WatchlistCanvas);
             AttachPreviewMouseDown(PlayerHistoryPanel, PlayerHistoryCanvas);
@@ -2219,7 +2164,6 @@ namespace eft_dma_radar
             ESPCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(ESPCanvas);
             GeneralSettingsCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(GeneralSettingsCanvas);
             LootSettingsCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(LootSettingsCanvas);
-            MemoryWritingCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(MemoryWritingCanvas);
             WatchlistCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(WatchlistCanvas);
             PlayerHistoryCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(PlayerHistoryCanvas);
             LootFilterCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(LootFilterCanvas);
@@ -2372,7 +2316,6 @@ namespace eft_dma_radar
             {
                 ["GeneralSettings"] = new PanelInfo(GeneralSettingsPanel, GeneralSettingsCanvas, "GeneralSettings", MIN_SETTINGS_PANEL_WIDTH, MIN_SETTINGS_PANEL_HEIGHT),
                 ["LootSettings"] = new PanelInfo(LootSettingsPanel, LootSettingsCanvas, "LootSettings", MIN_LOOT_PANEL_WIDTH, MIN_LOOT_PANEL_HEIGHT),
-                ["MemoryWriting"] = new PanelInfo(MemoryWritingPanel, MemoryWritingCanvas, "MemoryWriting", MIN_MEMORY_WRITING_PANEL_WIDTH, MIN_MEMORY_WRITING_PANEL_HEIGHT),
                 ["ESP"] = new PanelInfo(ESPPanel, ESPCanvas, "ESP", MIN_ESP_PANEL_WIDTH, MIN_ESP_PANEL_HEIGHT),
                 ["Watchlist"] = new PanelInfo(WatchlistPanel, WatchlistCanvas, "Watchlist", MIN_WATCHLIST_PANEL_WIDTH, MIN_WATCHLIST_PANEL_HEIGHT),
                 ["PlayerHistory"] = new PanelInfo(PlayerHistoryPanel, PlayerHistoryCanvas, "PlayerHistory", MIN_PLAYERHISTORY_PANEL_WIDTH, MIN_PLAYERHISTORY_PANEL_HEIGHT),

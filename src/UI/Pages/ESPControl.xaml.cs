@@ -44,11 +44,6 @@ namespace eft_dma_radar.UI.Pages
 
         private static Config Config => Program.Config;
 
-        private static readonly object _chamsColorLock = new object();
-        private static bool _isApplyingChamsColors = false;
-        private bool _isRefreshingChamsMaterials = false;
-        private DispatcherTimer _chamsMaterialStatusTimer;
-
         private bool _isImporting = false;
 
         private string _currentFuserPlayerType;
@@ -114,7 +109,6 @@ namespace eft_dma_radar.UI.Pages
 
                 PanelCoordinator.Instance.SetPanelReady("ESP");
                 ExpanderManager.Instance.RegisterExpanders(this, "ESPSettings",
-                    expChamsGeneralSettings,
                     expFuserGeneralSettings,
                     expFuserCrosshairSettings,
                     expFuserMiniRadarSettings,

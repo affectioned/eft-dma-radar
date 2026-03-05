@@ -366,3 +366,4 @@ FodyWeavers.xsd
 
 # Third-party native DLLs (must be placed next to the exe manually — see README)
 *.dll
+/src/.claude

@@ -789,9 +789,6 @@ namespace eft_dma_radar.UI.Misc
                 if (config.PanelPositions.LootSettings == null)
                     config.PanelPositions.LootSettings = new PanelPositionConfig();
 
-                if (config.PanelPositions.MemoryWriting == null)
-                    config.PanelPositions.MemoryWriting = new PanelPositionConfig();
-
                 if (config.PanelPositions.Watchlist == null)
                     config.PanelPositions.Watchlist = new PanelPositionConfig();
 
@@ -973,12 +970,6 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("lootSettings")]
         public PanelPositionConfig LootSettings { get; set; } = new PanelPositionConfig();
-
-        /// <summary>
-        /// Memory writing panel position
-        /// </summary>
-        [JsonPropertyName("memoryWriting")]
-        public PanelPositionConfig MemoryWriting { get; set; } = new PanelPositionConfig();
 
         /// <summary>
         /// ESP panel position

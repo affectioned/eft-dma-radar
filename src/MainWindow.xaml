@@ -104,16 +104,6 @@
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnESPSettings" 
-                            Style="{StaticResource ButtonIcon}" 
-                            ToolTip="Opens the chams/fuser esp configuration panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource GlassesGeometry}" Click="btnESPSettings_Click"/>
-
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
                     <Button x:Name="btnWatchlist" 
                             Style="{StaticResource ButtonIcon}" 
@@ -136,16 +126,6 @@
                             Padding="6"
                             hc:IconElement.Width="18"
                             hc:IconElement.Geometry="{StaticResource ClockRotatedGeometry}" Click="btnPlayerHistory_Click"/>
-                    <Button x:Name="btnMemoryWritingSettings" 
-                            Style="{StaticResource ButtonIcon}" 
-                            ToolTip="Opens the memory writing configuration panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource WandMagicSparklesGeometry}"
-                            Click="btnMemoryWritingSettings_Click"/>
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
@@ -259,23 +239,6 @@
             </Border>
         </Canvas>
 
-        <!-- memory writing panel -->
-        <Canvas Name="MemoryWritingCanvas" Panel.ZIndex="1000">
-            <Canvas.Resources>
-                <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
-            </Canvas.Resources>
-
-            <Border x:Name="MemoryWritingPanel" 
-                    Width="350" Height="550"
-                    Canvas.Left="650" Canvas.Top="70"
-                    CornerRadius="8" 
-                    Visibility="Collapsed"
-                    Effect="{StaticResource PanelShadow}"
-                    Background="Transparent"
-                    BorderThickness="0">
-            </Border>
-        </Canvas>
-        
         <!-- esp panel -->
         <Canvas Name="ESPCanvas" Panel.ZIndex="1000">
             <Canvas.Resources>
