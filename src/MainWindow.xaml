@@ -104,6 +104,16 @@
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
+                    <Button x:Name="btnESPSettings" 
+                            Style="{StaticResource ButtonIcon}" 
+                            ToolTip="Opens the fuser esp configuration panel"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Width="32" Height="32"
+                            Padding="6"
+                            hc:IconElement.Width="18"
+                            hc:IconElement.Geometry="{StaticResource GlassesGeometry}" Click="btnESPSettings_Click"/>
+
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
                     <Button x:Name="btnWatchlist" 
                             Style="{StaticResource ButtonIcon}" 
