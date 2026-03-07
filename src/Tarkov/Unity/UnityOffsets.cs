@@ -69,7 +69,6 @@ namespace eft_dma_radar.Common.Unity
             public const uint AllCameras = 0x19F3080; // IL2CPP AllCameras (XM Dec 2025)
 
             // Legacy/unused in IL2CPP mode
-            public const uint InputManager = 0x1C91748;
             public const uint GfxDevice = 0x1CF9F48; // g_MainGfxDevice , Type GfxDeviceClient
         }
         #endregion

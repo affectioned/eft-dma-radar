@@ -65,12 +65,46 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     _lastGA = ga;
 
                     // Load TypeInfoTable pointer
-                    ulong tablePtr = Memory.ReadPtr(ga + Offsets.Special.TypeInfoTableRva);
+                    ulong tablePtr = 0;
+                    ulong tableRva = 0;
+
+                    try
+                    {
+                        const string sig = "F0 48 0F C7 0D ? ? ? ? 48 89 44 24 ? 4C 8B EA";
+                        ulong addr = Memory.FindSignature(sig, "GameAssembly.dll");
+                        if (addr.IsValidVirtualAddress())
+                        {
+                            int rva = Memory.ReadValue<int>(addr + 3);
+                            ulong ptr = Memory.ReadPtr(addr + 7 + (ulong)rva, false);
+
+                            if (ptr.IsValidVirtualAddress())
+                            {
+                                XMLogging.WriteLine("[IL2CppClass] TypeInfoTable located via signature");
+                                tablePtr = Memory.ReadPtr(ptr);
+                                tableRva = ptr - ga;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        XMLogging.WriteLine($"[IL2CppClass] TypeInfoTable signature scan failed: {ex.Message}");
+                        ulong fallback = ga + Offsets.Special.TypeInfoTableRva;
+
+                        if (fallback.IsValidVirtualAddress())
+                        {
+                            XMLogging.WriteLine("[IL2CppClass] TypeInfoTable located via hardcoded offset");
+                            tablePtr = Memory.ReadPtr(fallback);
+                            tableRva = Offsets.Special.TypeInfoTableRva;
+                        }
+                    }
+
                     if (!tablePtr.IsValidVirtualAddress())
                     {
                         Reset("TypeInfoTablePtr invalid");
                         return;
                     }
+
+                    XMLogging.WriteLine($"[IL2CppClass] TypeInfoTable at 0x{tablePtr:X} (GameAssembly+0x{tableRva:X})");
 
                     // Moved?
                     if (_lastTablePtr != 0 && _lastTablePtr != tablePtr)

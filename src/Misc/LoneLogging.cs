@@ -22,14 +22,10 @@ namespace eft_dma_radar.Common.Misc
             // Always allocate console for debugging IL2CPP migration
             AllocateConsole();
 
-            string[] args = Environment.GetCommandLineArgs();
-            if (args?.Contains("-logging", StringComparer.OrdinalIgnoreCase) ?? false)
-            {
-                string logFileName = $"log-{DateTime.UtcNow.ToFileTime().ToString()}.txt";
-                var fs = new FileStream(logFileName, FileMode.Create, FileAccess.Write);
-                _writer = new StreamWriter(fs, Encoding.UTF8, 0x1000);
-                AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-            }
+            string logFileName = $"log-{DateTime.UtcNow.ToFileTime()}.txt";
+            var fs = new FileStream(logFileName, FileMode.Create, FileAccess.Write);
+            _writer = new StreamWriter(fs, Encoding.UTF8, 0x1000);
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
         }
 
         /// <summary>
