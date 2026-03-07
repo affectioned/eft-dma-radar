@@ -91,7 +91,7 @@ namespace SDK
 
         public readonly partial struct TripwireSynchronizableObject
         {
-            public const uint GrenadeTemplateId = 0x130; // EFT.MongoID (DEC 3) - <GrenadeTemplateId>k__BackingField
+            public const uint GrenadeTemplateId = 0x118; // EFT.MongoID (5 March, 2026) - <GrenadeTemplateId>k__BackingField
             public const uint _tripwireState = 0xE4; // ETripwireState (DEC 3)
             public const uint FromPosition = 0x14C; // UnityEngine.Vector3 (DEC 3) - <FromPosition>k__BackingField
             public const uint ToPosition = 0x158; // UnityEngine.Vector3 (DEC 3) - <ToPosition>k__BackingField
