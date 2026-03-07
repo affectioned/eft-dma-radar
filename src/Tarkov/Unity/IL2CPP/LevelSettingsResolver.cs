@@ -94,9 +94,39 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 }
 
                 // 2) Global pointer to GameObjectManager
-                var gomGlobal = unityBase + UnityOffsets.ModuleBase.GameObjectManager;
-                var gomPtr = Memory.ReadPtr(gomGlobal);
+                ulong gomGlobal = 0;
 
+                try
+                {
+                    const string sig = "48 8B 35 ? ? ? ? 48 85 F6 0F 84 ? ? ? ? 8B 46";
+                    ulong addr = Memory.FindSignature(sig, "UnityPlayer.dll");
+
+                    if (addr.IsValidVirtualAddress())
+                    {
+                        int rva = Memory.ReadValue<int>(addr + 3);
+                        if (rva != 0)
+                        {
+                            ulong ptr = addr + 7 + (ulong)rva;
+                            if (ptr.IsValidVirtualAddress())
+                            {
+                                Debug.WriteLine("[LevelSettingsResolver] GameObjectManager located via signature");
+                                gomGlobal = ptr;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[LevelSettingsResolver] GameObjectManager signature scan failed: {ex.Message}");
+                }
+
+                if (gomGlobal == 0)
+                {
+                    Debug.WriteLine("[LevelSettingsResolver] GameObjectManager falling back to hardcoded offset");
+                    gomGlobal = unityBase + UnityOffsets.ModuleBase.GameObjectManager;
+                }
+
+                var gomPtr = Memory.ReadPtr(gomGlobal);
                 if (!gomPtr.IsValidVirtualAddress())
                 {
                     Debug.WriteLine($"[LevelSettingsResolver] GameObjectManager pointer invalid: 0x{gomPtr:X}");

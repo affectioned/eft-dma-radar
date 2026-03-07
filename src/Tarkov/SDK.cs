@@ -9,7 +9,7 @@ namespace SDK
         }
         public readonly partial struct TarkovApplication
         {
-            public const uint _menuOperation = 0x130; // -.\uEA0Fget
+            public const uint _menuOperation = 0x128; // -.\uEA0Fget
         }
 
         public readonly partial struct MainMenuShowOperation
@@ -149,7 +149,7 @@ namespace SDK
         public readonly partial struct Grenade
         {
             public const uint IsDestroyed = 0x4D; // Boolean (DEC 1)
-            public const uint WeaponSource = 0x80; // -.\uEF81 (UNKN)
+            public const uint WeaponSource = 0x98; // -.\uEF81 (UNKN)
         }
 
         public readonly partial struct Player
@@ -164,7 +164,7 @@ namespace SDK
             public const uint _healthController = 0x960; // IHealthController (DEC 3)
             public const uint _inventoryController = 0x978; // PlayerInventoryController (DEC 3)
             public const uint _handsController = 0x980; // AbstractHandsController (DEC 3)
-            public const uint VoipID = 0x8f0; // Boolean (DEC 3)
+            public const uint VoipID = 0x8F0; // Boolean (DEC 3)
         }
 
         public readonly partial struct ObservedPlayerView
@@ -173,10 +173,10 @@ namespace SDK
             public const uint Voice = 0x40; // String (DEC 3) - <Voice>k__BackingField
             public const uint GroupID = 0x80; // String (DEC 3) - <GroupId>k__BackingField
             public const uint Side = 0x94; // EPlayerSide (DEC 3) - <Side>k__BackingField
-            public const uint IsAI = 0xa0; // Boolean (DEC 3) - <IsAI>k__BackingField
-            public const uint NickName = 0xb8; // String (DEC 3) - <NickName>k__BackingField
-            public const uint AccountId = 0xc0; // String (DEC 3) - <AccountId>k__BackingField
-            public const uint PlayerBody = 0xd8; // PlayerBody (DEC 3) - <PlayerBody>k__BackingField
+            public const uint IsAI = 0xA0; // Boolean (DEC 3) - <IsAI>k__BackingField
+            public const uint NickName = 0xB8; // String (DEC 3) - <NickName>k__BackingField
+            public const uint AccountId = 0xC0; // String (DEC 3) - <AccountId>k__BackingField
+            public const uint PlayerBody = 0xD8; // PlayerBody (DEC 3) - <PlayerBody>k__BackingField
             public const uint VoipId = 0xB0;
         }
 
@@ -296,7 +296,7 @@ namespace SDK
         public readonly partial struct MovementContext
         {
             public const uint Player = 0x48; // EFT.Player
-            public const uint _rotation = 0xc8; // UnityEngine.Vector2
+            public const uint _rotation = 0xC8; // UnityEngine.Vector2
             public const uint CurrentState = 0x1F0; // EFT.BaseMovementState <CurrentState>k__BackingField
         }
 
@@ -461,7 +461,7 @@ namespace SDK
         {
             public const uint OpticCameraManager = 0x10; // UNCHANGED DEC 2025
             public const uint Camera = 0x60; // UnityEngine.Camera - FPS Camera (UNCHANGED DEC 2025)
-            public const uint GetInstance_RVA = 0x3921890; // 5 March, 2026 - from Camera-PWA
+            public const uint GetInstance_RVA = 0x3CB1050; // 6 March 2026 - from Camera-PWA
             public const uint CameraDerefOffset = 0x10; // UNCHANGED DEC 2025 - dereference offset for Camera objects
         }
 
@@ -483,7 +483,7 @@ namespace SDK
         }
         public static class Special
         {
-            public const ulong TypeInfoTableRva = 0x5AA9158; // TYPE_INFO_TABLE //updated feb11 (5 March, 2026)
+            public const ulong TypeInfoTableRva = 0x5AA90C8; // TYPE_INFO_TABLE //updated feb11 (6 March 2026)
         }
         public readonly partial struct Il2CppClass
         {

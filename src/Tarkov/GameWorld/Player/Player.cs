@@ -105,7 +105,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             try
             {
                 var player = AllocateInternal(playerBase);
-                playerDict[player] = player; // Insert or swap
+
+                if (player is null)
+                {
+                    XMLogging.WriteLine($"Player @ 0x{playerBase:X} skipped (invalid/not ready).");
+                    return false;
+                }
+
+                playerDict[player] = player;
                 XMLogging.WriteLine($"Player '{player.Name}' allocated.");
                 return true;
             }
@@ -122,8 +129,11 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         private static Player AllocateInternal(ulong playerBase)
         {
+            if (playerBase == 0)
+                return null;
+
             if (!ObjectClass.TryReadClassName(playerBase, out var className))
-                throw new InvalidOperationException("Player class not ready");
+                return null;
 
             var isClientPlayer =
                 className == "ClientPlayer" ||

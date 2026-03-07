@@ -11,6 +11,8 @@ using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer;
+using System.Windows.Documents;
+using System.Windows.Input;
 using static eft_dma_radar.Common.Unity.UnityOffsets;
 using ObjectClass = eft_dma_radar.Common.Unity.ObjectClass;
 
@@ -355,9 +357,43 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     return 0;
                 }
 
-                // Calculate get_Instance method address
-                ulong methodAddr = gameAssemblyBase + Offsets.EFTCameraManager.GetInstance_RVA;
-                XMLogging.WriteLine($"[CameraManager] get_Instance at 0x{methodAddr:X} (GameAssembly+0x{Offsets.EFTCameraManager.GetInstance_RVA:X})");
+                ulong methodAddr = 0;
+                ulong methodAddrRva = 0;
+
+                try
+                {
+                    const string sig = "48 83 EC ? 80 3D ? ? ? ? 00 75 ? 48 8D 0D ? ? ? ? E8 ? ? ? ? C6 05 ? ? ? ? ? 48 8B 0D ? ? ? ? 83 B9 ? ? ? ? 00 75 ? E8 ? ? ? ? 48 8B 0D ? ? ? ? 48 8B 81 ? ? ? ? ? ? ? 48 85 C0";
+                    ulong addr = Memory.FindSignature(sig, "GameAssembly.dll");
+                    if (addr.IsValidVirtualAddress())
+                    {
+                        int rva = Memory.ReadValue<int>(addr + 3);
+                        ulong ptr = Memory.ReadPtr(addr + 7 + (ulong)rva, false);
+
+                        if (ptr.IsValidVirtualAddress())
+                        {
+                            XMLogging.WriteLine("[CameraManager] get_Instance located via signature");
+                            methodAddr = Memory.ReadPtr(ptr);
+                            methodAddrRva = ptr - gameAssemblyBase;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    XMLogging.WriteLine($"[CameraManager] get_Instance signature scan failed: {ex.Message}");
+                }
+
+                if (methodAddr == 0)
+                {
+                    ulong fallback = gameAssemblyBase + Offsets.EFTCameraManager.GetInstance_RVA;
+                    if (fallback.IsValidVirtualAddress())
+                    {
+                        XMLogging.WriteLine("[CameraManager] get_Instance located via hardcoded offset");
+                        methodAddr = fallback;
+                        methodAddrRva = Offsets.EFTCameraManager.GetInstance_RVA;
+                    }
+                }
+
+                XMLogging.WriteLine($"[CameraManager] get_Instance at 0x{methodAddr:X} (GameAssembly+0x{methodAddrRva:X})");
 
                 // Read method bytes
                 byte[] methodBytes = Memory.ReadBuffer(methodAddr, 128, false);
