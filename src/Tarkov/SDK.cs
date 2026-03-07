@@ -24,21 +24,21 @@ namespace SDK
 
         public readonly partial struct GameWorld
         {
-            public const uint SynchronizableObjectLogicProcessor = 0x240; // <SynchronizableObjectLogicProcessor>k__BackingField
+            public const uint SynchronizableObjectLogicProcessor = 0x248; // <SynchronizableObjectLogicProcessor>k__BackingField (5 March, 2026)
         }
 
         public readonly partial struct ClientLocalGameWorld
         {
-            public const uint BtrController = 0x20; // BtrController (DEC 3)
-            public const uint TransitController = 0x30; // TransitController (DEC 3)
-            public const uint ExfilController = 0x50; // ExfiltrationController (DEC 3)
-            public const uint ClientShellingController = 0xA0; // ArtilleryShellingControllerClient (DEC 3)
-            public const uint LocationId = 0xC8; // String (DEC 3)
-            public const uint LootList = 0x190; // List<IKillable> (DEC 3)
-            public const uint RegisteredPlayers = 0x1B0; // List<EFT.IPlayer> (DEC 3)
-            public const uint MainPlayer = 0x208; // EFT.Player (DEC 3)
-            public const uint World = 0x210; // EFT.World (DEC 3)
-            public const uint Grenades = 0x280; // DictionaryListHydra<Int32, Throwable> (DEC 3)
+            public const uint BtrController = 0x28; // BtrController (5 March, 2026)
+            public const uint TransitController = 0x38; // TransitController (5 March, 2026)
+            public const uint ExfilController = 0x58; // ExfiltrationController (5 March, 2026)
+            public const uint ClientShellingController = 0xA8; // ArtilleryShellingControllerClient (5 March, 2026)
+            public const uint LocationId = 0xD0; // String (5 March, 2026)
+            public const uint LootList = 0x198; // List<IKillable> (5 March, 2026)
+            public const uint RegisteredPlayers = 0x1B8; // List<EFT.IPlayer> (5 March, 2026)
+            public const uint MainPlayer = 0x210; // EFT.Player (5 March, 2026)
+            public const uint World = 0x218; // EFT.World (5 March, 2026)
+            public const uint Grenades = 0x288; // DictionaryListHydra<Int32, Throwable> (5 March, 2026)
         }
 
         public readonly partial struct TransitController
@@ -461,7 +461,7 @@ namespace SDK
         {
             public const uint OpticCameraManager = 0x10; // UNCHANGED DEC 2025
             public const uint Camera = 0x60; // UnityEngine.Camera - FPS Camera (UNCHANGED DEC 2025)
-            public const uint GetInstance_RVA = 0x105A4F0; // DEC 2025 - from Camera-PWA
+            public const uint GetInstance_RVA = 0x3921890; // 5 March, 2026 - from Camera-PWA
             public const uint CameraDerefOffset = 0x10; // UNCHANGED DEC 2025 - dereference offset for Camera objects
         }
 
@@ -483,11 +483,7 @@ namespace SDK
         }
         public static class Special
         {
-            public const ulong TypeInfoTableRva = 0x6B3B5E8; // TYPE_INFO_TABLE //updated feb11
-            public const uint EFTHardSettings_TypeIndex = 225;
-            public const uint GPUInstancerManager_TypeIndex = 4915;
-            public const uint WeatherController_TypeIndex = 10043;
-            public const uint GlobalConfiguration_TypeIndex = 6404;
+            public const ulong TypeInfoTableRva = 0x5AA9158; // TYPE_INFO_TABLE //updated feb11 (5 March, 2026)
         }
         public readonly partial struct Il2CppClass
         {

@@ -442,8 +442,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 LootFilterControl.RemoveNonStaticGroups();
                 LootItem.ClearNotificationHistory();
                 LevelSettingsResolver.Reset();
-                EftHardSettingsResolver.InvalidateCache();
-                EftWeatherControllerResolver.InvalidateCache();
 
                 Il2CppClass.ForceReset();
 
@@ -1046,8 +1044,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
                 LevelSettings = 0;
                 LevelSettingsResolver.Reset();
-                EftHardSettingsResolver.InvalidateCache();
-                EftWeatherControllerResolver.InvalidateCache();
 
                 Il2CppClass.ForceReset();
                 _screenManagerStaticClass = 0;
