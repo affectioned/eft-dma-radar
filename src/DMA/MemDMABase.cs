@@ -29,6 +29,17 @@ namespace eft_dma_radar.Common.DMA
         public const uint MAX_READ_SIZE = (uint)0x1000 * 1500;
         protected static readonly ManualResetEvent _syncProcessRunning = new(false);
         protected static readonly ManualResetEvent _syncInRaid = new(false);
+        private static volatile bool _isExiting;
+        /// <summary>
+        /// True once <see cref="SignalExit"/> has been called.
+        /// Background threads can check this to distinguish shutdown VmmExceptions from real errors.
+        /// </summary>
+        public static bool IsExiting => _isExiting;
+        /// <summary>
+        /// Signal that the application is shutting down. Must be called before CloseFPGA()
+        /// so background threads stop issuing reads against a closed VMM handle.
+        /// </summary>
+        public static void SignalExit() => _isExiting = true;
         protected readonly Vmm _hVMM;
         protected bool _restartRadar;
         /// <summary>
@@ -514,6 +525,8 @@ namespace eft_dma_radar.Common.DMA
         {
             try
             {
+                if (_isExiting)
+                    throw new VmmException("Application exiting");
                 uint flags = useCache ? 0 : Vmm.FLAG_NOCACHE;
                 byte[] data = Process.MemRead(addr, (uint)sizeof(T), flags);
 

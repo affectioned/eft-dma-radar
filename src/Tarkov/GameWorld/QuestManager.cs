@@ -198,10 +198,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
             var allStartedQuestIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             // IL2CPP hardcoded offsets for quest reading
-            var questsData = Memory.ReadPtr(_profile + Offsets.Profile.QuestsData, false);
-
             // Quest data can be temporarily null mid-raid (game unloads it during certain events)
-            // This is expected behavior - just skip this refresh cycle
+            // Use ReadValue<ulong> so the null check below is actually reachable.
+            var questsData = Memory.ReadValue<ulong>(_profile + Offsets.Profile.QuestsData, false);
             if (questsData == 0 || !questsData.IsValidVirtualAddress())
             {
                 _rateLimit.Restart(); // Rate limit to avoid rapid retries
@@ -209,7 +208,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
 
             // Read list structure using centralized offsets
-            var listItemsPtr = Memory.ReadPtr(questsData + UnityOffsets.ManagedList.ItemsPtr, false);
+            var listItemsPtr = Memory.ReadValue<ulong>(questsData + UnityOffsets.ManagedList.ItemsPtr, false);
             if (listItemsPtr == 0 || !listItemsPtr.IsValidVirtualAddress())
             {
                 _rateLimit.Restart();
@@ -233,7 +232,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             for (int i = 0; i < listCount; i++)
             {
-                var qDataEntry = Memory.ReadPtr(listItemsPtr + UnityOffsets.ManagedArray.FirstElement + (ulong)(i * UnityOffsets.ManagedArray.ElementSize));
+                var qDataEntry = Memory.ReadValue<ulong>(listItemsPtr + UnityOffsets.ManagedArray.FirstElement + (ulong)(i * UnityOffsets.ManagedArray.ElementSize));
                 if (qDataEntry == 0) continue;
 
                 try
@@ -262,7 +261,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
                     // CompletedConditions is DIRECTLY a HashSet<MongoID> (not a wrapper collection)
                     // This is confirmed in IL2CPP dump and Camera-PWA source
-                    var completedHashSetPtr = Memory.ReadPtr(qDataEntry + Offsets.QuestData.CompletedConditions, false);
+                    var completedHashSetPtr = Memory.ReadValue<ulong>(qDataEntry + Offsets.QuestData.CompletedConditions, false);
                     var questCompletedConditions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                     if (completedHashSetPtr != 0)
@@ -547,7 +546,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             for (int i = 0; i < listCount; i++)
             {
-                var qDataEntry = Memory.ReadPtr(listItemsPtr + UnityOffsets.ManagedArray.FirstElement + (ulong)(i * UnityOffsets.ManagedArray.ElementSize));
+                var qDataEntry = Memory.ReadValue<ulong>(listItemsPtr + UnityOffsets.ManagedArray.FirstElement + (ulong)(i * UnityOffsets.ManagedArray.ElementSize));
                 if (qDataEntry == 0) continue;
 
                 try

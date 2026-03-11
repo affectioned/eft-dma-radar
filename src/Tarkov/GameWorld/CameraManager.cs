@@ -408,31 +408,35 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     if (methodBytes[i] == 0x48 && methodBytes[i + 1] == 0x8D && methodBytes[i + 2] == 0x0D)
                     {
-                        int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
-                        ulong classMetadataAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
-
-                        ulong classPtr = Memory.ReadPtr(classMetadataAddr, false);
-                        if (classPtr.IsValidVirtualAddress())
+                        try
                         {
+                            int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
+                            ulong classMetadataAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
+
+                            ulong classPtr = Memory.ReadValue<ulong>(classMetadataAddr, false);
+                            if (!classPtr.IsValidVirtualAddress())
+                                continue;
+
                             uint[] staticFieldsOffsets = { 0xB8, 0xC0, 0xC8, 0xD0, 0xA8, 0xB0 };
                             foreach (var offset in staticFieldsOffsets)
                             {
-                                ulong staticFieldsPtr = Memory.ReadPtr(classPtr + offset, false);
-                                if (staticFieldsPtr.IsValidVirtualAddress())
+                                ulong staticFieldsPtr = Memory.ReadValue<ulong>(classPtr + offset, false);
+                                if (!staticFieldsPtr.IsValidVirtualAddress())
+                                    continue;
+
+                                ulong instancePtr = Memory.ReadValue<ulong>(staticFieldsPtr, false);
+                                if (!instancePtr.IsValidVirtualAddress())
+                                    continue;
+
+                                ulong testCamera = Memory.ReadValue<ulong>(instancePtr + Offsets.EFTCameraManager.Camera, false);
+                                if (testCamera.IsValidVirtualAddress())
                                 {
-                                    ulong instancePtr = Memory.ReadPtr(staticFieldsPtr, false);
-                                    if (instancePtr.IsValidVirtualAddress())
-                                    {
-                                        ulong testCamera = Memory.ReadPtr(instancePtr + Offsets.EFTCameraManager.Camera, false);
-                                        if (testCamera.IsValidVirtualAddress())
-                                        {
-                                            XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 1: 0x{instancePtr:X}");
-                                            return instancePtr;
-                                        }
-                                    }
+                                    XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 1: 0x{instancePtr:X}");
+                                    return instancePtr;
                                 }
                             }
                         }
+                        catch { /* skip this match, try next */ }
                     }
                 }
 
@@ -441,13 +445,16 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     if (methodBytes[i] == 0x48 && methodBytes[i + 1] == 0x8B && methodBytes[i + 2] == 0x05)
                     {
-                        int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
-                        ulong staticFieldAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
-
-                        ulong instancePtr = Memory.ReadPtr(staticFieldAddr, false);
-                        if (instancePtr.IsValidVirtualAddress())
+                        try
                         {
-                            ulong testCamera = Memory.ReadPtr(instancePtr + Offsets.EFTCameraManager.Camera, false);
+                            int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
+                            ulong staticFieldAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
+
+                            ulong instancePtr = Memory.ReadValue<ulong>(staticFieldAddr, false);
+                            if (!instancePtr.IsValidVirtualAddress())
+                                continue;
+
+                            ulong testCamera = Memory.ReadValue<ulong>(instancePtr + Offsets.EFTCameraManager.Camera, false);
                             if (testCamera.IsValidVirtualAddress())
                             {
                                 XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 2 at +0x{i:X}");
@@ -455,11 +462,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                                 return instancePtr;
                             }
                         }
+                        catch { /* skip this match, try next */ }
                     }
                 }
 
-                XMLogging.WriteLine("[CameraManager] FAILED No valid pattern found in get_Instance");
-                XMLogging.WriteLine($"[CameraManager] Update GetInstance_RVA! Current: 0x{Offsets.EFTCameraManager.GetInstance_RVA:X}");
                 return 0;
             }
             catch (Exception ex)

@@ -1909,6 +1909,13 @@ namespace eft_dma_radar.UI.Misc
         public int FPSCap { get; set; } = 60;
 
         /// <summary>
+        /// Enable VSync for ESP Rendering.
+        /// When true, frame pacing is handled by GPU vblank; FPS Cap is ignored.
+        /// </summary>
+        [JsonPropertyName("vsync")]
+        public bool VSync { get; set; } = true;
+
+        /// <summary>
         /// Enable 'Auto Full Screen' on Startup/Start.
         /// </summary>
         [JsonPropertyName("autoFS")]

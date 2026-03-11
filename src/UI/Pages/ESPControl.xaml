@@ -80,10 +80,22 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="FPS Cap" Style="{StaticResource LabelText}" 
+                                        <TextBlock Text="FPS Cap" Style="{StaticResource LabelText}"
                                                    VerticalAlignment="Center" Grid.Column="0"/>
                                         <hc:NumericUpDown x:Name="nudFPSCap" Value="60" Minimum="30" Maximum="500"
                                                           Grid.Column="1" Width="80" HorizontalAlignment="Left" Tag="FPSCap"/>
+                                    </Grid>
+
+                                    <!-- VSync -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="VSync" Style="{StaticResource LabelText}"
+                                                   VerticalAlignment="Center" Grid.Column="0"/>
+                                        <CheckBox x:Name="chkVSync" Grid.Column="1" VerticalAlignment="Center"
+                                                  Tag="VSync"/>
                                     </Grid>
 
                                     <!-- Font Scale Slider -->

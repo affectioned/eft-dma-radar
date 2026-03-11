@@ -243,13 +243,13 @@ namespace eft_dma_radar.Common.Unity
             if (!objectBase.IsValidVirtualAddress())
                 return false;
 
-            // Il2CppObject.klass is always at +0x0 in IL2CPP
-            ulong klass = Memory.ReadPtr(objectBase, false);
-            if (!klass.IsValidVirtualAddress())
-                return false;
-
             try
             {
+                // Il2CppObject.klass is always at +0x0 in IL2CPP
+                ulong klass = Memory.ReadPtr(objectBase, false);
+                if (!klass.IsValidVirtualAddress())
+                    return false;
+
                 className = ObjectClass.ReadName(objectBase, maxLen);
                 return !string.IsNullOrEmpty(className);
             }

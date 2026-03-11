@@ -166,7 +166,7 @@ namespace eft_dma_radar.UI.ESP
             skglControl_ESP.Margin = new Padding(4, 3, 4, 3);
             skglControl_ESP.Size = new Size(624, 441);
             skglControl_ESP.TabIndex = 0;
-            skglControl_ESP.VSync = false;
+            skglControl_ESP.VSync = false; // VSync on SKGLControl blocks the UI thread; we simulate it via timer interval
 
             skglControl_ESP.MouseDown += ESPForm_MouseDown;
             skglControl_ESP.MouseMove += ESPForm_MouseMove;
@@ -193,7 +193,11 @@ namespace eft_dma_radar.UI.ESP
             SetupESPWidgets();
             InitializeUIElements();
 
-            var interval = ESPConfig.FPSCap == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(1000d / ESPConfig.FPSCap);
+            // Interval is finalized in ESPForm_Shown once the window handle exists (needed for Screen.FromControl).
+            // Use FPSCap as a safe initial value; VSync mode will update to the actual refresh rate in Shown.
+            var interval = ESPConfig.FPSCap == 0
+                ? TimeSpan.Zero
+                : TimeSpan.FromMilliseconds(1000d / ESPConfig.FPSCap);
 
             _renderTimer = new PrecisionTimer(interval);
 
@@ -215,6 +219,10 @@ namespace eft_dma_radar.UI.ESP
             Window = this;
             Instance = this;
             CameraManagerBase.EspRunning = true;
+
+            // Now that the window handle exists, we can resolve the actual screen refresh rate.
+            if (ESPConfig.VSync)
+                _renderTimer.Interval = TimeSpan.FromMilliseconds(1000d / MonitorInfo.GetRefreshRate(Screen.FromControl(this)));
 
             _renderTimer.Start();
 
@@ -440,8 +448,21 @@ namespace eft_dma_radar.UI.ESP
 
         public void UpdateRenderTimerInterval(int targetFPS)
         {
-            var interval = TimeSpan.FromMilliseconds(1000d / targetFPS);
+            if (ESPConfig.VSync) return;
+            var interval = targetFPS == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(1000d / targetFPS);
             _renderTimer.Interval = interval;
+        }
+
+        public void UpdateVSync(bool enabled)
+        {
+            // We never set skglControl_ESP.VSync = true because SwapBuffers with VSync
+            // blocks the WinForms UI thread, freezing the form. Instead, when VSync is
+            // requested we pace the timer to the monitor's actual refresh rate.
+            _renderTimer.Interval = enabled
+                ? TimeSpan.FromMilliseconds(1000d / MonitorInfo.GetRefreshRate(Screen.FromControl(this)))
+                : ESPConfig.FPSCap == 0
+                    ? TimeSpan.Zero
+                    : TimeSpan.FromMilliseconds(1000d / ESPConfig.FPSCap);
         }
 
         /// <summary>

@@ -158,6 +158,10 @@ namespace eft_dma_radar.Tarkov
                     RunGameLoop();
                     OnGameStopped();
                 }
+                catch (VmmException) when (MemDMABase.IsExiting)
+                {
+                    break; // Normal application shutdown — not an error
+                }
                 catch (Exception ex)
                 {
                     XMLogging.WriteLine($"FATAL ERROR on Memory Thread: {ex}");
@@ -291,6 +295,10 @@ namespace eft_dma_radar.Tarkov
                             Thread.Sleep(133);
                         }
                     }
+                }
+                catch (VmmException) when (MemDMABase.IsExiting)
+                {
+                    break; // Normal application shutdown — not an error
                 }
                 catch (OperationCanceledException)
                 {
@@ -869,6 +877,8 @@ namespace eft_dma_radar.Tarkov
 
         public void CloseFPGA()
         {
+            MemDMABase.SignalExit();
+
             if (!HasDMA)
             {
                 LogSafeOnce("[SafeMode] CloseFPGA skipped (DMA disabled)");

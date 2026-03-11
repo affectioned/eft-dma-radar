@@ -230,6 +230,8 @@ namespace eft_dma_radar.UI.Pages
             // General Settings
             btnStartESP.Click += btnStartESP_Click;
             nudFPSCap.ValueChanged += nudFPSCap_ValueChanged;
+            chkVSync.Checked += chkVSync_Changed;
+            chkVSync.Unchecked += chkVSync_Changed;
             chkAutoFullscreen.Checked += FuserCheckbox_Checked;
             chkAutoFullscreen.Unchecked += FuserCheckbox_Checked;
             sldrFuserFontScale.ValueChanged += FuserSlider_ValueChanged;
@@ -291,6 +293,8 @@ namespace eft_dma_radar.UI.Pages
             // General
             chkAutoFullscreen.IsChecked = cfg.AutoFullscreen;
             nudFPSCap.Value = cfg.FPSCap;
+            nudFPSCap.IsEnabled = !cfg.VSync;
+            chkVSync.IsChecked = cfg.VSync;
             sldrFuserFontScale.Value = cfg.FontScale;
             sldrFuserLineScale.Value = cfg.LineScale;
             InitializeFuserOptions();
@@ -1035,6 +1039,18 @@ namespace eft_dma_radar.UI.Pages
 
                 XMLogging.WriteLine($"[FPS Cap] Changed to {fpsValue}");
             }
+        }
+
+        private void chkVSync_Changed(object sender, RoutedEventArgs e)
+        {
+            var enabled = chkVSync.IsChecked == true;
+            Config.ESP.VSync = enabled;
+            Config.Save();
+
+            nudFPSCap.IsEnabled = !enabled;
+            ESPForm.Window?.UpdateVSync(enabled);
+
+            XMLogging.WriteLine($"[VSync] {(enabled ? "Enabled" : "Disabled")}");
         }
 
         public void btnStartESP_Click(object sender, RoutedEventArgs e)
