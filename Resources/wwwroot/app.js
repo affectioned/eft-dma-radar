@@ -26,6 +26,11 @@ const playersWidgetList = document.getElementById("playersWidgetList");
 const playersWidgetCount = document.getElementById("playersWidgetCount");
 const playersWidgetSub = document.getElementById("playersWidgetSub");
 
+const aimviewWidget    = document.getElementById("aimviewWidget");
+const aimviewWidgetMinBtn = document.getElementById("aimviewWidgetMinBtn");
+const aimviewCanvas    = document.getElementById("aimviewCanvas");
+const aimviewCtx       = aimviewCanvas ? aimviewCanvas.getContext("2d") : null;
+
 const lootFilterModal = document.getElementById("lootFilterModal");
 const lootFilterCard  = lootFilterModal.querySelector(".card");
 const lootFilterHeader= lootFilterModal.querySelector(".header");
@@ -223,9 +228,14 @@ const defaults = {
 
   showLootWidget: false,
   showPlayersWidget: false,
+  showAimview: false,
 
   lootWidget: { x: 14, y: 64, minimized: false },
   playersWidget: { x: 14, y: 420, minimized: false },
+  aimviewWidget: { x: 300, y: 14, minimized: false },
+
+  aimviewFov: 90,
+  aimviewSize: 260,
 
   lootWidgetSearch: "",
   playersWidgetOnlyPMCs: false,
@@ -262,6 +272,7 @@ function mergeState(parsed){
     lootFilterWindow: { ...deepClone(defaults.lootFilterWindow), ...(parsed.lootFilterWindow || {}) },
     lootWidget: { ...deepClone(defaults.lootWidget), ...(parsed.lootWidget || {}) },
     playersWidget: { ...deepClone(defaults.playersWidget), ...(parsed.playersWidget || {}) },
+    aimviewWidget: { ...deepClone(defaults.aimviewWidget), ...(parsed.aimviewWidget || {}) },
   };
 
   if(out.lootFilterWindow){
@@ -284,6 +295,10 @@ function mergeState(parsed){
   };
   out.lootWidget = normWidget(out.lootWidget);
   out.playersWidget = normWidget(out.playersWidget);
+  out.aimviewWidget = normWidget(out.aimviewWidget);
+
+  out.aimviewFov  = Math.max(20, Math.min(160, Number(out.aimviewFov)  || 90));
+  out.aimviewSize = Math.max(160, Math.min(480, Number(out.aimviewSize) || 260));
 
   if(!Array.isArray(out.lootGroups)) out.lootGroups = [];
   for(const g of out.lootGroups){
@@ -399,6 +414,10 @@ const inputs = {
   showHeight: $("showHeight"),
   playerSize: $("playerSize"),
   showPlayersWidget: $("showPlayersWidget"),
+  showAimview:       $("showAimview"),
+  aimviewFov:        $("aimviewFov"),
+  aimviewFovText:    $("aimviewFovText"),
+  aimviewSize:       $("aimviewSize"),
 
   showGroups: $("showGroups"),
   groupAlpha: $("groupAlpha"),
@@ -473,6 +492,12 @@ function bindAllInputs(){
   inputs.showHeight.checked = !!state.showHeight;
   inputs.playerSize.value = String(state.playerSize);
   inputs.showPlayersWidget.checked = !!state.showPlayersWidget;
+  if(inputs.showAimview) inputs.showAimview.checked = !!state.showAimview;
+  if(inputs.aimviewFov){
+    inputs.aimviewFov.value = String(state.aimviewFov);
+    if(inputs.aimviewFovText) inputs.aimviewFovText.textContent = state.aimviewFov + "\u00b0";
+  }
+  if(inputs.aimviewSize) inputs.aimviewSize.value = String(state.aimviewSize);
 
   inputs.showGroups.checked = !!state.showGroups;
   inputs.groupAlpha.value = String(state.groupAlpha);
@@ -528,6 +553,17 @@ function bindAllInputs(){
   onBool("showHeight", inputs.showHeight);
   onNum("playerSize", inputs.playerSize, (v)=>Math.max(1, Number(v)));
   onBool("showPlayersWidget", inputs.showPlayersWidget, applyWidgetsFromState);
+  if(inputs.showAimview) onBool("showAimview", inputs.showAimview, applyWidgetsFromState);
+  if(inputs.aimviewFov) inputs.aimviewFov.oninput = () => {
+    state.aimviewFov = Math.max(20, Math.min(160, Number(inputs.aimviewFov.value) || 90));
+    if(inputs.aimviewFovText) inputs.aimviewFovText.textContent = state.aimviewFov + "\u00b0";
+    saveSettings();
+  };
+  if(inputs.aimviewSize) inputs.aimviewSize.oninput = () => {
+    state.aimviewSize = Math.max(160, Math.min(480, Number(inputs.aimviewSize.value) || 260));
+    updateAimviewCanvasSize();
+    saveSettings();
+  };
 
   onBool("showGroups", inputs.showGroups);
   onNum("groupAlpha", inputs.groupAlpha, (v)=>Math.min(1, Math.max(0, Number(v))));
@@ -623,12 +659,15 @@ function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 function applyWidgetsFromState(){
   lootWidget.classList.toggle("hidden", !state.showLootWidget);
   playersWidget.classList.toggle("hidden", !state.showPlayersWidget);
+  if(aimviewWidget) aimviewWidget.classList.toggle("hidden", !state.showAimview);
 
   lootWidget.classList.toggle("minimized", !!state.lootWidget?.minimized);
   playersWidget.classList.toggle("minimized", !!state.playersWidget?.minimized);
+  if(aimviewWidget) aimviewWidget.classList.toggle("minimized", !!state.aimviewWidget?.minimized);
 
   const lw = state.lootWidget || defaults.lootWidget;
   const pw = state.playersWidget || defaults.playersWidget;
+  const aw = state.aimviewWidget || defaults.aimviewWidget;
 
   const place = (el, w) => {
     const rect = el.getBoundingClientRect();
@@ -642,6 +681,9 @@ function applyWidgetsFromState(){
 
   place(lootWidget, lw);
   place(playersWidget, pw);
+  if(aimviewWidget) place(aimviewWidget, aw);
+
+  updateAimviewCanvasSize();
 
   if(lootWidgetSearch) lootWidgetSearch.value = String(state.lootWidgetSearch || "");
   if(playersWidgetOnlyPMCs) playersWidgetOnlyPMCs.checked = !!state.playersWidgetOnlyPMCs;
@@ -659,6 +701,11 @@ function syncMinButtons(){
     const min = !!state.playersWidget?.minimized;
     playersWidgetMinBtn.textContent = min ? "+" : "-";
     playersWidgetMinBtn.title = min ? "Restore" : "Minimize";
+  }
+  if(aimviewWidgetMinBtn){
+    const min = !!state.aimviewWidget?.minimized;
+    aimviewWidgetMinBtn.textContent = min ? "+" : "-";
+    aimviewWidgetMinBtn.title = min ? "Restore" : "Minimize";
   }
 }
 
@@ -709,6 +756,7 @@ function initWidgetDrag(widgetEl, headerEl, stateKey){
 
 initWidgetDrag(lootWidget, lootWidget.querySelector(".w-header"), "lootWidget");
 initWidgetDrag(playersWidget, playersWidget.querySelector(".w-header"), "playersWidget");
+if(aimviewWidget) initWidgetDrag(aimviewWidget, aimviewWidget.querySelector(".w-header"), "aimviewWidget");
 
 lootWidgetMinBtn.onclick = () => {
   state.lootWidget = state.lootWidget || deepClone(defaults.lootWidget);
@@ -719,6 +767,13 @@ lootWidgetMinBtn.onclick = () => {
 playersWidgetMinBtn.onclick = () => {
   state.playersWidget = state.playersWidget || deepClone(defaults.playersWidget);
   state.playersWidget.minimized = !state.playersWidget.minimized;
+  applyWidgetsFromState();
+  saveSettings();
+};
+
+if(aimviewWidgetMinBtn) aimviewWidgetMinBtn.onclick = () => {
+  state.aimviewWidget = state.aimviewWidget || deepClone(defaults.aimviewWidget);
+  state.aimviewWidget.minimized = !state.aimviewWidget.minimized;
   applyWidgetsFromState();
   saveSettings();
 };
@@ -1896,6 +1951,106 @@ function kvRow(k, v, mono=false){
   return `<div class="k">${escapeHtml(k)}</div><div class="v ${mono ? "mono" : ""}">${escapeHtml(v)}</div>`;
 }
 
+function updateAimviewCanvasSize(){
+  if(!aimviewCanvas) return;
+  const s = Math.max(160, Math.min(480, Number(state.aimviewSize) || 260));
+  const h = Math.round(s * 0.75);
+  aimviewCanvas.style.width  = s + "px";
+  aimviewCanvas.style.height = h + "px";
+  aimviewCanvas.width  = s;
+  aimviewCanvas.height = h;
+}
+
+function drawAimview(players){
+  if(!state.showAimview || !aimviewCtx || !aimviewCanvas) return;
+  if(aimviewWidget && (aimviewWidget.classList.contains("hidden") || aimviewWidget.classList.contains("minimized"))) return;
+
+  const W = aimviewCanvas.width;
+  const H = aimviewCanvas.height;
+  const halfW = W / 2;
+  const halfH = H / 2;
+
+  aimviewCtx.clearRect(0, 0, W, H);
+  aimviewCtx.fillStyle = "rgba(0,0,0,0.88)";
+  aimviewCtx.fillRect(0, 0, W, H);
+
+  const centered = lastCenteredPlayer;
+  if(centered){
+    const cx  = Number(centered.worldX ?? centered.WorldX ?? 0);
+    const cy  = Number(centered.worldY ?? centered.WorldY ?? 0);
+    const cz  = Number(centered.worldZ ?? centered.WorldZ ?? 0);
+    const yaw = toRadMaybe(centered.yaw ?? centered.Yaw ?? 0);
+
+    const hFov = (Number(state.aimviewFov) || 90) * Math.PI / 180;
+    const vFov = hFov * (H / W);
+    const dotR = 4;
+
+    for(const p of players){
+      if(!p || p === centered) continue;
+      if(p?.isAlive === false || p?.IsAlive === false) continue;
+      if(isExtracted(p)) continue;
+
+      const tx = Number(p.worldX ?? p.WorldX ?? NaN);
+      const ty = Number(p.worldY ?? p.WorldY ?? NaN);
+      const tz = Number(p.worldZ ?? p.WorldZ ?? NaN);
+      if(!Number.isFinite(tx) || !Number.isFinite(ty) || !Number.isFinite(tz)) continue;
+
+      const dx = tx - cx;
+      const dz = tz - cz;
+      const dy = ty - cy;
+      const hdist = Math.sqrt(dx*dx + dz*dz);
+      const fullDist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+      // Horizontal angle: atan2(-dz, dx) gives the same convention as player yaw (0 = East, CCW positive)
+      let relH = Math.atan2(-dz, dx) - yaw;
+      while(relH >  Math.PI) relH -= 2 * Math.PI;
+      while(relH < -Math.PI) relH += 2 * Math.PI;
+
+      const relV = Math.atan2(dy, Math.max(0.01, hdist));
+
+      if(Math.abs(relH) > hFov / 2 || Math.abs(relV) > vFov / 2) continue;
+
+      const px = halfW + (relH / (hFov / 2)) * halfW;
+      const py = halfH - (relV / (vFov / 2)) * halfH;
+
+      const col = playerColor(p);
+
+      aimviewCtx.beginPath();
+      aimviewCtx.arc(px, py, dotR, 0, Math.PI * 2);
+      aimviewCtx.fillStyle = col;
+      aimviewCtx.fill();
+
+      if(state.showNames){
+        const nm = String(p?.name ?? p?.Name ?? "");
+        if(nm){
+          aimviewCtx.fillStyle = col;
+          aimviewCtx.font = "10px monospace";
+          aimviewCtx.textAlign = "center";
+          aimviewCtx.textBaseline = "bottom";
+          aimviewCtx.fillText(nm, px, py - dotR - 1);
+        }
+      }
+
+      aimviewCtx.fillStyle = "rgba(229,231,235,0.85)";
+      aimviewCtx.font = "10px monospace";
+      aimviewCtx.textAlign = "center";
+      aimviewCtx.textBaseline = "top";
+      aimviewCtx.fillText(fullDist.toFixed(0) + "m", px, py + dotR + 2);
+    }
+  }
+
+  // Crosshair
+  const ch = 14, gap = 4;
+  aimviewCtx.strokeStyle = "rgba(255,255,255,0.55)";
+  aimviewCtx.lineWidth = 1;
+  aimviewCtx.beginPath();
+  aimviewCtx.moveTo(halfW - ch, halfH); aimviewCtx.lineTo(halfW - gap, halfH);
+  aimviewCtx.moveTo(halfW + gap, halfH); aimviewCtx.lineTo(halfW + ch, halfH);
+  aimviewCtx.moveTo(halfW, halfH - ch); aimviewCtx.lineTo(halfW, halfH - gap);
+  aimviewCtx.moveTo(halfW, halfH + gap); aimviewCtx.lineTo(halfW, halfH + ch);
+  aimviewCtx.stroke();
+}
+
 function tryWorldXZ(e){
   const wx = pick(e, ["worldX","WorldX","wx","WX"]);
   const wz = pick(e, ["worldZ","WorldZ","wz","WZ"]);
@@ -2885,6 +3040,8 @@ function frame(){
   drawPois(map, cx, cy, lastRotRad, mapRect, hitList);
 
   drawPing(mapRect, cx, cy, lastRotRad);
+
+  drawAimview(players);
 
   // tooltip
   updateHover();
