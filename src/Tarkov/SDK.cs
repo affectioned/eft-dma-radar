@@ -461,7 +461,7 @@ namespace SDK
         {
             public const uint OpticCameraManager = 0x10; // UNCHANGED DEC 2025
             public const uint Camera = 0x60; // UnityEngine.Camera - FPS Camera (UNCHANGED DEC 2025)
-            public const uint GetInstance_RVA = 0x3CB1050; // 6 March 2026 - from Camera-PWA
+            public const uint GetInstance_RVA = 0x2CF8AB0; // 6 March 2026 - from Camera-PWA
             public const uint CameraDerefOffset = 0x10; // UNCHANGED DEC 2025 - dereference offset for Camera objects
         }
 

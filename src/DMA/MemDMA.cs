@@ -123,6 +123,9 @@ namespace eft_dma_radar.Tarkov
         /// <summary>GameAssembly.dll base address (IL2CPP binary).</summary>
         public ulong GameAssemblyBase { get; private set; }
 
+        /// <summary>GameAssembly.dll image size (from PE header).</summary>
+        public ulong GameAssemblySize { get; private set; }
+
         public MemDMA() : base(Config.FpgaAlgo, Config.MemMapEnabled)
         {
             GameStarted += MemDMA_GameStarted;
@@ -386,12 +389,13 @@ namespace eft_dma_radar.Tarkov
             ArgumentOutOfRangeException.ThrowIfZero(unityBase, nameof(unityBase));
             UnityBase = unityBase;
 
-            // GameAssembly.dll base (IL2CPP)
-            var gameAssemblyBase = Process.GetModuleBase("GameAssembly.dll");
-            if (gameAssemblyBase != 0)
+            // GameAssembly.dll base + size (IL2CPP)
+            var gameAssemblyEntry = Process.MapModuleFromName("GameAssembly.dll");
+            if (gameAssemblyEntry.fValid && gameAssemblyEntry.vaBase != 0)
             {
-                GameAssemblyBase = gameAssemblyBase;
-                XMLogging.WriteLine($"[IL2CPP] GameAssembly.dll base: 0x{gameAssemblyBase:X}");
+                GameAssemblyBase = gameAssemblyEntry.vaBase;
+                GameAssemblySize = gameAssemblyEntry.cbImageSize;
+                XMLogging.WriteLine($"[IL2CPP] GameAssembly.dll base: 0x{GameAssemblyBase:X} size: 0x{GameAssemblySize:X}");
             }
             else
             {
@@ -406,6 +410,9 @@ namespace eft_dma_radar.Tarkov
             // Mono is DEPRECATED - IL2CPP only
             MonoBase = 0;
         }
+
+        protected override ulong GetModuleSize(string moduleName) =>
+            moduleName.Equals("GameAssembly.dll", StringComparison.OrdinalIgnoreCase) ? GameAssemblySize : 0;
 
         #endregion
 
@@ -542,6 +549,7 @@ namespace eft_dma_radar.Tarkov
         public bool RaidHasStarted => _actualMemory?.RaidHasStarted ?? false;
         public bool Ready => _actualMemory?.Ready ?? false;
         public ulong GameAssemblyBase => _actualMemory?.GameAssemblyBase ?? 0;
+        public ulong GameAssemblySize => _actualMemory?.GameAssemblySize ?? 0;
         public bool Starting => _actualMemory?.Starting ?? false;
 
         public ulong MonoBase => _actualMemory?.MonoBase ?? 0;

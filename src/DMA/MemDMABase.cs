@@ -773,6 +773,9 @@ namespace eft_dma_radar.Common.DMA
         /// <param name="signature">Pattern signature in the format "AA BB ?? DD" where ?? represents a wildcard.</param>
         /// <param name="moduleName">Name of the module to search (e.g., "UnityPlayer.dll")</param>
         /// <returns>Address where the pattern was found, or 0 if not found.</returns>
+        /// <summary>Returns the PE image size for a module. Override to provide pre-cached values.</summary>
+        protected virtual ulong GetModuleSize(string moduleName) => 0;
+
         public ulong FindSignature(string signature, string moduleName)
         {
             try
@@ -784,14 +787,14 @@ namespace eft_dma_radar.Common.DMA
                     return 0;
                 }
 
-                // IL2CPP GameAssembly.dll can be 150-200+ MB, search in chunks
-                // Search up to 200MB to cover most IL2CPP builds
-                const ulong MAX_SEARCH_SIZE = 0xC800000; // 200MB
-                const ulong CHUNK_SIZE = 0x1000000; // 16MB chunks for DMA reads
+                // Use actual module size from PE header to avoid scanning unmapped regions
+                ulong moduleSize = GetModuleSize(moduleName);
+                if (moduleSize == 0)
+                    moduleSize = 0xC800000; // 200MB fallback
 
-                ulong rangeEnd = moduleBase + MAX_SEARCH_SIZE;
+                const ulong CHUNK_SIZE = 0x100000; // 1MB chunks
+                ulong rangeEnd = moduleBase + moduleSize;
 
-                // Search in chunks to avoid DMA read limits
                 for (ulong chunkStart = moduleBase; chunkStart < rangeEnd; chunkStart += CHUNK_SIZE - 0x100)
                 {
                     ulong chunkEnd = Math.Min(chunkStart + CHUNK_SIZE, rangeEnd);
@@ -824,35 +827,44 @@ namespace eft_dma_radar.Common.DMA
 
             try
             {
-                // Read the memory block to search within
-                byte[] buffer = process.MemRead(rangeStart, (uint)(rangeEnd - rangeStart), Vmm.FLAG_NOCACHE);
+                // Pre-parse signature into (value, isWildcard) pairs — no allocations in hot loop
+                string[] tokens = signature.Split(' ');
+                var pattern = new (byte Value, bool IsWildcard)[tokens.Length];
+                for (int k = 0; k < tokens.Length; k++)
+                    pattern[k] = tokens[k][0] == '?' ? ((byte)0, true) : (Convert.ToByte(tokens[k], 16), false);
 
-                if (buffer.Length == 0)
+                // FLAG_ZEROPAD_ON_FAIL without FLAG_NOCACHE: uses the paging-aware read path which
+                // can retrieve pages from OS page cache/compressed memory, matching how direct ReadBuffer
+                // calls reliably read function bytes. Unreadable pages are zeroed rather than truncating.
+                byte[] buffer = process.MemRead(rangeStart, (uint)(rangeEnd - rangeStart), Vmm.FLAG_ZEROPAD_ON_FAIL);
+
+                if (buffer == null || buffer.Length == 0)
                     return 0;
 
-                string pat = signature;
                 ulong firstMatch = 0;
+                int patIdx = 0;
 
-                for (ulong i = 0; i < (ulong)buffer.Length; i++)
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    if (pat[0] == '?' || buffer[i] == GetByte(pat.Substring(0, 2)))
+                    if (pattern[patIdx].IsWildcard || buffer[i] == pattern[patIdx].Value)
                     {
-                        if (firstMatch == 0)
-                            firstMatch = rangeStart + i;
+                        if (patIdx == 0)
+                            firstMatch = rangeStart + (ulong)i;
 
-                        if (pat.Length <= 2)
-                            break;
-
-                        pat = pat.Substring(pat[0] == '?' ? 2 : 3);
+                        patIdx++;
+                        if (patIdx == pattern.Length)
+                            return firstMatch; // full match
                     }
                     else
                     {
-                        pat = signature;
+                        if (patIdx > 0)
+                            i = (int)(firstMatch - rangeStart); // retry from firstMatch+1 on next i++
+                        patIdx = 0;
                         firstMatch = 0;
                     }
                 }
 
-                return firstMatch;
+                return 0; // loop exited without full match — discard any partial
             }
             catch (VmmException ex)
             {
@@ -864,19 +876,6 @@ namespace eft_dma_radar.Common.DMA
             }
 
             return 0;
-        }
-
-        /// <summary>
-        /// Converts a hex string to a byte value.
-        /// </summary>
-        private byte GetByte(string hex)
-        {
-            if (hex.Length < 2)
-                return 0;
-
-            byte value = 0;
-            byte.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out value);
-            return value;
         }
         #endregion
 
