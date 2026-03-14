@@ -670,6 +670,208 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             ]),
         ];
 
+        // ── IL2CPP bootstrap resolution ─────────────────────────────────────────
+
+        /// <summary>
+        /// Candidate signatures for locating the TypeInfoTable global store.
+        /// Each entry: (signature, rel32 offset from match start, instruction length for RIP calc, description).
+        /// All patterns target a <c>mov [rip+xxxx], rax</c> or <c>lea reg, [rip+xxxx]</c>
+        /// instruction that references the <c>s_Il2CppMetadataRegistration→typeInfoTable</c> global.
+        /// </summary>
+        private static readonly (string Sig, int RelOffset, int InstrLen, string Desc)[] TypeInfoTableSigs =
+        [
+            // Pattern 1 (strict): mov [rip+xxxx], rax; mov rax, [rip+yyyy]; mov edx/ecx, [rax+0x30]
+            ("48 89 05 ? ? ? ? 48 8B 05 ? ? ? ? 8B 50", 3, 7, "mov [rip+rel32],rax; mov rax,[rip+rel32]; mov edx,[rax+30]"),
+
+            // Pattern 2 (relaxed tail): mov [rip+xxxx], rax; mov rax, [rip+yyyy]
+            ("48 89 05 ? ? ? ? 48 8B 05 ? ? ? ?", 3, 7, "mov [rip+rel32],rax; mov rax,[rip+rel32]"),
+
+            // Pattern 3: mov [rip+xxxx], rax; followed by xor ecx,ecx (common in newer IL2CPP builds)
+            ("48 89 05 ? ? ? ? 33 C9", 3, 7, "mov [rip+rel32],rax; xor ecx,ecx"),
+
+            // Pattern 4: mov [rip+xxxx], rax; followed by any mov reg,imm or test
+            ("48 89 05 ? ? ? ? 48 85", 3, 7, "mov [rip+rel32],rax; test reg,reg"),
+        ];
+
+        /// <summary>
+        /// Signature-scans GameAssembly.dll for the TypeInfoTable global and
+        /// updates <see cref="Offsets.Special.TypeInfoTableRva"/> at runtime.
+        /// Tries multiple signature patterns and validates the result by probing
+        /// the resolved table for plausible class pointers.
+        /// Falls back to the hardcoded value in SDK.cs if all strategies fail.
+        /// </summary>
+        private static bool ResolveTypeInfoTableRva(ulong gaBase)
+        {
+            XMLogging.WriteLine("[Il2CppDumper] Scanning for TypeInfoTable...");
+
+            // Strategy 1–N: try each signature pattern in order.
+            foreach (var (sig, relOff, instrLen, desc) in TypeInfoTableSigs)
+            {
+                var sigAddr = Memory.FindSignature(sig, "GameAssembly.dll");
+                if (sigAddr == 0)
+                    continue;
+
+                var rva = ResolveRipRelativeRva(sigAddr, relOff, instrLen, gaBase);
+                if (rva == 0)
+                    continue;
+
+                if (ValidateTypeInfoTable(gaBase, rva))
+                {
+                    var previous = Offsets.Special.TypeInfoTableRva;
+                    Offsets.Special.TypeInfoTableRva = rva;
+
+                    XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable resolved via: {desc}");
+                    XMLogging.WriteLine($"        RVA = 0x{rva:X}");
+
+                    if (previous != rva)
+                        XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTableRva updated: 0x{previous:X} → 0x{rva:X}");
+
+                    return true;
+                }
+
+                XMLogging.WriteLine($"[Il2CppDumper] Sig matched ({desc}) but validation failed at RVA 0x{rva:X} — trying next pattern.");
+            }
+
+            // All signatures failed — validate the hardcoded fallback.
+            XMLogging.WriteLine("[Il2CppDumper] All sig scans failed. Validating hardcoded fallback...");
+
+            if (Offsets.Special.TypeInfoTableRva != 0 && ValidateTypeInfoTable(gaBase, Offsets.Special.TypeInfoTableRva))
+            {
+                XMLogging.WriteLine($"[Il2CppDumper] Hardcoded TypeInfoTableRva 0x{Offsets.Special.TypeInfoTableRva:X} passed validation.");
+                return true;
+            }
+
+            XMLogging.WriteLine("[Il2CppDumper] WARNING: All TypeInfoTable resolution strategies failed — offsets may be stale!");
+            return false;
+        }
+
+        /// <summary>
+        /// Reads a RIP-relative <c>int32</c> displacement from a matched signature
+        /// and computes the target RVA relative to <paramref name="gaBase"/>.
+        /// </summary>
+        private static ulong ResolveRipRelativeRva(ulong sigAddr, int relOffset, int instrLen, ulong gaBase)
+        {
+            int rel;
+            try { rel = Memory.ReadValue<int>(sigAddr + (ulong)relOffset, false); }
+            catch { return 0; }
+
+            ulong globalVa = sigAddr + (ulong)instrLen + (ulong)(long)rel;
+
+            // Basic sanity: the resolved VA must be inside GameAssembly's address space.
+            if (globalVa <= gaBase)
+                return 0;
+
+            return globalVa - gaBase;
+        }
+
+        /// <summary>
+        /// Validates a candidate TypeInfoTable RVA by probing the first few entries.
+        /// A valid table has non-null class pointers whose <c>Il2CppClass::name</c>
+        /// fields point to readable ASCII strings.
+        /// </summary>
+        private static bool ValidateTypeInfoTable(ulong gaBase, ulong rva)
+        {
+            ulong tablePtr;
+            try { tablePtr = Memory.ReadPtr(gaBase + rva, false); }
+            catch { return false; }
+
+            if (!tablePtr.IsValidVirtualAddress())
+                return false;
+
+            // Probe a handful of early entries — at least some must look like valid Il2CppClass*.
+            const int probeCount = 8;
+            const int requiredValid = 3;
+            int valid = 0;
+
+            ulong[] ptrs;
+            try { ptrs = Memory.ReadArray<ulong>(tablePtr, probeCount, false); }
+            catch { return false; }
+
+            for (int i = 0; i < ptrs.Length; i++)
+            {
+                if (!ptrs[i].IsValidVirtualAddress())
+                    continue;
+
+                // Read Il2CppClass::name pointer (offset 0x10) and check it's a readable string.
+                ulong namePtr;
+                try { namePtr = Memory.ReadValue<ulong>(ptrs[i] + K_Name, false); }
+                catch { continue; }
+
+                if (!namePtr.IsValidVirtualAddress())
+                    continue;
+
+                var name = ReadStr(namePtr);
+                if (!string.IsNullOrEmpty(name) && name.Length < MaxNameLen && IsPlausibleClassName(name))
+                    valid++;
+
+                if (valid >= requiredValid)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks whether a string looks like a plausible IL2CPP class name
+        /// (printable ASCII or common Unicode escape, no control chars).
+        /// </summary>
+        private static bool IsPlausibleClassName(string name)
+        {
+            for (int i = 0; i < name.Length; i++)
+            {
+                char c = name[i];
+                // Allow printable ASCII, common C# identifier chars, and IL2CPP unicode escapes
+                if (c < 0x20 || (c > 0x7E && c < 0xA0))
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Maps IL2CPP class names → <see cref="Offsets.Special"/> TypeIndex field names.
+        /// Add entries here when new singleton classes need TypeIndex resolution.
+        /// </summary>
+        private static readonly (string Il2CppName, string FieldName)[] TypeIndexMap =
+        [
+            ("EFTHardSettings",     nameof(Offsets.Special.EFTHardSettings_TypeIndex)),
+            ("GPUInstancerManager", nameof(Offsets.Special.GPUInstancerManager_TypeIndex)),
+            ("WeatherController",   nameof(Offsets.Special.WeatherController_TypeIndex)),
+            ("GlobalConfiguration", nameof(Offsets.Special.GlobalConfiguration_TypeIndex)),
+        ];
+
+        /// <summary>
+        /// Looks up known singleton class names in the scanned type table and
+        /// updates <see cref="Offsets.Special"/> TypeIndex fields dynamically.
+        /// Falls back to hardcoded values for any class not found.
+        /// </summary>
+        private static void ResolveTypeIndices(Dictionary<string, int> nameToIndex)
+        {
+            var specialType = typeof(Offsets.Special);
+            const BindingFlags bf = BindingFlags.Public | BindingFlags.Static;
+
+            foreach (var (il2cppName, fieldName) in TypeIndexMap)
+            {
+                var fi = specialType.GetField(fieldName, bf);
+                if (fi is null)
+                    continue;
+
+                if (nameToIndex.TryGetValue(il2cppName, out var index))
+                {
+                    var previous = (uint)fi.GetValue(null);
+                    fi.SetValue(null, (uint)index);
+
+                    if (previous != (uint)index)
+                        XMLogging.WriteLine($"[Il2CppDumper] {fieldName} updated: {previous} → {index}");
+                    else
+                        XMLogging.WriteLine($"[Il2CppDumper] {fieldName} matches hardcoded value ({index}).");
+                }
+                else
+                {
+                    XMLogging.WriteLine($"[Il2CppDumper] WARN: '{il2cppName}' not found in type table — {fieldName} using fallback ({fi.GetValue(null)}).");
+                }
+            }
+        }
+
         /// <summary>
         /// Resolves IL2CPP offsets at runtime and applies them to
         /// <see cref="Offsets"/> via reflection. Hardcoded defaults in SDK.cs
@@ -686,6 +888,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 return;
             }
 
+            // Dynamically resolve TypeInfoTableRva via sig scan (falls back to hardcoded).
+            ResolveTypeInfoTableRva(gaBase);
+
             // Resolve the type-info table pointer once — used by both paths.
             ulong tablePtr;
             try { tablePtr = Memory.ReadPtr(gaBase + Offsets.Special.TypeInfoTableRva, false); }
@@ -701,19 +906,23 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 return;
             }
 
-            var schema = BuildSchema();
+            // Scan the full type table — needed for name lookups AND TypeIndex resolution.
+            var classes = ReadAllClassesFromTable(tablePtr);
+            XMLogging.WriteLine($"[Il2CppDumper] Type table: {classes.Count} classes found.");
 
-            // Build name→klassPtr map lazily — only if at least one entry needs name lookup.
-            bool needsNameScan = Array.Exists(schema, sc => sc.TypeIndex is null);
-            Dictionary<string, ulong> nameLookup = null;
-            if (needsNameScan)
+            var nameLookup = new Dictionary<string, ulong>(classes.Count, StringComparer.Ordinal);
+            var nameToIndex = new Dictionary<string, int>(classes.Count, StringComparer.Ordinal);
+            foreach (var (name, _, ptr, idx) in classes)
             {
-                var classes = ReadAllClassesFromTable(tablePtr);
-                XMLogging.WriteLine($"[Il2CppDumper] Type table: {classes.Count} classes found.");
-                nameLookup = new Dictionary<string, ulong>(classes.Count, StringComparer.Ordinal);
-                foreach (var (name, _, ptr, _) in classes)
-                    nameLookup.TryAdd(name, ptr);
+                nameLookup.TryAdd(name, ptr);
+                nameToIndex.TryAdd(name, idx);
             }
+
+            // Dynamically resolve TypeIndex values for known singleton classes.
+            ResolveTypeIndices(nameToIndex);
+
+            // Build schema AFTER TypeIndex resolution so it picks up updated values.
+            var schema = BuildSchema();
 
             // Reflection: locate nested types inside Offsets once.
             var offsetsType = typeof(Offsets);
@@ -740,7 +949,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 }
                 else
                 {
-                    if (nameLookup is null || !nameLookup.TryGetValue(sc.Il2CppName, out klassPtr))
+                    if (!nameLookup.TryGetValue(sc.Il2CppName, out klassPtr))
                     {
                         XMLogging.WriteLine($"[Il2CppDumper] SKIP '{sc.Il2CppName}': not found in type table.");
                         classesSkipped++;
@@ -762,6 +971,10 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 var methodMap = sc.Fields.Any(sf => sf.Kind == FieldKind.MethodRva)
                     ? ReadClassMethods(klassPtr, gaBase)
                     : null;
+
+                // ── Verbose dump log (comment out to silence) ────────────────
+                //LogClassDump(sc, resolvedVia, fieldMap, methodMap);
+                // ─────────────────────────────────────────────────────────────
 
                 foreach (var sf in sc.Fields)
                 {
@@ -813,6 +1026,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         /// <summary>
         /// Attempts to set a static field on a type via reflection.
         /// Handles uint/ulong/int type conversion automatically.
+        /// For const fields (IsLiteral), skips silently (cannot set at runtime).
+        /// For uint[] fields (deref chains), updates only the first element.
         /// </summary>
         private static bool TrySetField(Type type, string fieldName, object value, BindingFlags bf)
         {
@@ -822,6 +1037,10 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 XMLogging.WriteLine($"[Il2CppDumper] WARN: field '{fieldName}' not found on '{type.Name}' via reflection.");
                 return false;
             }
+
+            // const (literal) fields cannot be changed at runtime — skip silently.
+            if (fi.IsLiteral)
+                return true;
 
             try
             {
@@ -835,6 +1054,17 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     converted = Convert.ToUInt64(value);
                 else if (target == typeof(int))
                     converted = Convert.ToInt32(value);
+                else if (target == typeof(uint[]))
+                {
+                    // Deref-chain field: update only the first element with the dumped offset.
+                    var arr = (uint[])fi.GetValue(null);
+                    if (arr is not null && arr.Length > 0)
+                    {
+                        arr[0] = Convert.ToUInt32(value);
+                        return true; // array is reference type — already mutated in place
+                    }
+                    return false;
+                }
                 else
                 {
                     XMLogging.WriteLine($"[Il2CppDumper] WARN: unsupported field type '{target}' for '{type.Name}.{fieldName}'.");
@@ -848,6 +1078,41 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             {
                 XMLogging.WriteLine($"[Il2CppDumper] ERROR: Failed to set '{type.Name}.{fieldName}': {ex.Message}");
                 return false;
+            }
+        }
+
+        // ── Verbose dump logging (comment out the call site to silence) ──────
+
+        /// <summary>
+        /// Logs every resolved field and method for a single class.
+        /// </summary>
+        private static void LogClassDump(
+            SchemaClass sc,
+            string resolvedVia,
+            Dictionary<string, int> fieldMap,
+            Dictionary<string, ulong> methodMap)
+        {
+            XMLogging.WriteLine($"[Dump] ── {sc.CsName} ({resolvedVia}) ──");
+
+            if (fieldMap.Count > 0)
+            {
+                foreach (var (name, offset) in fieldMap)
+                {
+                    if (offset >= 0)
+                        XMLogging.WriteLine($"[Dump]   field  {name} = 0x{(uint)offset:X}");
+                    else
+                        XMLogging.WriteLine($"[Dump]   field  {name} = {offset}");
+                }
+            }
+            else
+            {
+                XMLogging.WriteLine($"[Dump]   (no fields)");
+            }
+
+            if (methodMap is not null && methodMap.Count > 0)
+            {
+                foreach (var (name, rva) in methodMap)
+                    XMLogging.WriteLine($"[Dump]   method {name} = 0x{rva:X}");
             }
         }
 

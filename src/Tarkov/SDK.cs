@@ -829,11 +829,11 @@ namespace SDK
 		//
 		public readonly partial struct Special
 		{
-			public const ulong TypeInfoTableRva = 0x5AA9118;
-			public const uint EFTHardSettings_TypeIndex = 225;
-			public const uint GPUInstancerManager_TypeIndex = 4917;
-			public const uint WeatherController_TypeIndex = 10104;
-			public const uint GlobalConfiguration_TypeIndex = 6406;
+			public static ulong TypeInfoTableRva = 0x00000;
+			public static uint EFTHardSettings_TypeIndex = 225;
+			public static uint GPUInstancerManager_TypeIndex = 4917;
+			public static uint WeatherController_TypeIndex = 10104;
+			public static uint GlobalConfiguration_TypeIndex = 6406;
 		}
 		public readonly partial struct Il2CppClass
 		{
