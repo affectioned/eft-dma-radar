@@ -1,5 +1,7 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using SDK;
 
@@ -24,6 +26,39 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private const int  MaxClasses    = 80_000;
         private const int  MaxNameLen    = 256;
+
+        // ── Scatter-read raw structs ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Contiguous name + namespace pointers read from Il2CppClass at offset 0x10.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ClassNamePtrs
+        {
+            public ulong NamePtr;      // 0x10  char* name
+            public ulong NamespacePtr; // 0x18  char* namespaze
+        }
+
+        /// <summary>
+        /// Raw FieldInfo entry (0x20 bytes stride). Only the fields we need are mapped.
+        /// </summary>
+        [StructLayout(LayoutKind.Explicit, Size = 0x20)]
+        private struct RawFieldInfo
+        {
+            [FieldOffset(0x00)] public ulong NamePtr; // char* name
+            [FieldOffset(0x18)] public int   Offset;  // int32 offset (signed!)
+        }
+
+        /// <summary>
+        /// Raw MethodInfo header. We read 0x20 bytes starting at the MethodInfo address
+        /// to capture the method pointer (0x00) and name pointer (0x18).
+        /// </summary>
+        [StructLayout(LayoutKind.Explicit, Size = 0x20)]
+        private struct RawMethodInfo
+        {
+            [FieldOffset(0x00)] public ulong MethodPointer; // void* methodPointer
+            [FieldOffset(0x18)] public ulong NamePtr;       // char* name
+        }
 
         // ── Schema ───────────────────────────────────────────────────────────────
 
@@ -782,12 +817,13 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         /// <summary>
         /// Reads all IL2CppClass* entries from a pre-resolved type-info table pointer.
-        /// Each entry is a direct Il2CppClass* (no second dereference).
+        /// Uses scatter reads to batch all DMA operations (2 scatter rounds instead of ~4 reads per class).
         /// </summary>
         private static List<(string Name, string Namespace, ulong KlassPtr, int Index)> ReadAllClassesFromTable(ulong tablePtr)
         {
             var result = new List<(string, string, ulong, int)>(4096);
 
+            // Step 1: Bulk read all class pointers (contiguous array — single DMA read).
             ulong[] ptrs;
             try { ptrs = Memory.ReadArray<ulong>(tablePtr, MaxClasses, false); }
             catch (Exception ex)
@@ -796,16 +832,76 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 return result;
             }
 
+            // Collect indices of valid class pointers.
+            var validIndices = new List<int>(ptrs.Length / 2);
             for (int i = 0; i < ptrs.Length; i++)
             {
-                var klassPtr = ptrs[i];
-                if (!klassPtr.IsValidVirtualAddress()) continue;
+                if (ptrs[i].IsValidVirtualAddress())
+                    validIndices.Add(i);
+            }
 
-                var name = ReadStr(ReadPtr(klassPtr + K_Name));
-                if (string.IsNullOrEmpty(name)) continue;
+            if (validIndices.Count == 0)
+                return result;
 
-                var ns = ReadStr(ReadPtr(klassPtr + K_Namespace)) ?? string.Empty;
-                result.Add((name, ns, klassPtr, i));
+            XMLogging.WriteLine($"[Il2CppDumper] Scatter-reading name/namespace pointers for {validIndices.Count} classes...");
+
+            // Step 2: Scatter read name_ptr + namespace_ptr for every valid class (one 16-byte read each).
+            var ptrEntries = new ScatterReadEntry<ClassNamePtrs>[validIndices.Count];
+            var scatterBatch = new IScatterEntry[validIndices.Count];
+
+            for (int j = 0; j < validIndices.Count; j++)
+            {
+                ptrEntries[j] = ScatterReadEntry<ClassNamePtrs>.Get(ptrs[validIndices[j]] + K_Name, 0);
+                scatterBatch[j] = ptrEntries[j];
+            }
+
+            Memory.ReadScatter(scatterBatch, false);
+
+            // Step 3: Scatter read all name and namespace strings in one batch.
+            var nameEntries = new ScatterReadEntry<UTF8String>[validIndices.Count];
+            var nsEntries   = new ScatterReadEntry<UTF8String>[validIndices.Count];
+            var stringBatch = new List<IScatterEntry>(validIndices.Count * 2);
+
+            for (int j = 0; j < validIndices.Count; j++)
+            {
+                if (ptrEntries[j].IsFailed)
+                    continue;
+
+                ref var p = ref ptrEntries[j].Result;
+
+                if (p.NamePtr.IsValidVirtualAddress())
+                {
+                    nameEntries[j] = ScatterReadEntry<UTF8String>.Get(p.NamePtr, MaxNameLen);
+                    stringBatch.Add(nameEntries[j]);
+                }
+
+                if (p.NamespacePtr.IsValidVirtualAddress())
+                {
+                    nsEntries[j] = ScatterReadEntry<UTF8String>.Get(p.NamespacePtr, MaxNameLen);
+                    stringBatch.Add(nsEntries[j]);
+                }
+            }
+
+            XMLogging.WriteLine($"[Il2CppDumper] Scatter-reading {stringBatch.Count} name/namespace strings...");
+            Memory.ReadScatter(stringBatch.ToArray(), false);
+
+            // Step 4: Build results.
+            for (int j = 0; j < validIndices.Count; j++)
+            {
+                int i = validIndices[j];
+
+                string name = nameEntries[j] is not null && !nameEntries[j].IsFailed
+                    ? (string)(UTF8String)nameEntries[j].Result
+                    : null;
+
+                if (string.IsNullOrEmpty(name))
+                    continue;
+
+                string ns = nsEntries[j] is not null && !nsEntries[j].IsFailed
+                    ? (string)(UTF8String)nsEntries[j].Result
+                    : string.Empty;
+
+                result.Add((name, ns ?? string.Empty, ptrs[i], i));
             }
 
             return result;
@@ -820,17 +916,36 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             var fieldsBase = ReadPtr(klassPtr + K_Fields);
             if (!fieldsBase.IsValidVirtualAddress()) return result;
 
-            for (int i = 0; i < fieldCount; i++)
+            // Bulk read the entire field array in one DMA operation.
+            RawFieldInfo[] rawFields;
+            try { rawFields = Memory.ReadArray<RawFieldInfo>(fieldsBase, fieldCount, false); }
+            catch { return result; }
+
+            // Scatter read all field name strings in one batch.
+            var nameEntries = new ScatterReadEntry<UTF8String>[rawFields.Length];
+            var scatter = new List<IScatterEntry>(rawFields.Length);
+
+            for (int i = 0; i < rawFields.Length; i++)
             {
-                var entry  = fieldsBase + (ulong)(i * FI_Stride);
-                var namePtr = ReadPtr(entry + FI_Name);
-                if (!namePtr.IsValidVirtualAddress()) continue;
+                if (rawFields[i].NamePtr.IsValidVirtualAddress())
+                {
+                    nameEntries[i] = ScatterReadEntry<UTF8String>.Get(rawFields[i].NamePtr, MaxNameLen);
+                    scatter.Add(nameEntries[i]);
+                }
+            }
 
-                var name = ReadStr(namePtr);
+            if (scatter.Count > 0)
+                Memory.ReadScatter(scatter.ToArray(), false);
+
+            // Build results.
+            for (int i = 0; i < rawFields.Length; i++)
+            {
+                string name = nameEntries[i] is not null && !nameEntries[i].IsFailed
+                    ? (string)(UTF8String)nameEntries[i].Result
+                    : null;
+
                 if (string.IsNullOrEmpty(name)) continue;
-
-                var offset = Memory.ReadValue<int>(entry + FI_Offset, false);
-                result.TryAdd(name, offset);
+                result.TryAdd(name, rawFields[i].Offset);
             }
 
             return result;
@@ -849,20 +964,49 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             try { methodPtrs = Memory.ReadArray<ulong>(methodsBase, methodCount, false); }
             catch { return result; }
 
-            foreach (var mp in methodPtrs)
+            // Scatter read MethodPointer + NamePtr for all methods in one batch.
+            var infoEntries = new ScatterReadEntry<RawMethodInfo>[methodPtrs.Length];
+            var scatter1 = new List<IScatterEntry>(methodPtrs.Length);
+
+            for (int i = 0; i < methodPtrs.Length; i++)
             {
-                if (!mp.IsValidVirtualAddress()) continue;
+                if (!methodPtrs[i].IsValidVirtualAddress()) continue;
+                infoEntries[i] = ScatterReadEntry<RawMethodInfo>.Get(methodPtrs[i], 0);
+                scatter1.Add(infoEntries[i]);
+            }
 
-                var fnPtr = Memory.ReadValue<ulong>(mp + MI_Pointer, false);
-                if (!fnPtr.IsValidVirtualAddress() || fnPtr < gaBase) continue;
+            if (scatter1.Count > 0)
+                Memory.ReadScatter(scatter1.ToArray(), false);
 
-                var namePtr = ReadPtr(mp + MI_Name);
-                if (!namePtr.IsValidVirtualAddress()) continue;
+            // Scatter read all method name strings in one batch.
+            var nameEntries = new ScatterReadEntry<UTF8String>[methodPtrs.Length];
+            var scatter2 = new List<IScatterEntry>(methodPtrs.Length);
 
-                var name = ReadStr(namePtr);
+            for (int i = 0; i < methodPtrs.Length; i++)
+            {
+                if (infoEntries[i] is null || infoEntries[i].IsFailed) continue;
+
+                ref var info = ref infoEntries[i].Result;
+                if (!info.MethodPointer.IsValidVirtualAddress() || info.MethodPointer < gaBase) continue;
+                if (!info.NamePtr.IsValidVirtualAddress()) continue;
+
+                nameEntries[i] = ScatterReadEntry<UTF8String>.Get(info.NamePtr, MaxNameLen);
+                scatter2.Add(nameEntries[i]);
+            }
+
+            if (scatter2.Count > 0)
+                Memory.ReadScatter(scatter2.ToArray(), false);
+
+            // Build results.
+            for (int i = 0; i < methodPtrs.Length; i++)
+            {
+                if (nameEntries[i] is null || nameEntries[i].IsFailed) continue;
+                if (infoEntries[i] is null || infoEntries[i].IsFailed) continue;
+
+                string name = (string)(UTF8String)nameEntries[i].Result;
                 if (string.IsNullOrEmpty(name)) continue;
 
-                var rva = fnPtr - gaBase;
+                var rva = infoEntries[i].Result.MethodPointer - gaBase;
                 result.TryAdd(name, rva);
             }
 
