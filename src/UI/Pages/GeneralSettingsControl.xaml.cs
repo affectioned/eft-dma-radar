@@ -7,7 +7,6 @@ using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
-using eft_dma_radar.Tarkov.WebRadar;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
@@ -144,7 +143,6 @@ namespace eft_dma_radar.UI.Pages
                     expEntityInformation,
                     expMonitorSettings,
                     expQuestHelper,
-                    expWebRadar,
                     expPlayerAPIService,
                     expPlayerColors,
                     expLootColors,
@@ -305,12 +303,10 @@ namespace eft_dma_radar.UI.Pages
                             XMLogging.WriteLine("[Config] Starting config import process...");
 
                             var currentCache = Config.Cache;
-                            var currentWebRadar = Config.WebRadar;
 
                             Config.EnsureComplexObjectsInitialized(importedConfig);
 
                             importedConfig.Cache = currentCache;
-                            importedConfig.WebRadar = currentWebRadar;
 
                             Program.UpdateConfig(importedConfig);
 
@@ -618,14 +614,6 @@ namespace eft_dma_radar.UI.Pages
             chkKillZones.Checked += GeneralCheckbox_Checked;
             chkKillZones.Unchecked += GeneralCheckbox_Checked;
 
-            // Web Radar Server
-            btnWebRadarStart.Click += btnWebRadarStart_Click;
-            chkWebRadarUPnP.Checked += GeneralCheckbox_Checked;
-            chkWebRadarUPnP.Unchecked += GeneralCheckbox_Checked;
-            lblWebRadarLink.MouseLeftButtonUp += lblWebRadarLink_MouseLeftButtonUp;
-            txtWebRadarPort.TextChanged += GeneralTextbox_TextChanged;
-
-
             // Player API Service
             rdbTarkovDev.Checked += GeneralRadioButton_Checked;
             rdbEftApiTech.Checked += GeneralRadioButton_Checked;
@@ -654,8 +642,6 @@ namespace eft_dma_radar.UI.Pages
             chkKillZones.IsChecked = Config.QuestHelper.KillZones;
             RefreshQuestHelper();
 
-            // Web Radar Server
-            InitializeWebRadar();
 
             // Player API Service
             var alternateService = Config.AlternateProfileService;
@@ -1152,31 +1138,6 @@ namespace eft_dma_radar.UI.Pages
                 btnSendStashDogTags.Content = "Send Stashed DogTags";
             }
         }
-        private void InitializeWebRadar()
-        {
-            chkWebRadarUPnP.IsChecked = Config.WebRadar.UPnP;
-            txtWebRadarPort.Text = Config.WebRadar.Port;
-
-
-            if (WebRadarServer.IsRunning)
-            {
-                btnWebRadarStart.Content = "Stop";
-                ToggleWebRadarControls(false);
-            }
-            else
-            {
-                btnWebRadarStart.Content = "Start";
-                ToggleWebRadarControls(true);
-            }
-        }
-
-        private void ToggleWebRadarControls(bool enabled = false)
-        {
-            btnWebRadarStart.IsEnabled = true;
-            chkWebRadarUPnP.IsEnabled = enabled;
-            txtWebRadarPort.IsEnabled = enabled;
-
-        }
 
         private void ToggleMapSetup()
         {
@@ -1515,9 +1476,6 @@ namespace eft_dma_radar.UI.Pages
                     case "KillZones":
                         Config.QuestHelper.KillZones = value;
                         break;
-                    case "UPnP":
-                        Config.WebRadar.UPnP = value;
-                        break;
                     case "EnableApi":
                         Config.AlternateProfileService = value;
                         break;
@@ -1600,12 +1558,6 @@ namespace eft_dma_radar.UI.Pages
                         Config.MonitorHeight = intValue;
                         CameraManagerBase.UpdateViewportRes();
                         break;
-                    case "WebRadarClientURL":
-                        Config.WebRadar.WebClientURL = text;
-                        break;
-                    case "WebRadarPort":
-                        Config.WebRadar.Port = text;
-                        break;
                 }
 
                 Config.Save();
@@ -1684,104 +1636,6 @@ namespace eft_dma_radar.UI.Pages
                     Config.QuestHelper.BlacklistedQuests.Remove(id);
                 else
                     Config.QuestHelper.BlacklistedQuests.Add(id);
-            }
-        }
-
-        private void lblWebRadarLink_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            var link = lblWebRadarLink.Text;
-
-            if (string.IsNullOrWhiteSpace(link))
-                return;
-
-            try
-            {
-                Process.Start(new ProcessStartInfo(link) { UseShellExecute = true });
-            }
-            catch { }
-        }
-
-        private async void btnWebRadarStart_Click(object sender, RoutedEventArgs e)
-        {
-            if (WebRadarServer.IsRunning)
-            {
-                ToggleWebRadarControls(false);
-                btnWebRadarStart.Content = "Stopping...";
-
-                try
-                {
-                    await WebRadarServer.StopAsync();
-
-                    btnWebRadarStart.Content = "Start";
-                    lblWebRadarLink.Text = "";
-                    ToggleWebRadarControls(true);
-
-                    NotificationsShared.Info("Web Radar Server stopped successfully.");
-                }
-                catch (Exception ex)
-                {
-                    NotificationsShared.Error($"ERROR Stopping Web Radar Server: {ex.Message}");
-                    btnWebRadarStart.Content = "Stop";
-                    ToggleWebRadarControls(true);
-                }
-            }
-            else
-            {
-                ToggleWebRadarControls(false);
-                btnWebRadarStart.Content = "Starting...";
-
-                try
-                {
-                    var tickRate = TimeSpan.FromMilliseconds(1000d / 60);
-                    var bindIP = "0.0.0.0";
-                    var port = int.Parse(txtWebRadarPort.Text.Trim());
-                    var useUPnP = chkWebRadarUPnP.IsChecked == true;
-
-
-                    await WebRadarServer.StartAsync(bindIP, port, tickRate, useUPnP);
-
-                    btnWebRadarStart.Content = "Stop";
-
-                    var externalIP = await WebRadarServer.GetExternalIPAsync();
-                    var webClientUrl = $"http://{externalIP}";
-
-                    lblWebRadarLink.Text = $"{webClientUrl}:{port}";
-
-                    NotificationsShared.Success("Web Radar Server started successfully!");
-                }
-                catch (Exception ex)
-                {
-                    NotificationsShared.Error($"ERROR Starting Web Radar Server: {ex.Message}");
-                    btnWebRadarStart.Content = "Start";
-                    ToggleWebRadarControls(true);
-                }
-            }
-        }
-
-        private void btnAutoDetectIP_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var localIP = WebRadarServer.GetLocalIPAddress();
-
-                if (!string.IsNullOrEmpty(localIP))
-                {
-                    Config.WebRadar.IP = localIP;
-                    Config.Save();
-
-                    NotificationsShared.Success($"Auto-detected local IP: {localIP}");
-                    XMLogging.WriteLine($"[AutoDetectIP] Found local IP: {localIP}");
-                }
-                else
-                {
-                    NotificationsShared.Warning("Could not auto-detect local IP address. Please enter manually.");
-                    XMLogging.WriteLine("[AutoDetectIP] Failed to detect local IP");
-                }
-            }
-            catch (Exception ex)
-            {
-                NotificationsShared.Error($"Error auto-detecting IP: {ex.Message}");
-                XMLogging.WriteLine($"[AutoDetectIP] Error: {ex.Message}");
             }
         }
 
@@ -3223,7 +3077,6 @@ namespace eft_dma_radar.UI.Pages
 
                 var configForExport = JsonSerializer.Deserialize<Config>(JsonSerializer.Serialize(Config));
                 configForExport.Cache = null;
-                configForExport.WebRadar = null;
 
                 var options = new JsonSerializerOptions
                 {
@@ -3235,8 +3088,8 @@ namespace eft_dma_radar.UI.Pages
                 var jsonData = JsonSerializer.Serialize(configForExport, options);
                 Clipboard.SetText(jsonData);
 
-                NotificationsShared.Success("[Config] Configuration exported to clipboard successfully! (Cache and WebRadar settings excluded)");
-                XMLogging.WriteLine("[Config] Configuration exported to clipboard (excluding Cache and WebRadar)");
+                NotificationsShared.Success("[Config] Configuration exported to clipboard successfully! (Cache)");
+                XMLogging.WriteLine("[Config] Configuration exported to clipboard (excluding Cache)");
             }
             catch (Exception ex)
             {

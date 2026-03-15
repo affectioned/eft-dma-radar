@@ -586,12 +586,6 @@ namespace eft_dma_radar.UI.Misc
         [JsonInclude]
         [JsonPropertyName("hotKeys")]
         public HotkeyConfig HotKeys { get; private set; } = new();
-        /// <summary>
-        /// Web Radar Configuration.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("webRadar")]
-        public WebRadarConfig WebRadar { get; set; } = new();
 
         /// <summary>
         /// Containers configuration.
@@ -765,9 +759,6 @@ namespace eft_dma_radar.UI.Misc
 
             if (config.HotKeys == null)
                 config.HotKeys = new HotkeyConfig();
-
-            if (config.WebRadar == null)
-                config.WebRadar = new WebRadarConfig();
 
             if (config.Containers == null)
                 config.Containers = new ContainersConfig();
@@ -2154,30 +2145,6 @@ namespace eft_dma_radar.UI.Misc
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// Configuration for Web Radar.
-    /// </summary>
-    public sealed class WebRadarConfig
-    {
-        [JsonPropertyName("webClientUrl")]
-        public string WebClientURL { get; set; } = "http://localhost";
-
-        [JsonPropertyName("upnp")]
-        public bool UPnP { get; set; } = true;
-
-        [JsonPropertyName("host")]
-        public string IP { get; set; }
-
-        [JsonPropertyName("port")]
-        public string Port { get; set; } = Random.Shared.Next(50000, 60000).ToString();
-
-        [JsonPropertyName("tickRate")]
-        public string TickRate { get; set; } = "60";
-
-        [JsonPropertyName("password")]
-        public string Password { get; set; }
     }
 
     /// <summary>

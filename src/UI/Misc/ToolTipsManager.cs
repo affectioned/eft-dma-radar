@@ -305,27 +305,6 @@ namespace eft_dma_radar.UI.Misc
             if (context.FindName("listQuests") is ListBox listQuests)
                 listQuests.ToolTip = "Active Quest List (populates once you are in raid). Uncheck a quest to untrack it.";
 
-            if (context.FindName("btnWebRadarStart") is Button btnWebRadarStart)
-                btnWebRadarStart.ToolTip = "Starts the Web Radar server.";
-
-            if (context.FindName("chkWebRadarUPnP") is CheckBox chkWebRadarUPnP)
-                chkWebRadarUPnP.ToolTip = "Attempts to open the port automatically using UPnP.";
-
-            if (context.FindName("lblWebRadarLink") is TextBlock lblWebRadarLink)
-                lblWebRadarLink.ToolTip = "Click to open your Web Radar URL in the browser.";
-
-            if (context.FindName("txtWebRadarBindIP") is HandyControl.Controls.TextBox txtWebRadarBindIP)
-                txtWebRadarBindIP.ToolTip = "IP address the server will bind to.";
-
-            if (context.FindName("txtWebRadarPort") is HandyControl.Controls.TextBox txtWebRadarPort)
-                txtWebRadarPort.ToolTip = "Port number for the Web Radar server.";
-
-            if (context.FindName("txtWebRadarTickRate") is HandyControl.Controls.TextBox txtWebRadarTickRate)
-                txtWebRadarTickRate.ToolTip = "How often the Web Radar sends updates (in Hz).";
-
-            if (context.FindName("txtWebRadarPassword") is HandyControl.Controls.TextBox txtWebRadarPassword)
-                txtWebRadarPassword.ToolTip = "Password required to connect to the Web Radar.";
-
             if (context.FindName("cboTheme") is HandyControl.Controls.ComboBox cboTheme)
                 cboTheme.ToolTip = "Choose between Dark and Light themes.";
 

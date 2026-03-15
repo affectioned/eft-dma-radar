@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net10.0-windows7.0</TargetFramework>
@@ -53,12 +53,6 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
-<ItemGroup>
-  <Content Include="..\Maps\**\*.*">
-    <Link>wwwroot\Maps\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </Content>
-</ItemGroup>
 	<!-- Embedded Resources (from eft-dma-shared) -->
 	<ItemGroup>
 		<EmbeddedResource Include="..\resources\NeoSansStdRegular.otf" />
@@ -77,18 +71,18 @@
 	<!-- NuGet Packages (combined from both projects) -->
 	<ItemGroup>
 		<PackageReference Include="HandyControls" Version="3.6.0" />
-		<PackageReference Include="HelixToolkit.Wpf" Version="2.27.0" />
+		<PackageReference Include="HelixToolkit.Wpf" Version="3.1.2" />
 		<PackageReference Include="Open.Nat.imerzan" Version="2.2.0" />
-		<PackageReference Include="SkiaSharp" Version="3.119.0" />
-		<PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.119.0" />
-		<PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.6" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="9.0.6" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+		<PackageReference Include="SkiaSharp" Version="3.119.2" />
+		<PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.119.2" />
+		<PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.2" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
 		<PackageReference Include="Reloaded.Assembler" Version="1.0.16" />
-		<PackageReference Include="Svg.Skia" Version="3.0.3" />
-		<PackageReference Include="Collections.Pooled.V2" Version="2.2.2" />
-		<PackageReference Include="System.Management" Version="9.0.0" />
+		<PackageReference Include="Svg.Skia" Version="3.6.0" />
+		<PackageReference Include="Collections.Pooled.V2" Version="2.4.1" />
+		<PackageReference Include="System.Management" Version="10.0.5" />
 		<PackageReference Include="Vmmsharp" Version="5.17.0" />
 	</ItemGroup>
 
@@ -101,12 +95,6 @@
 		<Page Update="MainWindow.xaml">
 			<CopyToOutputDirectory></CopyToOutputDirectory>
 		</Page>
-	</ItemGroup>
-	<ItemGroup>
-	  <Content Include="..\resources\wwwroot\**\*">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    <Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
-	  </Content>
 	</ItemGroup>	
 	<Target Name="CopyNativeDLLs" AfterTargets="Build">
 		<ItemGroup>

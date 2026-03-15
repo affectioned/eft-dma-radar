@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
+using DataGrid = System.Windows.Controls.DataGrid;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
@@ -159,8 +160,6 @@ namespace eft_dma_radar.UI.Pages
         #region Functions/Methods
         private void RegisterSettingsEvents()
         {
-            playerHistoryDataGrid.MouseDoubleClick += PlayerHistoryDataGrid_MouseDoubleClick;
-
             RegisterDeselectionEvents();
         }
 
@@ -305,23 +304,6 @@ namespace eft_dma_radar.UI.Pages
                 XMLogging.WriteLine($"[PlayerHistory] Error opening player profile: {ex}");
             }
         }
-
-        private (DataGridCell cell, int columnIndex) GetCellInfo(MouseButtonEventArgs e)
-        {
-            DependencyObject dep = (DependencyObject)e.OriginalSource;
-
-            while (dep != null && !(dep is DataGridCell))
-            {
-                dep = VisualTreeHelper.GetParent(dep);
-            }
-
-            if (dep is DataGridCell cell)
-            {
-                return (cell, cell.Column.DisplayIndex);
-            }
-
-            return (null, -1);
-        }
         #endregion
         #region Events
         private void PlayerHistory_EntriesChanged(object sender, EventArgs e)
@@ -361,25 +343,6 @@ namespace eft_dma_radar.UI.Pages
                 _timeUpdateTimer.Stop();
                 _timeUpdateTimer.Tick -= TimeUpdateTimer_Tick;
                 _timeUpdateTimer = null;
-            }
-        }
-
-        private void PlayerHistoryDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            var (cell, columnIndex) = GetCellInfo(e);
-
-            if (cell == null || !(cell.DataContext is PlayerHistoryEntry entry))
-                return;
-
-            if (columnIndex == 1)
-            {
-                OpenPlayerProfile(entry.ID);
-
-                e.Handled = true;
-            }
-            else
-            {
-                AddToWatchlist();
             }
         }
         #endregion
