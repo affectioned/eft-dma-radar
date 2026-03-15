@@ -1,6 +1,7 @@
 using System.Windows.Controls;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
+using DataGrid = System.Windows.Controls.DataGrid;
 using ListBox = System.Windows.Controls.ListBox;
 using ListView = System.Windows.Controls.ListView;
 using NumericUpDown = HandyControl.Controls.NumericUpDown;

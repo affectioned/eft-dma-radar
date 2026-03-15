@@ -30,6 +30,8 @@ using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using UserControl = System.Windows.Controls.UserControl;
 using Window = HandyControl.Controls.Window;
+using DataGridCell = System.Windows.Controls.DataGridCell;
+using DataGrid = System.Windows.Controls.DataGrid;
 
 namespace eft_dma_radar.UI.Pages
 {
