@@ -1862,6 +1862,7 @@ function hideTooltip(){
 
 let hitList = [];
 let lastLocalPlayer = null;
+let lastCenteredPlayer = null;
 let lastMouse = { inside:false, cx:0, cy:0, vx:0, vy:0 };
 
 function pickHoverTarget(mx, my){
@@ -1905,12 +1906,28 @@ function tryWorldXZ(e){
   if(Number.isFinite(Number(x)) && Number.isFinite(Number(z))) return { x:Number(x), z:Number(z) };
   return null;
 }
+
+function tryWorldY(e) {
+    const wy = pick(e, ["worldY", "WorldY", "wy", "WY"]);
+    if (Number.isFinite(Number(wy))) return Number(wy);
+    const p = e?.position || e?.Position || e?.pos || e?.Pos;
+    const y = p?.y ?? p?.Y;
+    if (Number.isFinite(Number(y))) return Number(y);
+    return null;
+}
+
 function distanceMeters(a, b){
   const aa = tryWorldXZ(a);
   const bb = tryWorldXZ(b);
   if(!aa || !bb) return null;
   const dx = aa.x - bb.x;
   const dz = aa.z - bb.z;
+  const ay = tryWorldY(a);
+  const by = tryWorldY(b);
+  if (ay !== null && by !== null) {
+     const dy = ay - by;
+     return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
   return Math.sqrt(dx*dx + dz*dz);
 }
 
@@ -1924,7 +1941,7 @@ function buildPlayerTooltip(p){
 
   const hp = pick(p, ["health","Health","hp","Hp"]);
   const lvl = pick(p, ["level","Level"]);
-  const dist = lastLocalPlayer ? distanceMeters(p, lastLocalPlayer) : null;
+  const dist = lastCenteredPlayer ? distanceMeters(p, lastCenteredPlayer) : null;
 
   const gearValue = pick(p, ["gearValue","GearValue","value","Value","gearPrice","GearPrice","totalValue","TotalValue"]);
   const weapon = pick(p, ["weapon","Weapon","weaponName","WeaponName","primary","Primary"]);
@@ -2815,6 +2832,7 @@ function frame(){
   // find local
   const local = players.find(p => p?.isLocal || p?.IsLocal) || null;
   lastLocalPlayer = local;
+  lastCenteredPlayer = getFollowTarget(players) || local;
 
   // rotation based on local yaw
   const localYaw = local ? toRadMaybe(local?.yaw ?? local?.Yaw ?? 0) : 0;
@@ -2853,7 +2871,7 @@ function frame(){
 
   // draw map
   if(state.showMap && map){
-    const localY = readWorldY(local);
+    const localY = readWorldY(lastCenteredPlayer);;
     drawMap(map, localY, cx, cy, state.zoom, lastRotRad, anchor);
   }
 
@@ -2864,8 +2882,8 @@ function frame(){
 
   // draws
   if(state.showGroups) drawGroupConnectors(players, map, cx, cy, lastRotRad, mapRect);
-  if(state.showLoot) drawLoot(loot, map, cx, cy, lastRotRad, mapRect, hitList);
-  if(state.showPlayers) drawPlayers(players, map, cx, cy, lastRotRad, mapRect, readWorldY(local), hitList);
+  if (state.showLoot) drawLoot(loot, map, cx, cy, lastRotRad, mapRect, hitList);
+  if (state.showPlayers) drawPlayers(players, map, cx, cy, lastRotRad, mapRect, readWorldY(lastCenteredPlayer), hitList);
   drawPois(map, cx, cy, lastRotRad, mapRect, hitList);
 
   drawPing(mapRect, cx, cy, lastRotRad);

@@ -50,6 +50,9 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
         [Key(22)] public float Y { get; init; }
         [Key(23)] public float Z { get; init; }
         [Key(24)] public float Yaw { get; init; }
+        [Key(25)] public float WorldX { get; init; }
+        [Key(26)] public float WorldY { get; init; }
+        [Key(27)] public float WorldZ { get; init; }
 
         // ============================================================
         // FACTORY
@@ -115,6 +118,9 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
                 Y = mappos.Y,
                 Z = pos.Z,
                 Yaw = yaw,
+                WorldX = pos.X,
+                WorldY = pos.Y,
+                WorldZ = pos.Z,
 
                 Value = player.Gear?.Value ?? 0,
                 KD = kd,
