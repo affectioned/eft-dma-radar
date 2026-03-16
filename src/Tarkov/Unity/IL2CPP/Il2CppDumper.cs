@@ -640,6 +640,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             var offsetsType = typeof(Offsets);
             const BindingFlags bf = BindingFlags.Public | BindingFlags.Static;
 
+            // Warn about any Offsets.* struct with no schema entry (will silently use hardcoded fallback).
+            CheckSchemaCompleteness(schema, offsetsType);
+
             int updated = 0, fallback = 0, classesSkipped = 0;
 
             foreach (var sc in schema)
@@ -724,6 +727,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                         // FieldInfo::offset is signed. Positive → uint, negative → int.
                         object value = offset >= 0 ? (object)(uint)offset : (object)offset;
+                        CheckOffsetDelta(nestedType, sf.CsName, value, bf);
                         if (TrySetField(nestedType, sf.CsName, value, bf))
                             updated++;
                         else
@@ -1056,6 +1060,55 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             }
 
             return null;
+        }
+
+        // ── Validation helpers ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Warns when a freshly resolved field offset deviates from the current
+        /// hardcoded/previously-resolved value by more than <see cref="OffsetDeltaThreshold"/>.
+        /// A large delta usually means the field was matched to the wrong entry.
+        /// </summary>
+        private const int OffsetDeltaThreshold = 0x200;
+
+        private static void CheckOffsetDelta(Type type, string fieldName, object newValue, BindingFlags bf)
+        {
+            var fi = type.GetField(fieldName, bf);
+            if (fi is null || fi.IsLiteral) return;
+
+            try
+            {
+                var current = fi.GetValue(null);
+                long prev = fi.FieldType == typeof(uint[])
+                    ? (current is uint[] arr && arr.Length > 0 ? arr[0] : 0)
+                    : Convert.ToInt64(current);
+
+                long next = Convert.ToInt64(newValue);
+                long delta = Math.Abs(next - prev);
+
+                if (prev != 0 && delta > OffsetDeltaThreshold)
+                    XMLogging.WriteLine($"[Il2CppDumper] DELTA WARN: {type.Name}.{fieldName}: 0x{prev:X} → 0x{next:X} (delta 0x{delta:X})");
+            }
+            catch { /* never let a diagnostic break resolution */ }
+        }
+
+        /// <summary>
+        /// Logs any <c>Offsets.*</c> nested struct that has no corresponding schema entry.
+        /// Those structs will silently use their hardcoded fallback values — this makes the gap visible.
+        /// </summary>
+        private static readonly HashSet<string> _nonSchemaStructs =
+            new(["Special"], StringComparer.Ordinal);
+
+        private static void CheckSchemaCompleteness(SchemaClass[] schema, Type offsetsType)
+        {
+            var covered = new HashSet<string>(schema.Select(sc => sc.CsName), StringComparer.Ordinal);
+
+            foreach (var nested in offsetsType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                if (_nonSchemaStructs.Contains(nested.Name)) continue;
+                if (!covered.Contains(nested.Name))
+                    XMLogging.WriteLine($"[Il2CppDumper] COVERAGE WARN: Offsets.{nested.Name} has no schema entry — using hardcoded fallback.");
+            }
         }
 
         // Reads a pointer without throwing (uses ReadValue<ulong> — never ReadPtr which throws)
