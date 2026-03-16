@@ -1,9 +1,4 @@
-using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.GameWorld;
-using eft_dma_radar.Tarkov.Unity.IL2CPP;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
@@ -11,19 +6,14 @@ using HandyControl.Controls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
-using Color = System.Windows.Media.Color;
-using ColorConverter = System.Windows.Media.ColorConverter;
 using ComboBox = System.Windows.Controls.ComboBox;
 using MessageBox = HandyControl.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using UserControl = System.Windows.Controls.UserControl;
-using Window = System.Windows.Window;
 
 namespace eft_dma_radar.UI.Pages
 {

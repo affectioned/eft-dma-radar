@@ -1,14 +1,9 @@
 ﻿using eft_dma_radar.Common.Misc;
-using SkiaSharp;
 using SkiaSharp.Views.WPF;
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Input;
-using Point = System.Windows.Point;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Point = System.Windows.Point;
 
 namespace eft_dma_radar.UI.SKWidgetControl
 {

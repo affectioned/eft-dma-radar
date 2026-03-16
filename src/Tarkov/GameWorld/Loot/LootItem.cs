@@ -15,9 +15,7 @@ namespace eft_dma_radar.Tarkov.Loot
     {
         private static Config Config => Program.Config;
         private readonly TarkovMarketItem _item;
-        private DateTime? _lastNotifyTime;
         private static readonly Dictionary<string, DateTime> _lastNotifyTimes = new();
-        private static readonly TimeSpan NotifyCooldown = TimeSpan.FromSeconds(30);
 
         public static EntityTypeSettings LootSettings => Config.EntityTypeSettings.GetSettings("RegularLoot");
         public static EntityTypeSettingsESP LootESPSettings => ESP.Config.EntityTypeESPSettings.GetSettings("RegularLoot");
@@ -34,7 +32,7 @@ namespace eft_dma_radar.Tarkov.Loot
         public static EntityTypeSettings AirdropSettings => Config.EntityTypeSettings.GetSettings("Airdrop");
         public static EntityTypeSettingsESP AirdropESPSettings => ESP.Config.EntityTypeESPSettings.GetSettings("Airdrop");
 
-        private static bool QuestHelperEnabled = Config.QuestHelper.Enabled;
+        private static bool QuestHelperEnabled => Config.QuestHelper.Enabled;
 
         private const float HEIGHT_INDICATOR_THRESHOLD = 1.85f;
 
@@ -74,7 +72,6 @@ namespace eft_dma_radar.Tarkov.Loot
         public string ShortName => _item.ShortName;
 
         public ulong InteractiveClass { get; set; }
-        static Dictionary<ulong, List<int>> _originalMaterials = new();
         /// <summary>
         /// Item's Price (In roubles).
         /// </summary>

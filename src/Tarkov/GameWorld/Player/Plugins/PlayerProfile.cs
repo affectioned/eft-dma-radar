@@ -1,7 +1,6 @@
 ﻿using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Tarkov.API;
 using HandyControl.Tools.Extension;
-using System.Threading;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -55,7 +54,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 return null;
             }
         }
-        public int? _raidCount;
+        private int? _raidCount;
         /// <summary>
         /// Player's Overall Raid Count (only human players).
         /// </summary>

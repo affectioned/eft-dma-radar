@@ -25,14 +25,12 @@ using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
 using ListView = System.Windows.Controls.ListView;
 using ListViewItem = System.Windows.Controls.ListViewItem;
+using MenuItem = System.Windows.Controls.MenuItem;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using UserControl = System.Windows.Controls.UserControl;
 using Window = HandyControl.Controls.Window;
-using DataGridCell = System.Windows.Controls.DataGridCell;
-using DataGrid = System.Windows.Controls.DataGrid;
-using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace eft_dma_radar.UI.Pages
 {

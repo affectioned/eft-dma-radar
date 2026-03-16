@@ -13,7 +13,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<Nullable>warnings</Nullable>
+		<Nullable>enable</Nullable>
 		<PlatformTarget>x64</PlatformTarget>
 		<UseWindowsForms>True</UseWindowsForms>
 		<ApplicationManifest>app.manifest</ApplicationManifest>

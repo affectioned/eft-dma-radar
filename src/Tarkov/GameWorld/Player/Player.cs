@@ -2090,7 +2090,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                     var p0 = Skeleton.ESPBuffer[idx];
                     var p1 = Skeleton.ESPBuffer[idx + 1];
-        
+
                     // HARD GUARD ï¿½ï¿½ prevents long diagonal lines
                     if (!p0.IsFinite() || !p1.IsFinite())
                         continue;

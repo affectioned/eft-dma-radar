@@ -1,9 +1,6 @@
 ﻿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Tarkov.GameWorld;
-using eft_dma_radar.UI.Misc;
 
 namespace eft_dma_radar.Tarkov.Features
 {
@@ -12,12 +9,6 @@ namespace eft_dma_radar.Tarkov.Features
     /// </summary>
     internal static class FeatureManager
     {
-        /// <summary>
-        /// HARD DISABLE - Set to true to completely disable ALL memory writes.
-        /// This overrides all config settings. For development/safety.
-        /// </summary>
-        private const bool HARD_DISABLE_ALL_MEMWRITES = false;
-
         internal static void ModuleInit()
         {
             new Thread(Worker)
@@ -38,19 +29,11 @@ namespace eft_dma_radar.Tarkov.Features
         private static void Worker()
         {
             XMLogging.WriteLine("Features Thread Starting...");
-            if (HARD_DISABLE_ALL_MEMWRITES)
-                XMLogging.WriteLine("[FeatureManager] *** MEMORY WRITES HARD DISABLED ***");
 
             while (true)
             {
                 try
                 {
-                    if (HARD_DISABLE_ALL_MEMWRITES)
-                    {
-                        Thread.Sleep(1000);
-                        continue;
-                    }
-
                     // Wait for process to be up (blocks until GameStarted)
                     if (!MemDMABase.WaitForProcess())
                     {

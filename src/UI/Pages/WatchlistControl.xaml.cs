@@ -11,11 +11,11 @@ using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using static SDK.Enums;
 using Button = System.Windows.Controls.Button;
 using Clipboard = System.Windows.Clipboard;
+using MenuItem = System.Windows.Controls.MenuItem;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using UserControl = System.Windows.Controls.UserControl;
-using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace eft_dma_radar.UI.Pages
 {

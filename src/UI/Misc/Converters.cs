@@ -17,7 +17,7 @@ namespace eft_dma_radar.Converters
             {
                 try
                 {
-                    return (SolidColorBrush)(new BrushConverter().ConvertFrom(hex));
+                    return (SolidColorBrush)new BrushConverter().ConvertFrom(hex);
                 }
                 catch
                 {

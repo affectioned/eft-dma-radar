@@ -5,7 +5,6 @@ using eft_dma_radar.Common.Misc.Data.EFT;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.ESP;
@@ -29,12 +28,12 @@ using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using InputManager = eft_dma_radar.Common.Misc.InputManager;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using MenuItem = System.Windows.Controls.MenuItem;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using RadioButton = System.Windows.Controls.RadioButton;
 using UserControl = System.Windows.Controls.UserControl;
-using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace eft_dma_radar.UI.Pages
 {

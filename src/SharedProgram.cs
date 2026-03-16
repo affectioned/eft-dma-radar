@@ -1,5 +1,4 @@
-﻿using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Config;
+﻿using eft_dma_radar.Common.Misc.Config;
 using System.IO;
 using System.Net.Http;
 

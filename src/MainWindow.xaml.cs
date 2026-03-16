@@ -1,11 +1,9 @@
-﻿using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.Maps;
+﻿using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;

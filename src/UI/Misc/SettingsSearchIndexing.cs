@@ -42,7 +42,7 @@ namespace eft_dma_radar.UI.Misc
 
     internal static class SettingsIndexer
     {
-        private static string ExtractItemText(object item)
+        private static string? ExtractItemText(object item)
         {
             switch (item)
             {
@@ -377,7 +377,7 @@ namespace eft_dma_radar.UI.Misc
 
     internal static class SettingsReveal
     {
-        private static string ExtractItemText(object item)
+        private static string? ExtractItemText(object item)
         {
             switch (item)
             {
@@ -512,7 +512,7 @@ namespace eft_dma_radar.UI.Misc
             }
         }
 
-        private static TAncestor FindAncestor<TAncestor>(DependencyObject start) where TAncestor : DependencyObject
+        private static TAncestor? FindAncestor<TAncestor>(DependencyObject start) where TAncestor : DependencyObject
         {
             for (DependencyObject cur = start; cur != null; cur = GetParentSafe(cur))
                 if (cur is TAncestor a) return a;

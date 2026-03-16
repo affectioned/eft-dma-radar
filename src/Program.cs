@@ -5,7 +5,6 @@ global using SDK;
 global using SkiaSharp;
 global using SkiaSharp.Views.Desktop;
 global using System.Buffers;
-global using System.Buffers.Binary;
 global using System.Collections;
 global using System.Collections.Concurrent;
 global using System.ComponentModel;
@@ -407,10 +406,6 @@ namespace eft_dma_radar
 
                 loading.UpdateStatus("Loading Completed!", 100);
                 Thread.Sleep(300);
-            }
-            catch (Exception)
-            {
-                throw;
             }
             finally
             {

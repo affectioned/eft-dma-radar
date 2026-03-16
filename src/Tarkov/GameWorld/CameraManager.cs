@@ -11,8 +11,6 @@ using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using System.Windows.Documents;
-using System.Windows.Input;
 using static eft_dma_radar.Common.Unity.UnityOffsets;
 using ObjectClass = eft_dma_radar.Common.Unity.ObjectClass;
 
@@ -37,11 +35,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// </summary>
         public override ulong OpticCamera { get; }
 
-        // Optional debug fields
-        public static ulong ThermalVision;
-        public static ulong NightVision;
-        public static ulong FPSCamera_;
-
         public CameraManager() : base()
         {
             if (!TryResolveCameras(out var fpsCam, out var opticCam))
@@ -49,8 +42,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             FPSCamera = fpsCam;
             OpticCamera = opticCam;
-
-            FPSCamera_ = FPSCamera;
 
             XMLogging.WriteLine($"[CameraManager] FPSCamera:   0x{FPSCamera:X}");
             XMLogging.WriteLine($"[CameraManager] OpticCamera: 0x{OpticCamera:X}");

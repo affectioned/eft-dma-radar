@@ -2,11 +2,7 @@
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Config;
 using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.LowLevel;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.UI.ESP;
-using eft_dma_radar.UI.LootFilters;
 using eft_dma_radar.UI.Misc;
 using System.IO;
 using System.Windows;
