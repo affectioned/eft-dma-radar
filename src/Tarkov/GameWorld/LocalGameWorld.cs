@@ -1,16 +1,26 @@
-using eft_dma_radar.Common.DMA;
-using eft_dma_radar.Common.DMA.Features;
-using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
 using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
+using eft_dma_radar.Common.DMA;
+using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Tarkov.API;
+using eft_dma_radar.Common.Unity.Collections;
 
 namespace eft_dma_radar.Tarkov.GameWorld
 {
@@ -237,6 +247,21 @@ namespace eft_dma_radar.Tarkov.GameWorld
             _worldInteractablesManager = new WorldInteractablesManager(Base);
 
             XMLogging.WriteLine("[Raid] Game data initialized successfully!");
+
+            if (Config.MemWrites.Aimbot.Enabled && Config.MemWrites.MemWritesEnabled)
+            {
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        Features.MemoryWrites.Aimbot.RunBallisticsDiagnosticOnce();
+                    }
+                    catch (Exception ex)
+                    {
+                        XMLogging.WriteLine($"[Raid] Ballistics diagnostic failed: {ex.Message}");
+                    }
+                });
+            }
         }
 
         /// <summary>
@@ -327,35 +352,35 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static LocalGameWorld GetLocalGameWorld(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-
+        
             try
             {
                 // Use IL2CPP GameObjectManager to find GameWorld (Mono is deprecated)
                 var gomAddress = Memory.GOM;
                 if (!gomAddress.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid GOM address");
-
+        
                 // Find GameWorld via IL2CPP GOM iteration with parallel search
                 var localGameWorld = GameWorldExtensions.GetGameWorld(gomAddress, ct, out string map);
                 if (!localGameWorld.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid LocalGameWorld address");
-
-                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
+        
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
                 // OFFLINE / ONLINE detection (cheap)
-                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
                 try
                 {
                     ulong classNamePtr = Memory.ReadPtrChain(
                         localGameWorld,
                         UnityOffsets.Component.To_NativeClassName,
                         useCache: false);
-
+        
                     string className = Memory.ReadString(classNamePtr, 64, useCache: false);
-
+        
                     IsOffline = className.Equals(
                         "ClientLocalGameWorld",
                         StringComparison.OrdinalIgnoreCase);
-
+        
                     XMLogging.WriteLine($"[IL2CPP] Raid Mode: {(IsOffline ? "OFFLINE" : "ONLINE")}");
                 }
                 catch (Exception ex)
@@ -363,10 +388,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     XMLogging.WriteLine($"[IL2CPP] Could not detect offline mode: {ex.Message}");
                     IsOffline = false;
                 }
-
-                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
-                // LEVEL SETTINGS ï¿½ï¿½C non-blocking
-                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
+        
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // LEVEL SETTINGS ¡§C non-blocking
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
                 try
                 {
                     // 1) Fast path: use cached value if we already resolved it
@@ -377,10 +402,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     }
                     else
                     {
-                        // 2) No cached value yet ï¿½ï¿½C schedule a background resolve.
+                        // 2) No cached value yet ¡§C schedule a background resolve.
                         //    Do NOT block the game / raid init thread here.
                         LevelSettings = 0;
-
+        
                         ThreadPool.QueueUserWorkItem(_ =>
                         {
                             try
@@ -404,7 +429,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     XMLogging.WriteLine($"[IL2CPP] LevelSettings resolution error: {ex.Message}");
                     LevelSettings = 0;
                 }
-
+        
                 return new LocalGameWorld(localGameWorld, map);
             }
             catch (OperationCanceledException)
@@ -442,6 +467,8 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 LootFilterControl.RemoveNonStaticGroups();
                 LootItem.ClearNotificationHistory();
                 LevelSettingsResolver.Reset();
+                EftHardSettingsResolver.InvalidateCache();
+                EftWeatherControllerResolver.InvalidateCache();
 
                 Il2CppClass.ForceReset();
 
@@ -541,7 +568,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (_rgtPlayers.GetPlayerCount() <= 0)
                     return false;
 
-                // 3) Map transition detection ï¿½ï¿½C but not on every single call
+                // 3) Map transition detection ¡§C but not on every single call
                 if ((_mapCheckTick++ & 0x3F) == 0) // every 64 calls
                 {
                     var currentMapId = GetCurrentMapId();
@@ -641,6 +668,21 @@ namespace eft_dma_radar.Tarkov.GameWorld
                                 XMLogging.WriteLine($"[Raid] OnRaidStart error in {feature.GetType().Name}: {ex}");
                             }
                         }
+                        foreach (var player in Memory.Players)
+                        {
+                            if(player is null)
+                                continue;
+                            try
+                            {
+                                
+                                PlayerLookupApiClient.TryResolve(player);
+                                XMLogging.WriteLine($"[Raid] PlayerLookupApiClient resolved player {player.ProfileID}");
+                            }
+                            catch (Exception ex)
+                            {
+                                XMLogging.WriteLine($"[Raid] OnRaidStart error in Player {player}: {ex}");
+                            }
+                        }
                         XMLogging.WriteLine("[Raid] Raid fully active, all features notified.");
                     });
                 }
@@ -668,7 +710,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 XMLogging.WriteLine("Realtime thread starting...");
                 while (InRaid)
                 {
-                    if (Config.RatelimitRealtimeReads || !CameraManagerBase.EspRunning)
+                    if (Config.RatelimitRealtimeReads ||!CameraManagerBase.EspRunning || (MemWriteFeature<Aimbot>.Instance.Enabled && Aimbot.Engaged))
                     {
                         _refreshWait.AutoWait(TimeSpan.FromMilliseconds(1), 1000);
                     }
@@ -961,7 +1003,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch
             {
-                // Swallow ï¿½ï¿½C camera can fail transiently during transitions
+                // Swallow ¡§C camera can fail transiently during transitions
             }
         }
 
@@ -1044,11 +1086,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
                 LevelSettings = 0;
                 LevelSettingsResolver.Reset();
+                EftHardSettingsResolver.InvalidateCache();
+                EftWeatherControllerResolver.InvalidateCache();
 
                 Il2CppClass.ForceReset();
                 _screenManagerStaticClass = 0;
 
-                // 10ï¿½ï¿½C15 seconds cooldown recommended
+                // 10¡§C15 seconds cooldown recommended
                 RaidCooldown.BeginCooldown(12);
 
                 _cts.Cancel();

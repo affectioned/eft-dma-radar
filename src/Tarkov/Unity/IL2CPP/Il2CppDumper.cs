@@ -1,27 +1,32 @@
-﻿using eft_dma_radar.Common.DMA.ScatterAPI;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
+using SDK;
 
 namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 {
     public static class Il2CppDumper
     {
         // ── IL2CPP struct field offsets ──────────────────────────────────────────
-        private const uint K_Name = 0x10;   // char*    Il2CppClass::name
-        private const uint K_Namespace = 0x18;   // char*    Il2CppClass::namespaze
-        private const uint K_Fields = 0x80;   // FieldInfo*  (direct array)
-        private const uint K_Methods = 0x98;   // MethodInfo** (array of pointers)
+        private const uint K_Name        = 0x10;   // char*    Il2CppClass::name
+        private const uint K_Namespace   = 0x18;   // char*    Il2CppClass::namespaze
+        private const uint K_Fields      = 0x80;   // FieldInfo*  (direct array)
+        private const uint K_Methods     = 0x98;   // MethodInfo** (array of pointers)
         private const uint K_MethodCount = 0x120;  // uint16
-        private const uint K_FieldCount = 0x124;  // uint16
+        private const uint K_FieldCount  = 0x124;  // uint16
 
-        private const uint FI_Name = 0x00;   // char*    FieldInfo::name
-        private const uint FI_Offset = 0x18;   // int32    FieldInfo::offset  (signed!)
-        private const uint FI_Stride = 0x20;   // sizeof(FieldInfo)
+        private const uint FI_Name       = 0x00;   // char*    FieldInfo::name
+        private const uint FI_Offset     = 0x18;   // int32    FieldInfo::offset  (signed!)
+        private const uint FI_Stride     = 0x20;   // sizeof(FieldInfo)
 
-        private const uint MI_Pointer = 0x00;   // void*    MethodInfo::methodPointer
-        private const uint MI_Name = 0x18;   // char*    MethodInfo::name
+        private const uint MI_Pointer    = 0x00;   // void*    MethodInfo::methodPointer
+        private const uint MI_Name       = 0x18;   // char*    MethodInfo::name
 
-        private const int MaxClasses = 80_000;
-        private const int MaxNameLen = 256;
+        private const int  MaxClasses    = 80_000;
+        private const int  MaxNameLen    = 256;
 
         // ── Scatter-read raw structs ─────────────────────────────────────────────
 
@@ -42,7 +47,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         private struct RawFieldInfo
         {
             [FieldOffset(0x00)] public ulong NamePtr; // char* name
-            [FieldOffset(0x18)] public int Offset;  // int32 offset (signed!)
+            [FieldOffset(0x18)] public int   Offset;  // int32 offset (signed!)
         }
 
         /// <summary>
@@ -62,8 +67,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private readonly struct SchemaField
         {
-            public readonly string Il2CppName; // name as it appears in IL2CPP metadata
-            public readonly string CsName;     // name to emit in the output struct
+            public readonly string    Il2CppName; // name as it appears in IL2CPP metadata
+            public readonly string    CsName;     // name to emit in the output struct
             public readonly FieldKind Kind;
             public SchemaField(string il2cpp, string cs, FieldKind kind = FieldKind.Normal)
             { Il2CppName = il2cpp; CsName = cs; Kind = kind; }
@@ -71,9 +76,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private sealed class SchemaClass
         {
-            public readonly string Il2CppName; // plain class name used for name-based lookup
-            public readonly string CsName;     // struct name in generated output
-            public readonly bool IsStatic;   // emit as static class (singleton statics)
+            public readonly string        Il2CppName; // plain class name used for name-based lookup
+            public readonly string        CsName;     // struct name in generated output
+            public readonly bool          IsStatic;   // emit as static class (singleton statics)
             public readonly SchemaField[] Fields;
             /// <summary>
             /// When non-null, resolves the class directly via
@@ -113,13 +118,17 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             C("TarkovApplication", [F("_menuOperation")]),
 
             // MainMenuShowOperation
-            C("MainMenuShowOperation", [F("_preloaderUI"), F("_profile")]),
+            C("MainMenuShowOperation", [F("_afkMonitor"), F("_preloaderUI"), F("_profile")]),
 
             // PreloaderUI
-            C("PreloaderUI", [F("_sessionIdText")]),
+            C("PreloaderUI", [F("_sessionIdText"), F("_alphaVersionLabel")]),
+
+            // AFKMonitor → AfkMonitor
+            C("AFKMonitor", [F("_afkTimeout", "Delay")], cs: "AfkMonitor"),
 
             // GameWorld (base fields)
             C("GameWorld", [
+                F("GameDateTime"),
                 F("<SynchronizableObjectLogicProcessor>k__BackingField", "SynchronizableObjectLogicProcessor"),
             ]),
 
@@ -132,6 +141,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 F("<LocationId>k__BackingField", "LocationId"),
                 F("LootList"),
                 F("RegisteredPlayers"),
+                F("BorderZones"),
                 F("MainPlayer"),
                 F("_world", "World"),
                 F("<SynchronizableObjectLogicProcessor>k__BackingField", "SynchronizableObjectLogicProcessor"),
@@ -182,6 +192,47 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // BTRTurretView
             C("BTRTurretView", [F("_bot", "AttachedBot")]),
 
+            // EffectsController
+            C("EffectsController", [
+                F("_effectsPrefab"),
+                F("FastVineteFlicker"),
+                F("<RainScreenDrops>k__BackingField", "RainScreenDrops"),
+                F("<ScreenWater>k__BackingField", "ScreenWater"),
+                F("_vignette"),
+                F("_doubleVision"),
+                F("_hueFocus"),
+                F("_radialBlur"),
+                F("_sharpen"),
+                F("_lowhHealthBlend"),
+                F("_bloodlossBlend"),
+                F("_wiggle"),
+                F("_motionBluer"),
+                F("_bloodOnScreen"),
+                F("_grenadeFlash"),
+                F("_eyeBurn"),
+                F("_blur"),
+                F("_dof"),
+                F("_effectAccumulators"),
+                F("_sharpenAccumulator"),
+                F("_radialBlurAccumulator"),
+                F("_chromaticAberration"),
+                F("_thermalVision"),
+                F("_frostbiteEffect"),
+            ]),
+
+            // FrostbiteEffect
+            C("FrostbiteEffect", [F("_opacity")]),
+
+            // NightVision
+            C("NightVision", [F("_on")]),
+
+            // ThermalVision
+            C("ThermalVision", [
+                F("_material", "Material"), F("On"), F("IsNoisy"), F("IsFpsStuck"), F("IsMotionBlurred"),
+                F("IsGlitch"), F("IsPixelated"), F("ChromaticAberrationThermalShift"),
+                F("UnsharpRadiusBlur"), F("UnsharpBias"),
+            ]),
+
             // HealthInfo → HealthController
             C("HealthInfo", [F("Energy"), F("Hydration")], cs: "HealthController"),
 
@@ -213,24 +264,37 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 F("<MovementContext>k__BackingField", "MovementContext"),
                 F("_playerBody"),
                 F("<ProceduralWeaponAnimation>k__BackingField", "ProceduralWeaponAnimation"),
+                F("_animators"),
+                F("EnabledAnimators"),
                 F("Corpse"),
                 F("<Location>k__BackingField", "Location"),
+                F("<InteractableObject>k__BackingField", "InteractableObject"),
                 F("<Profile>k__BackingField", "Profile"),
+                F("Physical"),
+                F("<AIData>k__BackingField", "AIData"),
                 F("_healthController"),
                 F("_inventoryController"),
                 F("_handsController"),
+                F("<InteractionRayOriginOnStartOperation>k__BackingField", "InteractionRayOriginOnStartOperation"),
+                F("<InteractionRayDirectionOnStartOperation>k__BackingField", "InteractionRayDirectionOnStartOperation"),
+                F("<IsYourPlayer>k__BackingField", "IsYourPlayer"),
                 F("<VoipID>k__BackingField", "VoipID"),
+                F("<PlayerId>k__BackingField", "Id"),
+                F("<GameWorld>k__BackingField", "GameWorld"),
             ]),
 
             // ObservedPlayerView
             C("ObservedPlayerView", [
                 F("<ObservedPlayerController>k__BackingField", "ObservedPlayerController"),
                 F("<Voice>k__BackingField", "Voice"),
+                F("<VisibleToCameraType>k__BackingField", "VisibleToCameraType"),
                 F("<GroupId>k__BackingField", "GroupID"),
                 F("<Side>k__BackingField", "Side"),
                 F("<IsAI>k__BackingField", "IsAI"),
+                F("<NickName>k__BackingField", "NickName"),
                 F("<AccountId>k__BackingField", "AccountId"),
                 F("<PlayerBody>k__BackingField", "PlayerBody"),
+                F("<Id>k__BackingField", "Id"),
                 F("<VoipID>k__BackingField", "VoipId"),
             ]),
 
@@ -238,6 +302,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             C("ObservedPlayerController", [
                 F("<InventoryController>k__BackingField", "InventoryController"),
                 F("<PlayerView>k__BackingField", "Player"),
+                F("<InfoContainer>k__BackingField", "InfoContainer"),
                 F("<MovementController>k__BackingField", "MovementController"),
                 F("<HealthController>k__BackingField", "HealthController"),
                 F("<HandsController>k__BackingField", "HandsController"),
@@ -246,6 +311,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // ObservedPlayerStateContext → ObservedMovementController
             C("ObservedPlayerStateContext", [
                 F("<Rotation>k__BackingField", "Rotation"),
+                F("_velocity", "Velocity"),
             ], cs: "ObservedMovementController"),
 
             // ObservedPlayerHandsController → ObservedHandsController
@@ -273,25 +339,84 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             // ProceduralWeaponAnimation (main)
             C("ProceduralWeaponAnimation", [
+                F("<ShotNeedsFovAdjustments>k__BackingField", "ShotNeedsFovAdjustments"),
+                F("Breath"),
+                F("PositionZeroSum"),
+                F("Shootingg"),
+                F("_aimingSpeed"),
                 F("_isAiming"),
                 F("_optics"),
+                F("_shotDirection"),
+                F("Mask"),
+                F("HandsContainer"),
+                F("_fovCompensatoryDistance"),
             ]),
+
+            // PlayerSpring → HandsContainer
+            C("PlayerSpring", [
+                F("CameraOffset"),
+                F("HandsRotation"),
+                F("CameraRotation"),
+                F("CameraPosition"),
+            ], cs: "HandsContainer"),
 
             // SightNBone
             C("SightNBone", [F("Mod")]),
 
-            // Profile
-            C("Profile", [
-                F("Id"), F("AccountId"), F("Info"), F("Inventory"), F("QuestsData"), F("WishlistManager"),
+            // ShotEffector
+            C("ShotEffector", [F("NewShotRecoil")]),
+
+            // PlayerStateContainer
+            C("PlayerStateContainer", [F("Name"), F("StateFullNameHash")]),
+
+            // NewRecoilShotEffect → NewShotRecoil
+            C("NewRecoilShotEffect", [F("IntensitySeparateFactors")], cs: "NewShotRecoil"),
+
+            // VisorEffect
+            C("VisorEffect", [F("Intensity")]),
+
+            // TOD_Time
+            C("TOD_Time", [F("LockCurrentTime")]),
+
+            // TOD_CycleParameters
+            C("TOD_CycleParameters", [F("Hour")]),
+
+            // TOD_ImageEffect → TOD_Scattering
+            C("TOD_ImageEffect", [F("_sky", "Sky")], cs: "TOD_Scattering"),
+
+            // TOD_Sky
+            C("TOD_Sky", [
+                F("<Cycle>k__BackingField", "Cycle"),
+                F("<Components>k__BackingField", "TOD_Components"),
             ]),
 
-            // WishlistManager (renamed to EFT_WishlistManager in game)
-            C("EFT_WishlistManager", [F("_userItems", "Items")]),
+            // TOD_Components
+            C("TOD_Components", [F("<Time>k__BackingField", "TOD_Time")]),
+
+            // Profile
+            C("Profile", [
+                F("Id"), F("AccountId"), F("Info"), F("Inventory"), F("Skills"),
+                F("TaskConditionCounters"), F("QuestsData"), F("WishlistManager"), F("Stats"),
+            ]),
+
+            // WishlistManager
+            C("WishlistManager", [F("_userItems", "Items")]),
 
             // ProfileInfo → PlayerInfo
             C("ProfileInfo", [
-                F("EntryPoint"), F("<Side>k__BackingField", "Side"), F("RegistrationDate"), F("GroupId"),
+                F("Nickname"), F("EntryPoint"), F("<Side>k__BackingField", "Side"), F("RegistrationDate"),
+                F("GroupId"), F("<Settings>k__BackingField", "Settings"), F("MemberCategory"), F("_experience", "Experience"),
             ], cs: "PlayerInfo"),
+
+            // SkillManager
+            C("SkillManager", [
+                F("StrengthBuffJumpHeightInc"), F("StrengthBuffThrowDistanceInc"),
+                F("MagDrillsLoadSpeed"), F("MagDrillsUnloadSpeed"),
+                F("RaidLoadedAmmoAction"), F("RaidUnloadedAmmoAction"),
+            ]),
+
+            // FloatBuff → SkillValueContainer
+            C("FloatBuff", [F("Value")], cs: "SkillValueContainer"),
 
             // QuestStatusData → QuestData
             C("QuestStatusData", [F("Id"), F("Status"), F("CompletedConditions"), F("Template")], cs: "QuestData"),
@@ -312,34 +437,65 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             C("ItemHandsController", [F("_item", "Item")]),
 
             // FirearmController
-            C("FirearmController", [F("Fireport")]),
+            C("FirearmController", [F("Fireport"), F("COI", "TotalCenterOfImpact"), F("WeaponLn")]),
+
+            // ClientFirearmController (fields from ClientFirearmController + inherited FirearmController)
+            C("FirearmController", [F("WeaponLn")], cs: "ClientFirearmController"),
+            C("ClientFirearmController", [F("LastShotId", "ShotIndex")], cs: "ClientFirearmController"),
 
             // MovementContext
             C("MovementContext", [
                 F("_player", "Player"),
                 F("_rotation"),
+                F("PlantState"),
                 F("<CurrentState>k__BackingField", "CurrentState"),
+                F("_states"),
+                F("_movementStates"),
+                F("_tilt"),
+                F("_physicalCondition"),
+                F("_speedLimitIsDirty"),
+                F("<StateSpeedLimit>k__BackingField", "StateSpeedLimit"),
+                F("<StateSprintSpeedLimit>k__BackingField", "StateSprintSpeedLimit"),
+                F("_lookDirection"),
+                F("<WalkInertia>k__BackingField", "WalkInertia"),
+                F("<SprintBrakeInertia>k__BackingField", "SprintBrakeInertia"),
+                F("_poseInertia"),
+                F("_currentPoseInertia"),
+                F("_inertiaAppliedTime"),
             ]),
+
+            // MovementState (from MovementState class)
+            C("MovementState", [F("StickToGround"), F("PlantTime")], cs: "MovementState"),
+
+            // BaseMovementState (from BaseMovementState class → same output)
+            C("BaseMovementState", [F("Name"), F("AnimatorStateHash"), F("AuthoritySpeed")], cs: "MovementState"),
+
+            // MovePlayerState (from MovePlayerState class → same output)
+            C("MovePlayerState", [F("_velocity"), F("_velocity2")], cs: "MovementState"),
 
             // InventoryController
             C("InventoryController", [F("<Inventory>k__BackingField", "Inventory")]),
 
             // Inventory
-            C("Inventory", [F("Equipment"), F("Stash")]),
+            C("Inventory", [F("Equipment"), F("QuestRaidItems"), F("QuestStashItems"), F("Stash")]),
 
             // Stash
             C("Stash", [F("_grid", "Grids")]),
 
-            // CompoundItem → Equipment (class renamed to EFT_InventoryLogic_CompoundItem)
-            C("EFT_InventoryLogic_CompoundItem", [F("Grids"), F("Slots")], cs: "Equipment"),
+            // CompoundItem → Stash (Slots from CompoundItem, same output Stash)
+            C("CompoundItem", [F("Slots")], cs: "Stash"),
+
+            // CompoundItem → Equipment
+            C("CompoundItem", [F("Grids"), F("Slots")], cs: "Equipment"),
 
             // BarterOther → BarterOtherOffsets
             C("BarterOther", [F("Dogtag")], cs: "BarterOtherOffsets"),
 
             // DogtagComponent
             C("DogtagComponent", [
-                F("AccountId"), F("ProfileId"), F("Nickname"),
-                F("KillerAccountId"), F("KillerProfileId"), F("KillerName"), F("WeaponName"),
+                F("GroupId"), F("AccountId"), F("ProfileId"), F("Nickname"),
+                F("Side"), F("Level"), F("Time"), F("Status"), F("KillerAccountId"),
+                F("KillerProfileId"), F("KillerName"), F("WeaponName"), F("CarriedByGroupMember"),
             ]),
 
             // Grid → Grids
@@ -352,6 +508,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             C("Slot", [
                 F("<ContainedItem>k__BackingField", "ContainedItem"),
                 F("<ID>k__BackingField", "ID"),
+                F("Required"),
             ]),
 
             // LootItem → InteractiveLootItem
@@ -361,7 +518,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             C("Skeleton", [F("_values")], cs: "DizSkinningSkeleton"),
 
             // LootableContainer (fields from LootableContainer class)
-            C("LootableContainer", [F("ItemOwner")], cs: "LootableContainer"),
+            C("LootableContainer", [F("ItemOwner"), F("Template")], cs: "LootableContainer"),
 
             // WorldInteractiveObject (fields inherited → same output LootableContainer)
             C("WorldInteractiveObject", [
@@ -376,8 +533,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 F("StackObjectsCount"), F("Version"), F("Components"), F("<Template>k__BackingField", "Template"), F("<SpawnedInSession>k__BackingField", "SpawnedInSession"),
             ], cs: "LootItem"),
 
-            // CompoundItem → LootItemMod (class renamed to EFT_InventoryLogic_CompoundItem)
-            C("EFT_InventoryLogic_CompoundItem", [F("Grids"), F("Slots")], cs: "LootItemMod"),
+            // CompoundItem → LootItemMod
+            C("CompoundItem", [F("Grids"), F("Slots")], cs: "LootItemMod"),
 
             // Grid → Grid
             C("Grid", [F("<ItemCollection>k__BackingField", "ItemCollection")], cs: "Grid"),
@@ -392,11 +549,50 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 F("_magSlotCache"),
             ], cs: "LootItemWeapon"),
 
+            // LevelSettings
+            C("LevelSettings", [F("AmbientMode"), F("EquatorColor"), F("GroundColor")]),
+
+            // SlotView_2 → PlayerBodySubclass
+            C("SlotView_2", [F("Dresses")], cs: "PlayerBodySubclass"),
+
+            // Dress
+            C("Dress", [F("Renderers")]),
+
+            // EFTHardSettings (singleton with TypeIndex)
+            C("EFTHardSettings", [
+                F("POSE_CHANGING_SPEED"),
+                F("_instance"),
+                F("MED_EFFECT_USING_PANEL"),
+                F("MOUSE_LOOK_HORIZONTAL_LIMIT"),
+                F("MOUSE_LOOK_LIMIT_IN_AIMING_COEF"),
+                F("MOUSE_LOOK_VERTICAL_LIMIT"),
+                F("ABOVE_OR_BELOW"),
+                F("ABOVE_OR_BELOW_STAIRS"),
+                F("AIM_PROCEDURAL_INTENSITY"),
+                F("AIR_CONTROL_BACK_DIR"),
+                F("AIR_CONTROL_NONE_OR_ORT_DIR"),
+                F("AIR_CONTROL_SAME_DIR"),
+                F("AIR_LERP"),
+                F("AIR_MIN_SPEED"),
+                F("DecelerationSpeed"),
+                F("WEAPON_OCCLUSION_LAYERS"),
+                F("DOOR_RAYCAST_DISTANCE"),
+                F("LOOT_RAYCAST_DISTANCE"),
+            ], s: true, ti: Offsets.Special.EFTHardSettings_TypeIndex),
+
+            // GPUInstancerManager (singleton with TypeIndex)
+            C("GPUInstancerManager", [
+                F("runtimeDataList"),
+            ], s: true, ti: Offsets.Special.GPUInstancerManager_TypeIndex),
+
+            // ClientBackendSession
+            C("ClientBackendSession", [F("<BackEndConfig>k__BackingField", "BackEndConfig")]),
+
             // FireModeComponent
             C("FireModeComponent", [F("FireMode")]),
 
             // MagazineTemplate → LootItemMagazine
-            C("MagazineTemplate", [F("Cartridges")], cs: "LootItemMagazine"),
+            C("MagazineTemplate", [F("Cartridges"), F("LoadUnloadModifier")], cs: "LootItemMagazine"),
 
             // Item → MagazineClass
             C("Item", [F("StackObjectsCount")], cs: "MagazineClass"),
@@ -405,13 +601,48 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             C("StackSlot", [F("_items"), F("MaxCount")]),
 
             // ItemTemplate
-            C("ItemTemplate", [F("Name"), F("ShortName"), F("<_id>k__BackingField", "_id"), F("QuestItem")]),
+            C("ItemTemplate", [F("Name"), F("ShortName"), F("<_id>k__BackingField", "_id"), F("Weight"), F("QuestItem")]),
+
+            // ModTemplate
+            C("ModTemplate", [F("Velocity")]),
+
+            // AmmoTemplate
+            C("AmmoTemplate", [
+                F("InitialSpeed"), F("BallisticCoeficient"), F("BulletMassGram"), F("BulletDiameterMilimeters"),
+            ]),
+
+            // WeaponTemplate
+            C("WeaponTemplate", [
+                F("Velocity"), F("AllowJam"), F("AllowFeed"), F("AllowMisfire"), F("AllowSlide"),
+            ]),
 
             // PlayerBody
-            C("PlayerBody", [F("SkeletonRootJoint")]),
+            C("PlayerBody", [
+                F("SkeletonRootJoint"), F("BodySkins"), F("_bodyRenderers"), F("SlotViews"), F("PointOfView"),
+            ]),
+
+            // InventoryBlur
+            C("InventoryBlur", [F("_blurCount"), F("_upsampleTexDimension")]),
+
+            // Physical
+            C("PhysicalBase", [
+                F("Overweight"), F("WalkOverweight"), F("WalkSpeedLimit"), F("Inertia"),
+                F("Stamina"), F("Oxygen"), F("BaseOverweightLimits"), F("SprintOverweightLimits"),
+                F("PreviousWeight"), F("SprintAcceleration"), F("PreSprintAcceleration"),
+                F("_encumbered"), F("_overEncumbered"), F("SprintOverweight"), F("<BerserkRestorationFactor>k__BackingField", "BerserkRestorationFactor"),
+            ], cs: "Physical"),
+
+            // Stamina → PhysicalValue
+            C("Stamina", [F("Current")], cs: "PhysicalValue"),
+
+            // BreathEffector
+            C("BreathEffector", [F("Intensity")]),
 
             // OpticCameraManager
-            C("OpticCameraManager", [F("<Camera>k__BackingField", "Camera")]),
+            C("OpticCameraManager", [F("<Camera>k__BackingField", "Camera"), F("<CurrentOpticSight>k__BackingField", "CurrentOpticSight")]),
+
+            // GPUInstancerRuntimeData
+            C("GPUInstancerRuntimeData", [F("instanceBounds")]),
 
             // CameraManager → EFTCameraManager
             C("CameraManager", [
@@ -428,6 +659,14 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // SightModTemplate → SightInterface
             C("SightModTemplate", [F("Zooms")], cs: "SightInterface"),
 
+            // WeatherController (instance fields + static Instance, with TypeIndex)
+            C("WeatherController", [F("Instance"), F("WeatherDebug")], s: true, ti: Offsets.Special.WeatherController_TypeIndex),
+
+            // WeatherDebug
+            C("WeatherDebug", [
+                F("CloudDensity"), F("Fog"), F("LightningThunderProbability"),
+                F("Rain"), F("WindMagnitude"), F("isEnabled"),
+            ]),
         ];
 
         // ── IL2CPP bootstrap resolution ─────────────────────────────────────────
@@ -588,6 +827,51 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         }
 
         /// <summary>
+        /// Maps IL2CPP class names → <see cref="Offsets.Special"/> TypeIndex field names.
+        /// Add entries here when new singleton classes need TypeIndex resolution.
+        /// </summary>
+        private static readonly (string Il2CppName, string FieldName)[] TypeIndexMap =
+        [
+            ("EFTHardSettings",     nameof(Offsets.Special.EFTHardSettings_TypeIndex)),
+            ("GPUInstancerManager", nameof(Offsets.Special.GPUInstancerManager_TypeIndex)),
+            ("WeatherController",   nameof(Offsets.Special.WeatherController_TypeIndex)),
+            ("GlobalConfiguration", nameof(Offsets.Special.GlobalConfiguration_TypeIndex)),
+        ];
+
+        /// <summary>
+        /// Looks up known singleton class names in the scanned type table and
+        /// updates <see cref="Offsets.Special"/> TypeIndex fields dynamically.
+        /// Falls back to hardcoded values for any class not found.
+        /// </summary>
+        private static void ResolveTypeIndices(Dictionary<string, int> nameToIndex)
+        {
+            var specialType = typeof(Offsets.Special);
+            const BindingFlags bf = BindingFlags.Public | BindingFlags.Static;
+
+            foreach (var (il2cppName, fieldName) in TypeIndexMap)
+            {
+                var fi = specialType.GetField(fieldName, bf);
+                if (fi is null)
+                    continue;
+
+                if (nameToIndex.TryGetValue(il2cppName, out var index))
+                {
+                    var previous = (uint)fi.GetValue(null);
+                    fi.SetValue(null, (uint)index);
+
+                    if (previous != (uint)index)
+                        XMLogging.WriteLine($"[Il2CppDumper] {fieldName} updated: {previous} → {index}");
+                    else
+                        XMLogging.WriteLine($"[Il2CppDumper] {fieldName} matches hardcoded value ({index}).");
+                }
+                else
+                {
+                    XMLogging.WriteLine($"[Il2CppDumper] WARN: '{il2cppName}' not found in type table — {fieldName} using fallback ({fi.GetValue(null)}).");
+                }
+            }
+        }
+
+        /// <summary>
         /// Resolves IL2CPP offsets at runtime and applies them to
         /// <see cref="Offsets"/> via reflection. Hardcoded defaults in SDK.cs
         /// serve as fallback for any field that cannot be resolved.
@@ -625,13 +909,45 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             var classes = ReadAllClassesFromTable(tablePtr);
             XMLogging.WriteLine($"[Il2CppDumper] Type table: {classes.Count} classes found.");
 
-            var nameLookup = new Dictionary<string, ulong>(classes.Count, StringComparer.Ordinal);
-            var nameToIndex = new Dictionary<string, int>(classes.Count, StringComparer.Ordinal);
+            var nameLookup  = new Dictionary<string, ulong>(classes.Count * 2, StringComparer.Ordinal);
+            var nameToIndex = new Dictionary<string, int>(classes.Count * 2, StringComparer.Ordinal);
+
+            // Dedup numbering: when multiple classes share the same sanitized base name,
+            // the first is keyed as "World", the second as "World_2", third as "World_3", etc.
+            // This matches the C++ AppSDK naming convention used by the schema.
+            var baseNameSeen = new Dictionary<string, int>(classes.Count, StringComparer.Ordinal);
+
             foreach (var (name, _, ptr, idx) in classes)
             {
+                var san = SanitizeName(name);
+
+                // Index by raw name and sanitized name (first-wins via TryAdd).
                 nameLookup.TryAdd(name, ptr);
                 nameToIndex.TryAdd(name, idx);
+                if (san != name)
+                {
+                    nameLookup.TryAdd(san, ptr);
+                    nameToIndex.TryAdd(san, idx);
+                }
+
+                // Dedup numbering by sanitized base name:
+                // First "World" → key "World", second → "World_2", third → "World_3", etc.
+                if (baseNameSeen.TryGetValue(san, out int seen))
+                {
+                    int next = seen + 1;
+                    baseNameSeen[san] = next;
+                    var dedupKey = $"{san}_{next}";
+                    nameLookup.TryAdd(dedupKey, ptr);
+                    nameToIndex.TryAdd(dedupKey, idx);
+                }
+                else
+                {
+                    baseNameSeen[san] = 1;
+                }
             }
+
+            // Dynamically resolve TypeIndex values for known singleton classes.
+            ResolveTypeIndices(nameToIndex);
 
             // Build schema AFTER TypeIndex resolution so it picks up updated values.
             var schema = BuildSchema();
@@ -639,9 +955,6 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // Reflection: locate nested types inside Offsets once.
             var offsetsType = typeof(Offsets);
             const BindingFlags bf = BindingFlags.Public | BindingFlags.Static;
-
-            // Warn about any Offsets.* struct with no schema entry (will silently use hardcoded fallback).
-            CheckSchemaCompleteness(schema, offsetsType);
 
             int updated = 0, fallback = 0, classesSkipped = 0;
 
@@ -682,7 +995,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     continue;
                 }
 
-                var fieldMap = ReadClassFields(klassPtr);
+                var fieldMap  = ReadClassFields(klassPtr);
                 var methodMap = sc.Fields.Any(sf => sf.Kind == FieldKind.MethodRva)
                     ? ReadClassMethods(klassPtr, gaBase)
                     : null;
@@ -727,7 +1040,6 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                         // FieldInfo::offset is signed. Positive → uint, negative → int.
                         object value = offset >= 0 ? (object)(uint)offset : (object)offset;
-                        CheckOffsetDelta(nestedType, sf.CsName, value, bf);
                         if (TrySetField(nestedType, sf.CsName, value, bf))
                             updated++;
                         else
@@ -878,7 +1190,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             // Step 3: Scatter read all name and namespace strings in one batch.
             var nameEntries = new ScatterReadEntry<UTF8String>[validIndices.Count];
-            var nsEntries = new ScatterReadEntry<UTF8String>[validIndices.Count];
+            var nsEntries   = new ScatterReadEntry<UTF8String>[validIndices.Count];
             var stringBatch = new List<IScatterEntry>(validIndices.Count * 2);
 
             for (int j = 0; j < validIndices.Count; j++)
@@ -928,7 +1240,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private static Dictionary<string, int> ReadClassFields(ulong klassPtr)
         {
-            var result = new Dictionary<string, int>(StringComparer.Ordinal);
+            var result     = new Dictionary<string, int>(StringComparer.Ordinal);
             var fieldCount = Memory.ReadValue<ushort>(klassPtr + K_FieldCount, false);
             if (fieldCount == 0 || fieldCount > 4096) return result;
 
@@ -972,7 +1284,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private static Dictionary<string, ulong> ReadClassMethods(ulong klassPtr, ulong gaBase)
         {
-            var result = new Dictionary<string, ulong>(StringComparer.Ordinal);
+            var result      = new Dictionary<string, ulong>(StringComparer.Ordinal);
             var methodCount = Memory.ReadValue<ushort>(klassPtr + K_MethodCount, false);
             if (methodCount == 0 || methodCount > 4096) return result;
 
@@ -1062,55 +1374,6 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             return null;
         }
 
-        // ── Validation helpers ────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Warns when a freshly resolved field offset deviates from the current
-        /// hardcoded/previously-resolved value by more than <see cref="OffsetDeltaThreshold"/>.
-        /// A large delta usually means the field was matched to the wrong entry.
-        /// </summary>
-        private const int OffsetDeltaThreshold = 0x200;
-
-        private static void CheckOffsetDelta(Type type, string fieldName, object newValue, BindingFlags bf)
-        {
-            var fi = type.GetField(fieldName, bf);
-            if (fi is null || fi.IsLiteral) return;
-
-            try
-            {
-                var current = fi.GetValue(null);
-                long prev = fi.FieldType == typeof(uint[])
-                    ? (current is uint[] arr && arr.Length > 0 ? arr[0] : 0)
-                    : Convert.ToInt64(current);
-
-                long next = Convert.ToInt64(newValue);
-                long delta = Math.Abs(next - prev);
-
-                if (prev != 0 && delta > OffsetDeltaThreshold)
-                    XMLogging.WriteLine($"[Il2CppDumper] DELTA WARN: {type.Name}.{fieldName}: 0x{prev:X} → 0x{next:X} (delta 0x{delta:X})");
-            }
-            catch { /* never let a diagnostic break resolution */ }
-        }
-
-        /// <summary>
-        /// Logs any <c>Offsets.*</c> nested struct that has no corresponding schema entry.
-        /// Those structs will silently use their hardcoded fallback values — this makes the gap visible.
-        /// </summary>
-        private static readonly HashSet<string> _nonSchemaStructs =
-            new(["Special"], StringComparer.Ordinal);
-
-        private static void CheckSchemaCompleteness(SchemaClass[] schema, Type offsetsType)
-        {
-            var covered = new HashSet<string>(schema.Select(sc => sc.CsName), StringComparer.Ordinal);
-
-            foreach (var nested in offsetsType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic))
-            {
-                if (_nonSchemaStructs.Contains(nested.Name)) continue;
-                if (!covered.Contains(nested.Name))
-                    XMLogging.WriteLine($"[Il2CppDumper] COVERAGE WARN: Offsets.{nested.Name} has no schema entry — using hardcoded fallback.");
-            }
-        }
-
         // Reads a pointer without throwing (uses ReadValue<ulong> — never ReadPtr which throws)
         private static ulong ReadPtr(ulong addr)
         {
@@ -1124,6 +1387,22 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             if (!addr.IsValidVirtualAddress()) return null;
             try { return Memory.ReadString(addr, MaxNameLen, false); }
             catch { return null; }
+        }
+
+        /// <summary>
+        /// Replaces non-alphanumeric/non-underscore characters with '_'.
+        /// e.g. "World`2" → "World_2", "SlotView`2" → "SlotView_2"
+        /// </summary>
+        private static string SanitizeName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+            var sb = new char[name.Length];
+            for (int i = 0; i < name.Length; i++)
+            {
+                char c = name[i];
+                sb[i] = char.IsLetterOrDigit(c) || c == '_' ? c : '_';
+            }
+            return new string(sb);
         }
     }
 }
