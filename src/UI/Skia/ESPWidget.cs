@@ -20,7 +20,6 @@
         private SKPath _resizeTriangle;
         private float _relativeX;
         private float _relativeY;
-        private bool _isDragging = false;
         private int _zIndex;
         #endregion
 
@@ -264,7 +263,6 @@
                 {
                     _capturedWidget._titleDrag = false;
                     _capturedWidget._resizeDrag = false;
-                    _capturedWidget._isDragging = false;
                     _capturedWidget = null;
                     return;
                 }
@@ -290,7 +288,6 @@
             {
                 case WidgetClickEvent.ClickedTitleBar:
                     _titleDrag = true;
-                    _isDragging = true;
                     _capturedWidget = this;
                     break;
 
@@ -298,7 +295,6 @@
                     if (CanResize)
                     {
                         _resizeDrag = true;
-                        _isDragging = true;
                         _capturedWidget = this;
                     }
                     break;
@@ -309,7 +305,6 @@
         {
             _titleDrag = false;
             _resizeDrag = false;
-            _isDragging = false;
         }
 
         private void HandleMouseMove(SKPoint position, MouseEventArgs e)

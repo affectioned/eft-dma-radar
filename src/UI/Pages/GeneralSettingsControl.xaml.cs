@@ -1,27 +1,47 @@
-using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Tarkov;
 using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
+using System.Net.Http;
+using System.Windows.Media.Imaging;
+using SkiaSharp;
+using System.IO;
+using eft_dma_radar.Tarkov.Features.MemoryWrites;
+using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
-using eft_dma_radar.UI.Controls;
+using eft_dma_radar.Tarkov.WebRadar;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.UI.SKWidgetControl;
+using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Config;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Misc.Data.EFT;
+using eft_dma_radar.UI.Controls;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Common.Unity.LowLevel;
+using eft_dma_radar.Common.Unity.LowLevel.PhysX;
 using HandyControl.Controls;
+using HandyControl.Data;
+using HandyControl.Themes;
+using Microsoft.VisualBasic;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
+using static eft_dma_radar.Tarkov.Features.MemoryWrites.Aimbot;
+using static SDK.Offsets;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
 using Clipboard = System.Windows.Clipboard;
@@ -29,12 +49,12 @@ using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using InputManager = eft_dma_radar.Common.Misc.InputManager;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
-using MenuItem = System.Windows.Controls.MenuItem;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using RadioButton = System.Windows.Controls.RadioButton;
 using UserControl = System.Windows.Controls.UserControl;
+using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace eft_dma_radar.UI.Pages
 {
@@ -106,6 +126,7 @@ namespace eft_dma_radar.UI.Pages
             "Player Info Widget",
             "Loot Info Widget",
             "Quest Info Widget",
+            "Quest Planner Widget",
             "HotKey Info Widget"
         };
 
@@ -143,6 +164,7 @@ namespace eft_dma_radar.UI.Pages
                     expEntityInformation,
                     expMonitorSettings,
                     expQuestHelper,
+                    expWebRadar,
                     expPlayerAPIService,
                     expPlayerColors,
                     expLootColors,
@@ -232,16 +254,16 @@ namespace eft_dma_radar.UI.Pages
 
                 var warningResult = MessageBox.Show(
                         "WARNING: Importing a configuration will replace current settings including:\n\n" +
-                        "�? General settings & UI preferences\n" +
-                        "�? Player/Entity display settings\n" +
-                        "�? Color configurations\n" +
-                        "�? Hotkey assignments\n" +
-                        "�? ESP configurations\n" +
-                        "�? Panel and toolbar positions\n" +
-                        "�? Memory writing settings\n" +
-                        "�? Loot settings\n" +
-                        "�? Quest helper settings\n" +
-                        "�? Container settings\n\n" +
+                        "ï¿? General settings & UI preferences\n" +
+                        "ï¿? Player/Entity display settings\n" +
+                        "ï¿? Color configurations\n" +
+                        "ï¿? Hotkey assignments\n" +
+                        "ï¿? ESP configurations\n" +
+                        "ï¿? Panel and toolbar positions\n" +
+                        "ï¿? Memory writing settings\n" +
+                        "ï¿? Loot settings\n" +
+                        "ï¿? Quest helper settings\n" +
+                        "ï¿? Container settings\n\n" +
                         "NOTE: Cache & Web Radar data will not be preserved.\n\n" +
                         "This action cannot be undone. Continue?",
                         "Import Configuration Warning",
@@ -303,10 +325,18 @@ namespace eft_dma_radar.UI.Pages
                             XMLogging.WriteLine("[Config] Starting config import process...");
 
                             var currentCache = Config.Cache;
+                            var currentWebRadar = Config.WebRadar;
 
                             Config.EnsureComplexObjectsInitialized(importedConfig);
 
                             importedConfig.Cache = currentCache;
+                            importedConfig.WebRadar = currentWebRadar;
+
+                            if (importedConfig.MemWrites.MemWritesEnabled)
+                            {
+                                var memoryWritingDecision = MemoryWritingControl.HandleConfigImportMemoryWriting(importedConfig);
+                                MemoryWritingControl.MemoryWritingImportHandler.ApplyMemoryWritingDecision(importedConfig, memoryWritingDecision);
+                            }
 
                             Program.UpdateConfig(importedConfig);
 
@@ -340,6 +370,16 @@ namespace eft_dma_radar.UI.Pages
                                 var mainWindow = MainWindow.Window;
                                 if (mainWindow != null)
                                 {
+                                    if (mainWindow.MemoryWritingControl != null)
+                                    {
+                                        MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
+                                        mainWindow.MemoryWritingControl.LoadSettings();
+                                        await Task.Delay(50);
+
+                                        mainWindow.MemoryWritingControl.FeatureInstanceCheck();
+                                        await Task.Delay(50);
+                                    }
+
                                     if (mainWindow.LootSettingsControl != null)
                                     {
                                         mainWindow.LootSettingsControl.LoadSettings();
@@ -445,6 +485,10 @@ namespace eft_dma_radar.UI.Pages
             try
             {
                 var mainWindow = MainWindow.Window;
+                MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
+
+                if (mainWindow?.MemoryWritingControl != null)
+                    mainWindow.MemoryWritingControl.FeatureInstanceCheck();
 
                 XMLogging.WriteLine("[Config] Feature instances updated successfully");
             }
@@ -614,6 +658,14 @@ namespace eft_dma_radar.UI.Pages
             chkKillZones.Checked += GeneralCheckbox_Checked;
             chkKillZones.Unchecked += GeneralCheckbox_Checked;
 
+            // Web Radar Server
+            btnWebRadarStart.Click += btnWebRadarStart_Click;
+            chkWebRadarUPnP.Checked += GeneralCheckbox_Checked;
+            chkWebRadarUPnP.Unchecked += GeneralCheckbox_Checked;
+            lblWebRadarLink.MouseLeftButtonUp += lblWebRadarLink_MouseLeftButtonUp;
+            txtWebRadarPort.TextChanged += GeneralTextbox_TextChanged;
+
+
             // Player API Service
             rdbTarkovDev.Checked += GeneralRadioButton_Checked;
             rdbEftApiTech.Checked += GeneralRadioButton_Checked;
@@ -642,6 +694,8 @@ namespace eft_dma_radar.UI.Pages
             chkKillZones.IsChecked = Config.QuestHelper.KillZones;
             RefreshQuestHelper();
 
+            // Web Radar Server
+            InitializeWebRadar();
 
             // Player API Service
             var alternateService = Config.AlternateProfileService;
@@ -1085,9 +1139,9 @@ namespace eft_dma_radar.UI.Pages
                     }
 
                     var sortedItems = QuestItems.OrderBy(q => q.Name, StringComparer.OrdinalIgnoreCase).ToList();
-
+                    
                     QuestItems.Clear();
-
+                    
                     foreach (var item in sortedItems)
                     {
                         QuestItems.Add(item);
@@ -1107,20 +1161,20 @@ namespace eft_dma_radar.UI.Pages
                 MessageBoxButton.OKCancel,
                 MessageBoxImage.Warning
             );
-
+        
             if (result != MessageBoxResult.OK)
                 return;
-
+        
             btnSendStashDogTags.IsEnabled = false;
             btnSendStashDogTags.Content = "Sending...";
-
+        
             try
             {
                 await Task.Run(() =>
                 {
                     MenuStashDogtagDumper.Dump();
                 });
-
+        
                 NotificationsShared.Success(
                     "Menu stash dogtags successfully sent to API.\n\n" +
                     "You may now enter a raid safely."
@@ -1137,6 +1191,31 @@ namespace eft_dma_radar.UI.Pages
                 btnSendStashDogTags.IsEnabled = true;
                 btnSendStashDogTags.Content = "Send Stashed DogTags";
             }
+        }
+        private void InitializeWebRadar()
+        {
+            chkWebRadarUPnP.IsChecked = Config.WebRadar.UPnP;
+            txtWebRadarPort.Text = Config.WebRadar.Port;
+
+
+            if (WebRadarServer.IsRunning)
+            {
+                btnWebRadarStart.Content = "Stop";
+                ToggleWebRadarControls(false);
+            }
+            else
+            {
+                btnWebRadarStart.Content = "Start";
+                ToggleWebRadarControls(true);
+            }
+        }
+
+        private void ToggleWebRadarControls(bool enabled = false)
+        {
+            btnWebRadarStart.IsEnabled = true;
+            chkWebRadarUPnP.IsEnabled = enabled;
+            txtWebRadarPort.IsEnabled = enabled;
+
         }
 
         private void ToggleMapSetup()
@@ -1396,7 +1475,7 @@ namespace eft_dma_radar.UI.Pages
             if (hasKey)
             {
                 txtApiStatus.Text = $"API key loaded successfully";
-                btnCreateApiFile.Content = "Edit API File�?";
+                btnCreateApiFile.Content = "Edit API Fileï¿?";
                 btnCreateApiFile.ToolTip = "Replace the stored API key";
                 btnClearApiFile.IsEnabled = true;
                 btnOpenApiFolder.IsEnabled = true;
@@ -1404,7 +1483,7 @@ namespace eft_dma_radar.UI.Pages
             else
             {
                 txtApiStatus.Text = "No API key saved.";
-                btnCreateApiFile.Content = "Create API File�?";
+                btnCreateApiFile.Content = "Create API Fileï¿?";
                 btnCreateApiFile.ToolTip = "Create and store an API key securely";
                 btnClearApiFile.IsEnabled = false;
                 btnOpenApiFolder.IsEnabled = false;
@@ -1475,6 +1554,9 @@ namespace eft_dma_radar.UI.Pages
                         break;
                     case "KillZones":
                         Config.QuestHelper.KillZones = value;
+                        break;
+                    case "UPnP":
+                        Config.WebRadar.UPnP = value;
                         break;
                     case "EnableApi":
                         Config.AlternateProfileService = value;
@@ -1558,6 +1640,12 @@ namespace eft_dma_radar.UI.Pages
                         Config.MonitorHeight = intValue;
                         CameraManagerBase.UpdateViewportRes();
                         break;
+                    case "WebRadarClientURL":
+                        Config.WebRadar.WebClientURL = text;
+                        break;
+                    case "WebRadarPort":
+                        Config.WebRadar.Port = text;
+                        break;
                 }
 
                 Config.Save();
@@ -1639,13 +1727,154 @@ namespace eft_dma_radar.UI.Pages
             }
         }
 
+        private void lblWebRadarLink_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var link = lblWebRadarLink.Text;
+
+            if (string.IsNullOrWhiteSpace(link))
+                return;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(link) { UseShellExecute = true });
+            }
+            catch { }
+        }
+
+        private async void btnWebRadarStart_Click(object sender, RoutedEventArgs e)
+        {
+            if (WebRadarServer.IsRunning)
+            {
+                ToggleWebRadarControls(false);
+                btnWebRadarStart.Content = "Stopping...";
+
+                try
+                {
+                    await WebRadarServer.StopAsync();
+
+                    btnWebRadarStart.Content = "Start";
+                    lblWebRadarLink.Text = "";
+                    ToggleWebRadarControls(true);
+
+                    NotificationsShared.Info("Web Radar Server stopped successfully.");
+                }
+                catch (Exception ex)
+                {
+                    NotificationsShared.Error($"ERROR Stopping Web Radar Server: {ex.Message}");
+                    btnWebRadarStart.Content = "Stop";
+                    ToggleWebRadarControls(true);
+                }
+            }
+            else
+            {
+                ToggleWebRadarControls(false);
+                btnWebRadarStart.Content = "Starting...";
+
+                try
+                {
+                    var tickRate = TimeSpan.FromMilliseconds(1000d / 60);
+                    var bindIP = "0.0.0.0";
+                    var port = int.Parse(txtWebRadarPort.Text.Trim());
+                    var useUPnP = chkWebRadarUPnP.IsChecked == true;
+
+
+                    await WebRadarServer.StartAsync(bindIP, port, tickRate, useUPnP);
+
+                    btnWebRadarStart.Content = "Stop";
+
+                    var externalIP = await WebRadarServer.GetExternalIPAsync();
+                    var webClientUrl = $"http://{externalIP}";
+
+                    lblWebRadarLink.Text = $"{webClientUrl}:{port}";
+
+                    NotificationsShared.Success("Web Radar Server started successfully!");
+                }
+                catch (Exception ex)
+                {
+                    NotificationsShared.Error($"ERROR Starting Web Radar Server: {ex.Message}");
+                    btnWebRadarStart.Content = "Start";
+                    ToggleWebRadarControls(true);
+                }
+            }
+        }
+
+        private void btnAutoDetectIP_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var localIP = WebRadarServer.GetLocalIPAddress();
+
+                if (!string.IsNullOrEmpty(localIP))
+                {
+                    Config.WebRadar.IP = localIP;
+                    Config.Save();
+
+                    NotificationsShared.Success($"Auto-detected local IP: {localIP}");
+                    XMLogging.WriteLine($"[AutoDetectIP] Found local IP: {localIP}");
+                }
+                else
+                {
+                    NotificationsShared.Warning("Could not auto-detect local IP address. Please enter manually.");
+                    XMLogging.WriteLine("[AutoDetectIP] Failed to detect local IP");
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationsShared.Error($"Error auto-detecting IP: {ex.Message}");
+                XMLogging.WriteLine($"[AutoDetectIP] Error: {ex.Message}");
+            }
+        }
+
         private void btnRefreshMonitors_Click(object sender, RoutedEventArgs e)
         {
             InitMonitors();
         }
 
 
-        private void btnCreateApiFile_Click(object sender, RoutedEventArgs e) { }
+        private async void btnCreateApiFile_Click(object sender, RoutedEventArgs e)
+        {
+            btnCreateApiFile.IsEnabled = false;
+
+            try
+            {
+                var exists = File.Exists(ApiKeyStore.StorePath);
+
+                if (exists)
+                {
+                    var res = MessageBox.Show(
+                        "An API key already exists. Do you want to replace it?",
+                        "Replace API Key",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (res != MessageBoxResult.Yes)
+                        return;
+                }
+
+                var key = await ApiKeyWizard.CaptureApiKeyAsync();
+                if (string.IsNullOrWhiteSpace(key))
+                    return;
+
+                ApiKeyStore.SaveApiKey(key);
+
+                UpdateApiStatus();
+
+                MessageBox.Show(
+                    exists ? "API key updated successfully." : "API key saved securely (encrypted).",
+                    "Success",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save API key:\n{ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                btnCreateApiFile.IsEnabled = true;
+            }
+        }
 
 
         private void btnOpenApiFolder_Click(object sender, RoutedEventArgs e)
@@ -1705,6 +1934,7 @@ namespace eft_dma_radar.UI.Pages
                     case "Quest Info Widget":
                         Config.ShowQuestInfoWidget = isSelected;
                         break;
+
                     case "HotKey Info Widget":
                         Config.ESP.ShowHotkeyInfoWidget = isSelected;
                         break;
@@ -1840,6 +2070,7 @@ namespace eft_dma_radar.UI.Pages
             btnClosestPlayerColor.Click += ColorButton_Clicked;
             btnTopLootColor.Click += ColorButton_Clicked;
             btnMiniRadarThemeColor.Click += ColorButton_Clicked;
+            btnOverridePlayerTextColor.Click += ColorButton_Clicked;
 
             // Interface
             btnAccentColor.Click += ColorButton_Clicked;
@@ -1991,6 +2222,7 @@ namespace eft_dma_radar.UI.Pages
             _brushFields["ClosestPlayer"] = closestPlayerBrush;
             _brushFields["TopLoot"] = topLootBrush;
             _brushFields["MiniRadarTheme"] = miniRadarThemeBrush;
+            _brushFields["OverridePlayerText"] = overridePlayerTextBrush;
 
             // Interface colors
             _brushFields["Interface.Accent"] = accentColor;
@@ -2224,7 +2456,7 @@ namespace eft_dma_radar.UI.Pages
             var registeredCount = 0;
             var allHotkeys = GetAllHotkeys().ToList();
             XMLogging.WriteLine($"[Hotkeys] Found {allHotkeys.Count} total hotkey entries in config");
-
+            
             foreach (var (actionKey, entry) in allHotkeys)
             {
                 if (entry.Enabled && entry.Key != -1)
@@ -2276,7 +2508,7 @@ namespace eft_dma_radar.UI.Pages
         private void HandleHotkeyEvent(string actionKey, HotkeyEntry entry, InputManager.KeyEventArgs e)
         {
             XMLogging.WriteLine($"[Hotkeys] HandleHotkeyEvent: {actionKey} IsPressed={e.IsPressed} Mode={entry.Mode}");
-
+            
             if (_lastExecutionTime.TryGetValue(actionKey, out var lastTime))
             {
                 var elapsed = (DateTime.UtcNow - lastTime).TotalMilliseconds;
@@ -2507,28 +2739,28 @@ namespace eft_dma_radar.UI.Pages
             {
                 #region Testing
                 //case nameof(HotkeyConfig.TestAction):
-                //XMLogging.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
-                //break;
+                    //XMLogging.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
+                    //break;
                 //case nameof(HotkeyConfig.TestAction2):
-                // try
-                // {
-                //     var from = Memory.LocalPlayer.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
-                //     foreach (var player in Memory.Players)
-                //     {
-                //         var to = player.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
-                //         bool visible = PhysXManager.IsVisible(from, to);
-                //         if (visible)
-                //             NotificationsShared.Info($"Player {player.Name} is visible from the local player's head.");
-                //         else
-                //             NotificationsShared.Info($"Player {player.Name} is NOT visible from the local player's head. {to}");
-                //     }
-                //     NotificationsShared.Info("Test action executed!");
-                // }
-                // catch (Exception ex)
-                // {
-                //     NotificationsShared.Error($"Error executing test action: {ex.Message}");
-                // }
-                //break;
+                  // try
+                  // {
+                  //     var from = Memory.LocalPlayer.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
+                  //     foreach (var player in Memory.Players)
+                  //     {
+                  //         var to = player.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
+                  //         bool visible = PhysXManager.IsVisible(from, to);
+                  //         if (visible)
+                  //             NotificationsShared.Info($"Player {player.Name} is visible from the local player's head.");
+                  //         else
+                  //             NotificationsShared.Info($"Player {player.Name} is NOT visible from the local player's head. {to}");
+                  //     }
+                  //     NotificationsShared.Info("Test action executed!");
+                  // }
+                  // catch (Exception ex)
+                  // {
+                  //     NotificationsShared.Error($"Error executing test action: {ex.Message}");
+                  // }
+                    //break;
                 #endregion
 
                 #region Loot
@@ -2598,17 +2830,90 @@ namespace eft_dma_radar.UI.Pages
 
                 #region Memory Writes
                 // Global
+                case nameof(HotkeyConfig.ToggleRageMode):
+                    Config.MemWrites.RageMode = isActive;
+                    mainWindow.MemoryWritingControl.chkRageMode.IsChecked = isActive;
+                    break;
                 // Aimbot
+                case nameof(HotkeyConfig.ToggleAimbot):
+                    Config.MemWrites.Aimbot.Enabled = isActive;
+                    mainWindow.MemoryWritingControl.chkEnableAimbot.IsChecked = isActive;
+                    break;
                 case nameof(HotkeyConfig.EngageAimbot):
+                    XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageAimbot = {isActive}");
                     Aimbot.Engaged = isActive;
                     break;
+                case nameof(HotkeyConfig.EngageLTW):
+                    LootThroughWalls.ZoomEngaged = isActive;
+                    break;                    
                 case nameof(HotkeyConfig.EngageTeammate):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;
                     break;
+                case nameof(HotkeyConfig.ToggleAimbotMode):
+                    if (isActive)
+                    {
+                        Config.MemWrites.Aimbot.TargetingMode = Config.MemWrites.Aimbot.TargetingMode == AimbotTargetingMode.FOV
+                            ? AimbotTargetingMode.CQB
+                            : AimbotTargetingMode.FOV;
+                    }
+                    break;
+                case nameof(HotkeyConfig.AimbotBone):
+                    if (isActive)
+                        mainWindow.MemoryWritingControl.ToggleAimbotBone();
+                    break;
+                case nameof(HotkeyConfig.SafeLock):
+                    Config.MemWrites.Aimbot.SilentAim.SafeLock = isActive;
+                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Safe Lock", isActive);
+                    break;
+                case nameof(HotkeyConfig.RandomBone):
+                    Config.MemWrites.Aimbot.RandomBone.Enabled = isActive;
+                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Random Bone", isActive);
+                    break;
+                case nameof(HotkeyConfig.AutoBone):
+                    Config.MemWrites.Aimbot.SilentAim.AutoBone = isActive;
+                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Auto Bone", isActive);
+                    break;
+                case nameof(HotkeyConfig.HeadshotAI):
+                    Config.MemWrites.Aimbot.HeadshotAI = isActive;
+                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Headshot AI", isActive);
+                    break;
                 // Weapons
-                // Movement;
+                case nameof(HotkeyConfig.FastWeaponOps):
+                    Config.MemWrites.FastWeaponOps = isActive;
+                    mainWindow.MemoryWritingControl.chkFastWeaponOps.IsChecked = isActive;
+                    break;
+                case nameof(HotkeyConfig.NoRecoil):
+                    Config.MemWrites.NoRecoil = isActive;
+                    mainWindow.MemoryWritingControl.chkNoRecoil.IsChecked = isActive;
+                    break;
+                // Movement
+                case nameof(HotkeyConfig.WideLean):
+                    Config.MemWrites.WideLean.Enabled = isActive;
+                    mainWindow.MemoryWritingControl.chkWideLean.IsChecked = isActive;
+                    break;
+                case nameof(HotkeyConfig.WideLeanUp):
+                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Up : WideLean.EWideLeanDirection.Off);
+                    break;
+                case nameof(HotkeyConfig.WideLeanLeft):
+                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Left : WideLean.EWideLeanDirection.Off);
+                    break;
+                case nameof(HotkeyConfig.WideLeanRight):
+                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Right : WideLean.EWideLeanDirection.Off);
+                    break;
                 // Camera
+                case nameof(HotkeyConfig.NoVisor):
+                    Config.MemWrites.NoVisor = isActive;
+                    mainWindow.MemoryWritingControl.chkNoVisor.IsChecked = isActive;
+                    break;
+                case nameof(HotkeyConfig.NightVision):
+                    Config.MemWrites.NightVision = isActive;
+                    mainWindow.MemoryWritingControl.chkNightVision.IsChecked = isActive;
+                    break;
+                case nameof(HotkeyConfig.ThermalVision):
+                    Config.MemWrites.ThermalVision = isActive;
+                    mainWindow.MemoryWritingControl.chkThermalVision.IsChecked = isActive;
+                    break;
                 #endregion
 
                 #region General Settings
@@ -2629,9 +2934,10 @@ namespace eft_dma_radar.UI.Pages
                     UpdateSpecificWidgetOption("Loot Info Widget", isActive);
                     break;
                 case nameof(HotkeyConfig.QuestInfoWidget):
-                    Config.ShowLootInfoWidget = isActive;
+                    Config.ShowQuestInfoWidget = isActive;
                     UpdateSpecificWidgetOption("Quest Info Widget", isActive);
                     break;
+
                 //case nameof(HotkeyConfig.ConnectGroups):
                 //    Config.ConnectGroups = isActive;
                 //    UpdateSpecificGeneralOption("Connect Groups", isActive);
@@ -2683,6 +2989,17 @@ namespace eft_dma_radar.UI.Pages
                     });
                 }
             }
+        }
+
+        private void SetWideLeanDirection(WideLean.EWideLeanDirection dir)
+        {
+            if (!Config.MemWrites.WideLean.Enabled)
+            {
+                WideLean.Direction = WideLean.EWideLeanDirection.Off;
+                return;
+            }
+
+            WideLean.Direction = WideLean.Direction == dir ? WideLean.EWideLeanDirection.Off : dir;
         }
 
         private void RefreshHotkeyDisplay()
@@ -2776,7 +3093,6 @@ namespace eft_dma_radar.UI.Pages
         #endregion
 
         #region ConfigTab
-        private bool _isRefreshingConfigList = false;
         private bool _ignoreConfigSelectionChanged = false;
         private async Task InitializeConfigTab()
         {
@@ -2808,37 +3124,34 @@ namespace eft_dma_radar.UI.Pages
         }
         private void RefreshConfigList()
         {
-            _isRefreshingConfigList = true;
-
             try
             {
                 _ignoreConfigSelectionChanged = true;
                 cboConfigs.Items.Clear();
-
+        
                 var configs = ConfigManager.GetAvailableConfigs()
                     .OrderBy(c => c.ConfigName)
                     .ToList();
-
+        
                 var currentConfigNameWithoutExt = Path.GetFileNameWithoutExtension(ConfigManager.CurrentConfigName);
                 var selectedIndex = -1;
-
+        
                 foreach (var config in configs)
                 {
                     var displayName = Path.GetFileNameWithoutExtension(config.ConfigName);
                     cboConfigs.Items.Add(displayName);
-
+        
                     if (displayName.Equals(currentConfigNameWithoutExt, StringComparison.OrdinalIgnoreCase))
                         selectedIndex = cboConfigs.Items.Count - 1;
                 }
-
+        
                 cboConfigs.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
-
+        
                 txtCurrentConfig.Text = currentConfigNameWithoutExt;
             }
             finally
             {
                 _ignoreConfigSelectionChanged = false;
-                _isRefreshingConfigList = false;
             }
         }
 
@@ -2857,13 +3170,13 @@ namespace eft_dma_radar.UI.Pages
 
             if (confirm != MessageBoxResult.Yes)
                 return;
-
+            
             try
             {
                 ESPForm.CloseESP();
 
                 ConfigManager.CurrentConfig.Save();
-
+                
                 var loaded = await Task.Run(() => ConfigManager.LoadConfig(configToLoad));
 
                 if (loaded)
@@ -2916,6 +3229,14 @@ namespace eft_dma_radar.UI.Pages
 
                 await Dispatcher.InvokeAsync(async () =>
                 {
+                    if (mainWindow.MemoryWritingControl != null)
+                    {
+                        MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
+                        mainWindow.MemoryWritingControl.LoadSettings();
+                        await Task.Delay(50);
+                        mainWindow.MemoryWritingControl.FeatureInstanceCheck();
+                    }
+
                     if (mainWindow.LootSettingsControl != null)
                     {
                         mainWindow.LootSettingsControl.LoadSettings();
@@ -3066,7 +3387,7 @@ namespace eft_dma_radar.UI.Pages
         private void BtnExportClipboard_Click(object sender, RoutedEventArgs e)
         {
             ExportConfigToClipboard();
-        }
+        }   
 
         private void ExportConfigToClipboard()
         {
@@ -3080,6 +3401,7 @@ namespace eft_dma_radar.UI.Pages
 
                 var configForExport = JsonSerializer.Deserialize<Config>(JsonSerializer.Serialize(Config));
                 configForExport.Cache = null;
+                configForExport.WebRadar = null;
 
                 var options = new JsonSerializerOptions
                 {
@@ -3091,8 +3413,8 @@ namespace eft_dma_radar.UI.Pages
                 var jsonData = JsonSerializer.Serialize(configForExport, options);
                 Clipboard.SetText(jsonData);
 
-                NotificationsShared.Success("[Config] Configuration exported to clipboard successfully! (Cache)");
-                XMLogging.WriteLine("[Config] Configuration exported to clipboard (excluding Cache)");
+                NotificationsShared.Success("[Config] Configuration exported to clipboard successfully! (Cache and WebRadar settings excluded)");
+                XMLogging.WriteLine("[Config] Configuration exported to clipboard (excluding Cache and WebRadar)");
             }
             catch (Exception ex)
             {
@@ -3115,16 +3437,16 @@ namespace eft_dma_radar.UI.Pages
 
                 var confirm = MessageBox.Show(
                     "WARNING: Importing a configuration will replace current settings including:\n\n" +
-                    "�? General settings & UI preferences\n" +
-                    "�? Player/Entity display settings\n" +
-                    "�? Color configurations\n" +
-                    "�? Hotkey assignments\n" +
-                    "�? ESP configurations\n" +
-                    "�? Panel and toolbar positions\n" +
-                    "�? Memory writing settings\n" +
-                    "�? Loot settings\n" +
-                    "�? Quest helper settings\n" +
-                    "�? Container settings\n\n" +
+                    "ï¿? General settings & UI preferences\n" +
+                    "ï¿? Player/Entity display settings\n" +
+                    "ï¿? Color configurations\n" +
+                    "ï¿? Hotkey assignments\n" +
+                    "ï¿? ESP configurations\n" +
+                    "ï¿? Panel and toolbar positions\n" +
+                    "ï¿? Memory writing settings\n" +
+                    "ï¿? Loot settings\n" +
+                    "ï¿? Quest helper settings\n" +
+                    "ï¿? Container settings\n\n" +
                     "NOTE: Cache data will not be preserved.\n\n" +
                     "This action cannot be undone. Continue?",
                     "Import Configuration Warning",
@@ -3197,7 +3519,7 @@ namespace eft_dma_radar.UI.Pages
             {
                 btnImportClipboard.IsEnabled = true;
             }
-        }
+        }          
         #endregion
     }
 }

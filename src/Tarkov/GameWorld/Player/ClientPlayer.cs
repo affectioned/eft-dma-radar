@@ -19,7 +19,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// <summary>
         /// Procedural Weapon Animation
         /// </summary>
-        public ulong PWA { get; }
+        public new ulong PWA { get; }
         /// <summary>
         /// PlayerInfo Address (GClass1044)
         /// </summary>
@@ -28,10 +28,6 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// Player name.
         /// </summary>
         public override string Name { get; set; }
-        /// <summary>
-        /// Account UUID for Human Controlled Players.
-        /// </summary>
-        public override string AccountID { get; set; }
         /// <summary>
         /// Group that the player belongs to.
         /// </summary>
@@ -114,7 +110,6 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             CorpseAddr = this + Offsets.Player.Corpse;
             VoipId = ParseVoipId(this);
 
-            AccountID = GetAccountID();
             NetworkGroupID = GetGroupID();
             MovementContext = GetMovementContext();
             RotationAddress = ValidateRotationAddr(MovementContext + Offsets.MovementContext._rotation);
@@ -138,30 +133,44 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 else
                 {
                     IsHuman = true;
-                    Name = "PScav";
+
+                    string nickname = null;
+                    try
+                    {
+                        var nickPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.Nickname);
+                        if (nickPtr != 0)
+                            nickname = Memory.ReadUnityString(nickPtr);
+                    }
+                    catch { }
+
+                    Name = !string.IsNullOrWhiteSpace(nickname) ? nickname : "PScav";
                     Type = PlayerType.PScav;
                 }
             }
             else if (IsPmc)
             {
                 IsHuman = true;
-                Name = "PMC";
-                //Type = PlayerType.PMC;
+
+                string nickname = null;
+                try
+                {
+                    var nickPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.Nickname);
+                    if (nickPtr != 0)
+                        nickname = Memory.ReadUnityString(nickPtr);
+                }
+                catch { }
+
+                Name = !string.IsNullOrWhiteSpace(nickname)
+                    ? nickname
+                    : (PlayerSide == EPlayerSide.Usec ? "USEC" : "BEAR");
+
                 Type = (PlayerSide == EPlayerSide.Usec) ? PlayerType.USEC : PlayerType.BEAR;
             }
             else
                 throw new NotImplementedException(nameof(PlayerSide));
         }
 
-        /// <summary>
-        /// Get Player's Account ID.
-        /// </summary>
-        /// <returns>Account ID Numeric String.</returns>
-        private string GetAccountID()
-        {
-            var idPTR = Memory.ReadPtr(Profile + Offsets.Profile.AccountId);
-            return Memory.ReadUnityString(idPTR);
-        }
+
         private void TryEnsureSkeleton()
         {
             if (_skeleton != null || _skeletonFailed)

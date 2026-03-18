@@ -1,8 +1,12 @@
-﻿using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
+﻿using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Unity;
 using static SDK.Enums;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer
@@ -26,10 +30,6 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// </summary>
         public override string Name { get; set; }
         /// <summary>
-        /// Account UUID for Human Controlled Players.
-        /// </summary>
-        public override string AccountID { get; set; }
-        /// <summary>
         /// Deprecated
         /// </summary>
         public override int GroupID { get; } = -1;
@@ -37,7 +37,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// <summary>
         /// EFT network squad (real teammates only)
         /// </summary>
-        public int NetworkGroupID { get; }
+        public override int NetworkGroupID { get; }
         private bool _identityApplied = false;
 
         /// <summary>
@@ -49,13 +49,13 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 if (!IsHuman || string.IsNullOrEmpty(ProfileID))
                     return -1;
-
+        
                 return PlayerListWorker.GetOrAssignSpawnGroup(
                     ProfileID,
                     Position,
                     PlayerSide);
             }
-        }
+        }     
 
         /// <summary>
         /// Player's Faction.
@@ -94,7 +94,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         // Key: Player.Base (ulong) → assigned index
         private static readonly Dictionary<ulong, int> _pmcIndex = new();
-        private static readonly object _pmcLock = new();
+        private static readonly object _pmcLock = new(); 
         private int GetOrAssignPmcIndex(bool isUsec)
         {
             lock (_pmcLock)
@@ -109,12 +109,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 _pmcIndex[this] = index;
                 return index;
             }
-        }
+        }               
         /// <summary>
         /// Player's Skeleton Bones.
         /// </summary>
         public override Skeleton Skeleton { get; protected set; }
-        public override int VoipId { get; }
+        public override int VoipId { get; }  
         private static int ParseVoipId(ulong baseAddr)
         {
             try
@@ -133,7 +133,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 return -1;
             }
-        }
+        }     
         public bool TryEnsureSkeleton()
         {
             if (Skeleton != null)
@@ -149,7 +149,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 Skeleton = null;
                 return false;
             }
-        }
+        }            
         /// <summary>
         /// Player's Current Health Status
         /// </summary>
@@ -185,8 +185,6 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             var isAI = Memory.ReadValue<bool>(this + Offsets.ObservedPlayerView.IsAI);
             IsHuman = !isAI;
 
-            // TEMP: Account IDs no longer networked
-            AccountID = IsHuman ? "HUMAN" : "AI";
             IsHuman = !isAI;
             if (IsScav)
             {
@@ -293,8 +291,25 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 }
                 else
                 {
-                    int pscavNumber = Interlocked.Increment(ref _playerScavNumber);
-                    Name = $"PScav{pscavNumber}";
+                    string nickname = null;
+                    try
+                    {
+                        var nickPtr = Memory.ReadPtr(this + Offsets.ObservedPlayerView.NickName);
+                        if (nickPtr != 0)
+                            nickname = Memory.ReadUnityString(nickPtr);
+                    }
+                    catch { }
+
+                    if (!string.IsNullOrWhiteSpace(nickname))
+                    {
+                        Name = nickname;
+                    }
+                    else
+                    {
+                        int pscavNumber = Interlocked.Increment(ref _playerScavNumber);
+                        Name = $"PScav{pscavNumber}";
+                    }
+
                     Type = GroupID != -1 && GroupID == localPlayer.GroupID
                         ? PlayerType.Teammate
                         : PlayerType.PScav;
@@ -306,8 +321,28 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 bool isTeammate =
                     NetworkGroupID != -1 &&
                     NetworkGroupID == localPlayer.NetworkGroupID;
-                int pmcIndex = GetOrAssignPmcIndex(PlayerSide == EPlayerSide.Usec);
-                Name = PlayerSide == EPlayerSide.Usec ? $"PMC {pmcIndex}" : $"PMC {pmcIndex}";
+
+                // Try to read the actual nickname from memory
+                string nickname = null;
+                try
+                {
+                    var nickPtr = Memory.ReadPtr(this + Offsets.ObservedPlayerView.NickName);
+                    if (nickPtr != 0)
+                        nickname = Memory.ReadUnityString(nickPtr);
+                }
+                catch { }
+
+                if (!string.IsNullOrWhiteSpace(nickname))
+                {
+                    Name = nickname;
+                }
+                else
+                {
+                    int pmcIndex = GetOrAssignPmcIndex(PlayerSide == EPlayerSide.Usec);
+                    Name = PlayerSide == EPlayerSide.Usec
+                        ? $"U:PMC{pmcIndex}"
+                        : $"B:PMC{pmcIndex}";
+                }
 
                 Type = isTeammate
                     ? PlayerType.Teammate
@@ -323,108 +358,11 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 var handController = Memory.ReadPtr(HandsControllerAddr);
                 var dickController = Memory.ReadPtr(handController + Offsets.ObservedHandsController.BundleAnimationBones);
-                this.PWA = Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
+                this.PWA =  Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
                 Profile = new PlayerProfile(this);
             }
-            else
-                AccountID = "AI";
-
-            if (IsHumanHostile)
-            {
-                if (PlayerWatchlist.Entries.TryGetValue(AccountID, out var watchlistEntry))
-                {
-                    Type = PlayerType.SpecialPlayer;
-                    UpdateAlerts(watchlistEntry.Reason);
-
-                    if (watchlistEntry.StreamingPlatform != StreamingPlatform.None && !string.IsNullOrEmpty(watchlistEntry.Username))
-                    {
-                        var streamingUrl = StreamingUtils.GetStreamingURL(watchlistEntry.StreamingPlatform, watchlistEntry.Username);
-                        StreamingURL = streamingUrl;
-
-                        CheckIfStreaming();
-                    }
-                    else
-                    {
-                        StreamingURL = null;
-                        IsStreaming = false;
-                    }
-                }
-            }
-
-            PlayerHistory.AddOrUpdate(this);
         }
-        public void CheckIfStreaming()
-        {
-            if (string.IsNullOrEmpty(StreamingURL))
-            {
-                IsStreaming = false;
 
-                if (Type == PlayerType.Streamer)
-                {
-                    UpdatePlayerType(PlayerType.SpecialPlayer);
-
-                    if (PlayerWatchlist.Entries.TryGetValue(AccountID, out var entry))
-                    {
-                        ClearAlerts();
-                        UpdateAlerts(entry.Reason);
-                    }
-                }
-                return;
-            }
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    if (!PlayerWatchlist.Entries.TryGetValue(AccountID, out var watchlistEntry))
-                        return;
-
-                    var wasStreaming = IsStreaming;
-                    string alertReason = watchlistEntry.Reason;
-
-                    if (watchlistEntry.StreamingPlatform != StreamingPlatform.None &&
-                        !string.IsNullOrEmpty(watchlistEntry.Username))
-                    {
-                        IsStreaming = await StreamingUtils.IsLive(watchlistEntry.StreamingPlatform, watchlistEntry.Username);
-                    }
-                    else
-                    {
-                        IsStreaming = false;
-                    }
-
-                    if (IsStreaming != wasStreaming)
-                    {
-                        if (IsStreaming)
-                        {
-                            UpdatePlayerType(PlayerType.Streamer);
-                            ClearAlerts();
-                            UpdateAlerts(alertReason);
-                        }
-                        else if (Type == PlayerType.Streamer)
-                        {
-                            UpdatePlayerType(PlayerType.SpecialPlayer);
-                            ClearAlerts();
-                            UpdateAlerts(alertReason);
-
-                            XMLogging.WriteLine($"[Streaming] {Name} ({AccountID}) is no longer streaming");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    XMLogging.WriteLine($"[Streaming] Error checking if {Name} [{AccountID}] is live: {ex.Message}");
-                }
-            });
-        }
-        /// <summary>
-        /// Get Player's Account ID.
-        /// </summary>
-        /// <returns>Account ID Numeric String.</returns>
-        private string GetAccountID()
-        {
-            var idPTR = Memory.ReadPtr(this + Offsets.ObservedPlayerView.AccountId);
-            return Memory.ReadUnityString(idPTR);
-        }
 
         /// <summary>
         /// Gets player's Group Number.
@@ -484,27 +422,20 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             if (_identityApplied)
                 return;
 
-            if (string.IsNullOrEmpty(ProfileID))
-                return;
+            try
+            {
+                var nickPtr = Memory.ReadPtr(this + Offsets.ObservedPlayerView.NickName);
+                if (nickPtr == 0)
+                    return;
 
-            // Pull ONLY from PlayerList.json
-            if (!PlayerListWorker.TryGetIdentity(
-                    ProfileID,
-                    out var nickname,
-                    out var accountId))
-                return;
+                var nickname = Memory.ReadUnityString(nickPtr);
+                if (string.IsNullOrWhiteSpace(nickname))
+                    return;
 
-            if (!string.IsNullOrWhiteSpace(nickname))
                 Name = nickname;
-
-            if (!string.IsNullOrWhiteSpace(accountId))
-                AccountID = accountId;
-
-            _identityApplied = true;
-            PlayerHistory.AddOrUpdate(this);
-
-            XMLogging.WriteLine(
-                $"[ObservedPlayer] Identity applied from PlayerList.json: {Name} ({AccountID})");
+                _identityApplied = true;
+            }
+            catch { }
         }
 
         private bool _mcSet = false;

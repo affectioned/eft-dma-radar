@@ -1,23 +1,34 @@
-﻿using eft_dma_radar.Common.DMA;
+﻿using eft_dma_radar;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Tarkov.Features.MemoryWrites;
+using eft_dma_radar.UI;
+using eft_dma_radar.UI.LootFilters;
+using eft_dma_radar.UI.Misc;
+using eft_dma_radar.UI.Pages;
+using eft_dma_radar.Common.DMA;
+using eft_dma_radar.UI.ESP;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Config;
+using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.UI.ESP;
-using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Common.Unity.LowLevel;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using static eft_dma_radar.Tarkov.API.EFTProfileService;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using Size = System.Windows.Size;
+using eft_dma_radar.Tarkov.Features.MemoryWrites.Chams;
 public static class ConfigManager
 {
     private static readonly string ConfigDirectory = Program.ConfigPath.FullName;
     public static readonly string CustomConfigDirectory = Program.CustomConfigPath.FullName;
     private const string ConfigExtension = ".json";
     private const string LastSelectedConfigFile = "lastSelectedConfig.json";
-
+    
     public static Config CurrentConfig { get; private set; }
     public static string CurrentConfigName { get; private set; }
 
@@ -39,18 +50,18 @@ public static class ConfigManager
         // Try to load last selected config
         string configToLoad = GetLastSelectedConfig();
         // If no last selected config or it doesn't exist, use config-eft-v3.json
-        if (string.IsNullOrEmpty(configToLoad))
+        if (string.IsNullOrEmpty(configToLoad)) 
         {
             configToLoad = "config-eft-v3.json";
         }
 
         var configPath = Path.Combine(CustomConfigDirectory, configToLoad);
-
+        
         // If the config file doesn't exist, create it
         if (!File.Exists(configPath))
         {
-            CurrentConfig = new Config
-            {
+            CurrentConfig = new Config 
+            { 
                 ConfigName = Path.GetFileNameWithoutExtension(configToLoad),
                 Filename = configToLoad
             };
@@ -71,7 +82,7 @@ public static class ConfigManager
     private static string GetLastSelectedConfig()
     {
         var lastSelectedPath = Path.Combine(CustomConfigDirectory, LastSelectedConfigFile);
-
+        
         try
         {
             if (File.Exists(lastSelectedPath))
@@ -85,7 +96,7 @@ public static class ConfigManager
         {
             XMLogging.WriteLine($"[Config] Error reading last selected config: {ex}");
         }
-
+        
         return null;
     }
 
@@ -93,7 +104,7 @@ public static class ConfigManager
     private static void SetLastSelectedConfig(string configFilename)
     {
         var lastSelectedPath = Path.Combine(CustomConfigDirectory, LastSelectedConfigFile);
-
+        
         try
         {
             var lastSelected = new LastSelectedConfig { ConfigFilename = configFilename };
@@ -154,8 +165,8 @@ public static class ConfigManager
                     config.ConfigName = Path.GetFileNameWithoutExtension(path);
                 }
             }
-            //GeneralSettingsControl.ApplyConfig();
-
+                //GeneralSettingsControl.ApplyConfig();
+            
             return config;
         }
         catch (Exception ex)
@@ -164,7 +175,7 @@ public static class ConfigManager
             return null;
         }
     }
-
+    
     private static bool SafeSaveConfig(Config config, string path)
     {
         try
@@ -227,20 +238,23 @@ public static class ConfigManager
         {
             if (string.IsNullOrEmpty(configName))
                 return false;
-
+    
             if (!configName.EndsWith(ConfigExtension, StringComparison.OrdinalIgnoreCase))
                 configName += ConfigExtension;
-
+    
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(CurrentConfig, options);
             var configToSave = JsonSerializer.Deserialize<Config>(json, options);
 
+            if (configToSave is null)
+                return false;
+
             configToSave.Filename = configName;
             configToSave.ConfigName = Path.GetFileNameWithoutExtension(configName);
-
+    
             var filePath = Path.Combine(CustomConfigDirectory, configName);
             SafeSaveConfig(configToSave, filePath);
-
+            
             XMLogging.WriteLine($"[Config] Saved new config: {configName}");
             return true;
         }
@@ -250,7 +264,7 @@ public static class ConfigManager
             return false;
         }
     }
-
+   
     public static bool DeleteConfig(string configName)
     {
         try
@@ -267,7 +281,7 @@ public static class ConfigManager
             {
                 // Check if we're deleting the currently loaded config
                 bool isCurrent = CurrentConfigName.Equals(configName, StringComparison.OrdinalIgnoreCase);
-
+                
                 File.Delete(filePath);
 
                 if (!File.Exists(filePath))
@@ -277,7 +291,7 @@ public static class ConfigManager
                     {
                         var fallbackConfig = "config-eft-v3.json";
                         var fallbackPath = Path.Combine(CustomConfigDirectory, fallbackConfig);
-
+                        
                         if (File.Exists(fallbackPath))
                         {
                             LoadConfig(fallbackConfig);
@@ -311,7 +325,7 @@ public static class ConfigManager
     {
         var defaultConfig = "config-eft-v3.json";
         var defaultPath = Path.Combine(CustomConfigDirectory, defaultConfig);
-
+        
         if (File.Exists(defaultPath))
         {
             LoadConfig(defaultConfig);
@@ -336,6 +350,17 @@ namespace eft_dma_radar.UI.Misc
     /// </summary>
     public sealed class Config : IConfig
     {
+        #region ISharedConfig
+        [JsonIgnore]
+        public bool MemWritesEnabled => this.MemWrites.MemWritesEnabled;
+        [JsonIgnore]
+        public LowLevelCache LowLevelCache => this.Cache.LowLevel;
+        [JsonIgnore]
+        public ChamsConfig ChamsConfig => this.MemWrites.Chams;    
+        [JsonIgnore]
+        public bool AdvancedMemWrites => this.MemWrites.AdvancedMemWrites;           
+        #endregion
+
         /// <summary>
         /// Toolbar position configuration
         /// </summary>
@@ -353,6 +378,13 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("expanderStates")]
         [JsonInclude]
         public ExpanderStatesConfig ExpanderStates { get; set; } = new();
+
+        /// <summary>
+        /// Quest planner filter settings.
+        /// </summary>
+        [JsonPropertyName("questPlanner")]
+        [JsonInclude]
+        public QuestPlannerSettings QuestPlanner { get; set; } = new QuestPlannerSettings();
 
         /// <summary>
         /// Config Name.
@@ -439,6 +471,7 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("showQuestInfoWidget")]
         public bool ShowQuestInfoWidget { get; set; } = false;
 
+
         /// <summary>
         /// Enables ESP Widget window in Main Window.
         /// </summary>
@@ -480,7 +513,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("lootPPS")]
         public bool LootPPS { get; set; }
-
+        
         /// <summary>
         /// Loot Price Mode.
         /// </summary>
@@ -556,6 +589,13 @@ namespace eft_dma_radar.UI.Misc
         public EntityTypeSettingsConfig EntityTypeSettings { get; set; } = new EntityTypeSettingsConfig();
 
         /// <summary>
+        /// DMA Toolkit (Write Features) Config.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("dmaToolkit")]
+        public MemWritesConfig MemWrites { get; private set; } = new();
+
+        /// <summary>
         /// ESP Configuration.
         /// </summary>
         [JsonInclude]
@@ -582,13 +622,12 @@ namespace eft_dma_radar.UI.Misc
         [JsonInclude]
         [JsonPropertyName("hotKeys")]
         public HotkeyConfig HotKeys { get; private set; } = new();
-
         /// <summary>
-        /// Aimbot Configuration.
+        /// Web Radar Configuration.
         /// </summary>
         [JsonInclude]
-        [JsonPropertyName("aimbot")]
-        public AimbotConfig Aimbot { get; private set; } = new();
+        [JsonPropertyName("webRadar")]
+        public WebRadarConfig WebRadar { get; set; } = new();
 
         /// <summary>
         /// Containers configuration.
@@ -608,7 +647,7 @@ namespace eft_dma_radar.UI.Misc
         /// <summary>
         /// Filename of this Config File (not full path).
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore] 
         public string Filename { get; set; } = "config-eft-v3.json";
 
         /// <summary>
@@ -618,7 +657,27 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("alternateProfileService")]
         public bool AlternateProfileService { get; set; } = false;
 
+        /// <summary>
+        /// Send anonymous data to fd-mambo server to count amoutn of users. A simple ping, no IP or personal info is stored. It creates and uses a uniqe ID number.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("sendAnonymousUsage")]
+        public bool SendAnonymousUsage { get; set; } = false;
+
+        /// <summary>
+        /// The maximum amount of requests to send per minute to eft-api.tech (5 = free tier, 60+ = premium tier)
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("requestsPerMin")]
+        public int RequestsPerMin { get; set; } = 60;
+
         [JsonIgnore] private static readonly Lock _syncRoot = new();
+
+        [JsonIgnore]
+        private FileInfo _configFile => new(Path.Combine(Program.ConfigPath.FullName, Filename));
+
+        [JsonIgnore]
+        private FileInfo _tempFile => new(Path.Combine(Program.ConfigPath.FullName, Filename + ".tmp"));
 
         public static Config Load(string filename)
         {
@@ -626,13 +685,11 @@ namespace eft_dma_radar.UI.Misc
             {
                 try
                 {
-                    Config config = new()
-                    {
-                        Filename = filename
-                    };
+                    Config config = new Config();
+                    config.Filename = filename;
 
                     // Always load from custom config directory now
-                    FileInfo configFile = new(Path.Combine(Program.CustomConfigPath.FullName, filename));
+                    FileInfo configFile = new FileInfo(Path.Combine(Program.CustomConfigPath.FullName, filename));
                     var tempFile = new FileInfo(configFile.FullName + ".tmp");
 
                     if (configFile.Exists)
@@ -671,6 +728,8 @@ namespace eft_dma_radar.UI.Misc
                                 };
 
                                 config = JsonSerializer.Deserialize<Config>(json, options);
+                                if (config is null)
+                                    throw new JsonException("Deserialized config was null.");
                                 config.Filename = filename;
                                 config.ConfigName = Path.GetFileNameWithoutExtension(filename);
 
@@ -751,6 +810,9 @@ namespace eft_dma_radar.UI.Misc
             if (config.QuestHelper == null)
                 config.QuestHelper = new QuestHelperConfig();
 
+            if (config.MemWrites == null)
+                config.MemWrites = new MemWritesConfig();
+
             if (config.ESP == null)
                 config.ESP = new ESPConfig();
 
@@ -763,11 +825,11 @@ namespace eft_dma_radar.UI.Misc
             if (config.HotKeys == null)
                 config.HotKeys = new HotkeyConfig();
 
+            if (config.WebRadar == null)
+                config.WebRadar = new WebRadarConfig();
+
             if (config.Containers == null)
                 config.Containers = new ContainersConfig();
-
-            if (config.Aimbot == null)
-                config.Aimbot = new AimbotConfig();
 
             if (config.Cache == null)
                 config.Cache = new PersistentCache();
@@ -778,6 +840,9 @@ namespace eft_dma_radar.UI.Misc
             if (config.InterfaceColors == null)
                 config.InterfaceColors = InterfaceColorOptions.GetDefaultColors();
 
+            if (config.QuestPlanner == null)
+                config.QuestPlanner = new QuestPlannerSettings();
+
             if (config.PanelPositions != null)
             {
                 if (config.PanelPositions.GeneralSettings == null)
@@ -786,11 +851,8 @@ namespace eft_dma_radar.UI.Misc
                 if (config.PanelPositions.LootSettings == null)
                     config.PanelPositions.LootSettings = new PanelPositionConfig();
 
-                if (config.PanelPositions.Watchlist == null)
-                    config.PanelPositions.Watchlist = new PanelPositionConfig();
-
-                if (config.PanelPositions.PlayerHistory == null)
-                    config.PanelPositions.PlayerHistory = new PanelPositionConfig();
+                if (config.PanelPositions.MemoryWriting == null)
+                    config.PanelPositions.MemoryWriting = new PanelPositionConfig();
 
                 if (config.PanelPositions.ESP == null)
                     config.PanelPositions.ESP = new PanelPositionConfig();
@@ -803,6 +865,12 @@ namespace eft_dma_radar.UI.Misc
 
                 if (config.PanelPositions.MapSetup == null)
                     config.PanelPositions.MapSetup = new PanelPositionConfig();
+
+                if (config.PanelPositions.SettingsSearch == null)
+                    config.PanelPositions.SettingsSearch = new PanelPositionConfig();
+
+                if (config.PanelPositions.QuestPlanner == null)
+                    config.PanelPositions.QuestPlanner = new PanelPositionConfig();
             }
 
             if (config.ExpanderStates != null)
@@ -831,6 +899,24 @@ namespace eft_dma_radar.UI.Misc
             {
                 if (config.QuestHelper.BlacklistedQuests == null)
                     config.QuestHelper.BlacklistedQuests = new HashSet<string>();
+            }
+
+            if (config.MemWrites != null)
+            {
+                if (config.MemWrites.Aimbot == null)
+                    config.MemWrites.Aimbot = new AimbotConfig();
+
+                if (config.MemWrites.WideLean == null)
+                    config.MemWrites.WideLean = new WideLeanConfig();
+
+                if (config.MemWrites.Aimbot != null)
+                {
+                    if (config.MemWrites.Aimbot.SilentAim == null)
+                        config.MemWrites.Aimbot.SilentAim = new SilentAimConfig();
+
+                    if (config.MemWrites.Aimbot.RandomBone == null)
+                        config.MemWrites.Aimbot.RandomBone = new AimbotRandomBoneConfig();
+                }
             }
 
             if (config.ESP != null)
@@ -950,7 +1036,7 @@ namespace eft_dma_radar.UI.Misc
             }
         }
         #endregion
-    }
+    } 
     /// <summary>
     /// Configuration for panel positions
     /// </summary>
@@ -969,21 +1055,17 @@ namespace eft_dma_radar.UI.Misc
         public PanelPositionConfig LootSettings { get; set; } = new PanelPositionConfig();
 
         /// <summary>
+        /// Memory writing panel position
+        /// </summary>
+        [JsonPropertyName("memoryWriting")]
+        public PanelPositionConfig MemoryWriting { get; set; } = new PanelPositionConfig();
+
+        /// <summary>
         /// ESP panel position
         /// </summary>
         [JsonPropertyName("esp")]
         public PanelPositionConfig ESP { get; set; } = new PanelPositionConfig();
-        /// <summary>
-        /// Watchlist panel position
-        /// </summary>
-        [JsonPropertyName("watchlist")]
-        public PanelPositionConfig Watchlist { get; set; } = new PanelPositionConfig();
 
-        /// <summary>
-        /// Player history panel position
-        /// </summary>
-        [JsonPropertyName("playerHistory")]
-        public PanelPositionConfig PlayerHistory { get; set; } = new PanelPositionConfig();
         /// <summary>
         /// Loot filter panel position
         /// </summary>
@@ -1003,10 +1085,16 @@ namespace eft_dma_radar.UI.Misc
         public PanelPositionConfig MapSetup { get; set; } = new PanelPositionConfig();
 
         /// <summary>
-        /// Aimbot panel position
+        /// Settings search panel position
         /// </summary>
-        [JsonPropertyName("aimbot")]
-        public PanelPositionConfig Aimbot { get; set; } = new PanelPositionConfig();
+        [JsonPropertyName("settingsSearch")]
+        public PanelPositionConfig SettingsSearch { get; set; } = new PanelPositionConfig();
+
+        /// <summary>
+        /// Quest planner panel position
+        /// </summary>
+        [JsonPropertyName("questPlanner")]
+        public PanelPositionConfig QuestPlanner { get; set; } = new PanelPositionConfig();
     }
 
     /// <summary>
@@ -1205,7 +1293,7 @@ namespace eft_dma_radar.UI.Misc
             return Settings[playerType];
         }
     }
-
+    
     /// <summary>
     /// Settings for a specific player type
     /// </summary>
@@ -1414,6 +1502,12 @@ namespace eft_dma_radar.UI.Misc
         public float MinKD { get; set; } = 1f;
 
         /// <summary>
+        /// Use the override text color instead of faction color for this player type
+        /// </summary>
+        [JsonPropertyName("useOverrideTextColor")]
+        public bool UseOverrideTextColor { get; set; } = false;
+
+        /// <summary>
         /// Display name in ESP
         /// </summary>
         [JsonIgnore]
@@ -1549,13 +1643,13 @@ namespace eft_dma_radar.UI.Misc
 
         [JsonPropertyName("showRadius")]
         public bool ShowRadius { get; set; } = false;
-
+        
         [JsonPropertyName("showLockedDoors")]
         public bool ShowLockedDoors { get; set; } = true;
 
         [JsonPropertyName("showUnlockedDoors")]
         public bool ShowUnlockedDoors { get; set; } = true;
-
+        
         [JsonPropertyName("hideInactiveExfils")]
         public bool HideInactiveExfils { get; set; } = false;
 
@@ -1755,6 +1849,27 @@ namespace eft_dma_radar.UI.Misc
         public List<string> Selected { get; set; } = new List<string>();
     }
 
+    /// <summary>
+    /// Loot Filter Config.
+    /// </summary>
+    public sealed class LootFilterConfig
+    {
+        /// <summary> //Mambo
+        /// Currently selected filter.
+        /// </summary>
+        [JsonPropertyName("selected")]
+        public string Selected { get; set; } = "default";
+        /// <summary>
+        /// Filter Entries.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("filters")]
+        public Dictionary<string, UserLootFilter> Filters { get; set; } = new()
+        {
+            ["default"] = new()
+        };
+    }
+
     public sealed class ESPConfig
     {
         /// <summary>
@@ -1762,7 +1877,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("espTargetScreen")]
         public int EspTargetScreen { get; set; } = 1; // Default to second monitor (fuser)
-
+        
         /// <summary>
         /// Show FPS Counter in ESP Window.
         /// </summary>
@@ -1853,7 +1968,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("topLootOffset")]
         public PointFSer TopLootOffset { get; set; } = new PointFSer(0, 0);
-
+        
         [JsonPropertyName("killfeedOffset")]
         public PointFSer KillfeedOffset { get; set; } = new PointFSer(0, 0);
 
@@ -1912,13 +2027,6 @@ namespace eft_dma_radar.UI.Misc
         public int FPSCap { get; set; } = 60;
 
         /// <summary>
-        /// Enable VSync for ESP Rendering.
-        /// When true, frame pacing is handled by GPU vblank; FPS Cap is ignored.
-        /// </summary>
-        [JsonPropertyName("vsync")]
-        public bool VSync { get; set; } = true;
-
-        /// <summary>
         /// Enable 'Auto Full Screen' on Startup/Start.
         /// </summary>
         [JsonPropertyName("autoFS")]
@@ -1941,6 +2049,12 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("espColors")]
         public Dictionary<EspColorOption, string> Colors { get; set; } = EspColorOptions.GetDefaultColors();
+
+        /// <summary>
+        /// Enable override player text color.
+        /// </summary>
+        [JsonPropertyName("enableOverridePlayerText")]
+        public bool EnableOverridePlayerText { get; set; } = false;
 
         /// <summary>
         /// Crosshair configuration options
@@ -2003,6 +2117,497 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("scale")]
         public float Scale { get; set; } = 1;
     }
+
+    public sealed class ESPPlayerRenderOptions
+    {
+        /// <summary>
+        /// Mode to draw in ESP.
+        /// </summary>
+        [JsonPropertyName("renderingMode")]
+        public ESPPlayerRenderMode RenderingMode { get; set; }
+
+        /// <summary>
+        /// Show text labels on this player.
+        /// </summary>
+        [JsonPropertyName("showLabels")]
+        public bool ShowLabels { get; set; }
+
+        /// <summary>
+        /// Show weapon name on this player.
+        /// </summary>
+        [JsonPropertyName("showWeapons")]
+        public bool ShowWeapons { get; set; }
+
+        /// <summary>
+        /// Show distance to this player.
+        /// </summary>
+        [JsonPropertyName("showDist")]
+        public bool ShowDist { get; set; }
+    }
+
+    public sealed class MemWritesConfig
+    {
+        /// <summary>
+        /// Keep always off, left for Chams compatibility.
+        /// </summary>
+        [JsonPropertyName("advancedMemWritesRisky")]
+        public bool AdvancedMemWrites { get; set; } = false;        
+        /// <summary>
+        /// Enables DMA Memory Writing
+        /// </summary>
+        [JsonPropertyName("enableMemWritesRisky")]
+        public bool MemWritesEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Enable No Recoil Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("enableNoRecoil")]
+        public bool NoRecoil { get; set; } = false;
+        /// </summary>
+        [JsonPropertyName("enableNoInertia")]
+        public bool NoInertia { get; set; } = false;
+
+        /// <summary>
+        /// Amount of 'No Recoil'. 0 = None, 1 = Full
+        /// </summary>
+        [JsonPropertyName("noRecoilAmount")]
+        public int NoRecoilAmount { get; set; } = 0;
+        /// <summary>
+        /// Enable Extended Reach on Startup.
+        /// </summary>
+        [JsonPropertyName("extendedReach")]
+        public ExtendedReachConfig ExtendedReach { get; set; } = new();
+        /// <summary>
+        /// Enable Loot Through Walls (LTW) on Startup.
+        /// </summary>
+        [JsonPropertyName("ltw")]
+        public LTWConfig LootThroughWalls { get; set; } = new();        
+        /// <summary>
+        /// Amount of 'No Sway'. 0 = None, 1 = Full
+        /// </summary>
+        [JsonPropertyName("noSwayAmount")]
+        public int NoSwayAmount { get; set; } = 0;
+
+        /// <summary>
+        /// Enable No Visor Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("noVisor")]
+        public bool NoVisor { get; set; } = false;
+
+        [JsonPropertyName("muleMode")]
+        public bool MuleMode { get; set; } = false;
+        
+        [JsonPropertyName("noWeaponMalfunctions")]
+        public bool NoWeaponMalfunctions { get; set; } = false;
+
+        [JsonPropertyName("hideRaidCode")]
+        public bool HideRaidCode { get; set; } = false;
+
+        [JsonPropertyName("disableFrostbite")]
+        public bool DisableFrostbite { get; set; } = false;
+
+        /// <summary>
+        /// Enable Disable Grass Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("disableGrass")]
+        public bool DisableGrass { get; set; } = false;
+
+        /// <summary>
+        /// Enable MedPanel Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("medPanel")]
+        public bool MedPanel { get; set; } = false;
+
+
+        [JsonPropertyName("rageMode")]
+        public bool RageMode { get; set; } = false;
+
+        /// <summary>
+        /// Disable head bobbing
+        /// </summary>
+        [JsonPropertyName("disableHeadBobbing")]
+        public bool DisableHeadBobbing { get; set; } = false;
+
+        /// <summary>
+        /// Disable DisableWeaponCollision
+        /// </summary>
+        [JsonPropertyName("disableWeaponCollision")]
+        public bool DisableWeaponCollision { get; set; } = false;
+
+        /// <summary>
+        /// Enable Inventory Blur Disable Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("disableInventoryBlur")]
+        public bool DisableInventoryBlur { get; set; } = false;
+        /// <summary>
+        /// Enable Third Person Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("thirdPerson")]
+        public bool ThirdPerson { get; set; } = false;
+
+        /// <summary>
+        /// Enable Clear Weather Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("clearWeather")]
+        public bool ClearWeather { get; set; } = false;
+
+        /// <summary>
+        /// Enable Infinite Stamina Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("infStamina")]
+        public bool InfStamina { get; set; } = false;
+        /// <summary>
+        /// Enable Owl Mode Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("owlMode")]
+        public bool OwlMode { get; set; } = false;
+
+        /// <summary>
+        /// Enable No Visor Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("enableFastDuck")]
+        public bool FastDuck { get; set; } = false;
+
+        /// <summary>
+        /// Enable Thermal Vision Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("enableThermalVision")]
+        public bool ThermalVision { get; set; } = false;
+
+        /// <summary>
+        /// Enable Night Vision Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("enableNightVision")]
+        public bool NightVision { get; set; } = false;
+
+        /// <summary>
+        /// Allows instantly planting certain quest items.
+        /// </summary>
+        [JsonPropertyName("instantPlant")]
+        public bool InstantPlant { get; set; } = false;
+
+        /// <summary>
+        /// Aimbot Configuration.
+        /// </summary>
+        [JsonPropertyName("aimbot")]
+        public AimbotConfig Aimbot { get; set; } = new();
+
+        /// <summary>
+        /// Wide Lean Configuration.
+        /// </summary>
+        [JsonPropertyName("wideLean")]
+        public WideLeanConfig WideLean { get; set; } = new();
+        /// <summary>
+        /// Chams Feature Config
+        /// </summary>
+        [JsonPropertyName("chams")]
+        public ChamsConfig Chams { get; set; } = new();
+        /// <summary>
+        /// Makes weapon operations faster (ads, mag loading, etc.)
+        /// </summary>
+        [JsonPropertyName("fastWeaponOps")]
+        public bool FastWeaponOps { get; set; } = false;
+
+        /// <summary>
+        /// Makes loading/unloading magazines faster.
+        /// </summary>
+        [JsonPropertyName("fastLoadUnload")]
+        public bool FastLoadUnload { get; set; } = false;
+
+        /// <summary>
+        /// Time of Day Configuration.
+        /// </summary>
+        [JsonPropertyName("timeOfDay")]
+        public TimeOfDayConfig TimeOfDay { get; set; } = new();
+
+        /// <summary>
+        /// Time of Day Configuration.
+        /// </summary>
+        [JsonPropertyName("fullBright")]
+        public FullBrightConfig FullBright { get; set; } = new();
+        /// <summary>
+        /// Long Jump Configuration.
+        /// </summary>
+        [JsonPropertyName("longJump")]
+        public LongJumpConfig LongJump { get; set; } = new();
+
+        /// <summary>
+        /// Enables big head mode.
+        /// </summary>
+        [JsonPropertyName("bigHead")]
+        public BigHeadConfig BigHead { get; set; } = new();   
+
+        /// <summary>
+        /// Move Speed is Enabled.
+        /// </summary>
+        [JsonPropertyName("moveSpeed")]
+        public MoveSpeedConfig MoveSpeed { get; set; } = new();     
+
+    }
+    public sealed class MoveSpeedConfig
+    {
+        /// <summary>
+        /// True if move speed is enabled.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// The multiplier of move speed
+        /// </summary>
+        [JsonPropertyName("multiplier")]
+        public float Multiplier { get; set; } = 1.2f;
+
+        /// <summary>
+        /// The multiplier of move speed
+        /// </summary>
+        [JsonPropertyName("speed")]
+
+        public uint Speed { get; set; } = 0x488;
+    }
+    public sealed class BigHeadConfig
+    {
+        /// <summary>
+        /// True if Big Heads is enabled.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Big head scale
+        /// </summary>
+        [JsonPropertyName("scale")]
+        public float Scale { get; set; } = 1.0f;
+    }    
+    public sealed class LongJumpConfig
+    {
+        /// <summary>
+        /// True if Long Jump is enabled.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Jump multiplier
+        /// </summary>
+        [JsonPropertyName("multiplier")]
+        public float Multiplier { get; set; } = 10f;
+    }
+    public sealed class FullBrightConfig
+    {
+        /// <summary>
+        /// Enable Full Bright lock.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Intensity .
+        /// </summary>
+        [JsonPropertyName("intensity")]
+        public float Intensity { get; set; } = 12.0f;
+    }
+    public sealed class TimeOfDayConfig
+    {
+        /// <summary>
+        /// Enable Time of Day lock.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Hour to lock to (0-23).
+        /// </summary>
+        [JsonPropertyName("hour")]
+        public int Hour { get; set; } = 12;
+    }
+
+    public sealed class WideLeanConfig
+    {
+        /// <summary>
+        /// Enable Wide Lean Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Amount of wide lean (scaled to 0.1 - 3.2).
+        /// </summary>
+        [JsonPropertyName("amount")]
+        public float Amount { get; set; } = 0.5f;
+    }
+    /// <summary>
+    /// Loot Through Walls Config.
+    /// </summary>
+    public sealed class LTWConfig
+    {
+        /// <summary>
+        /// True if LTW is enabled.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// LTW Zoom Amount.
+        /// </summary>
+        [JsonPropertyName("zoomAmount")]
+        public float ZoomAmount { get; set; } = 2f;
+    }
+    public sealed class ExtendedReachConfig
+    {
+        /// <summary>
+        /// True if extended reach is enabled.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Extended reach distance.
+        /// </summary>
+        [JsonPropertyName("distance")]
+        public float Distance { get; set; } = 2f;
+    }
+
+    public sealed class AimbotConfig
+    {
+        /// <summary>
+        /// Enable Aimbot Feature on Startup.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Last Aimbot Targeting Mode that the player set.
+        /// </summary>
+        [JsonPropertyName("targetingMode")]
+        public Aimbot.AimbotTargetingMode TargetingMode { get; set; } = Aimbot.AimbotTargetingMode.FOV;
+
+        /// <summary>
+        /// Aimbot FOV via ESP Circle.
+        /// </summary>
+        [JsonPropertyName("fov")]
+        public float FOV { get; set; } = 150f;
+
+        /// <summary>
+        /// Aimbot max aiming distance.
+        /// </summary>
+        [JsonPropertyName("distance")]
+        public float Distance { get; set; } = 500f;
+
+        /// <summary>
+        /// Bone for the Default Aimbot Target.
+        /// </summary>
+        [JsonPropertyName("bone")]
+        public Bones Bone { get; set; } = Bones.HumanSpine3;
+
+        /// <summary>
+        /// Always headshot AI Targets.
+        /// </summary>
+        [JsonPropertyName("headshotAI")]
+        public bool HeadshotAI { get; set; } = true;
+
+        /// <summary>
+        /// True if Aimbot Re-Locking is disabled after a target dies/is no longer valid.
+        /// </summary>
+        [JsonPropertyName("disableReLock")]
+        public bool DisableReLock { get; set; } = false;
+
+        /// <summary>
+        /// Silent Aim Config
+        /// </summary>
+        [JsonPropertyName("silentAimCfg")]
+        public SilentAimConfig SilentAim { get; set; } = new();
+        /// <summary>
+        /// Random Bone Config
+        /// </summary>
+        [JsonPropertyName("randomBone")]
+        public AimbotRandomBoneConfig RandomBone { get; set; } = new();
+    }
+
+    public sealed class AimbotRandomBoneConfig
+    {
+        [JsonIgnore]
+        private static readonly Random _rng = new();
+
+        /// <summary>
+        /// Enables Random Bone Selection.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+        /// <summary>
+        /// Head shot percentage.
+        /// </summary>
+        [JsonPropertyName("headPercent")]
+        public int HeadPercent { get; set; } = 1;
+        /// <summary>
+        /// Torso shot percentage.
+        /// </summary>
+        [JsonPropertyName("torsoPercent")]
+        public int TorsoPercent { get; set; } = 33;
+        /// <summary>
+        /// Arms shot percentage.
+        /// </summary>
+        [JsonPropertyName("armsPercent")]
+        public int ArmsPercent { get; set; } = 33;
+        /// <summary>
+        /// Legs shot percentage.
+        /// </summary>
+        [JsonPropertyName("legsPercent")]
+        public int LegsPercent { get; set; } = 33;
+
+        /// <summary>
+        /// True if all values add up to 100% exactly, otherwise False.
+        /// </summary>
+        [JsonIgnore]
+        public bool Is100Percent => (HeadPercent >= 0 && TorsoPercent >= 0 && ArmsPercent >= 0 && LegsPercent >= 0) &&
+            (HeadPercent + TorsoPercent + ArmsPercent + LegsPercent == 100);
+
+        /// <summary>
+        /// Reset all values to defaults.
+        /// </summary>
+        public void ResetDefaults()
+        {
+            HeadPercent = 1;
+            TorsoPercent = 33;
+            ArmsPercent = 33;
+            LegsPercent = 33;
+        }
+
+        /// <summary>
+        /// Returns a random bone via the selected percentages.
+        /// </summary>
+        /// <returns>Skeleton Bone.</returns>
+        public Bones GetRandomBone()
+        {
+            if (!Is100Percent)
+                ResetDefaults();
+            int roll = _rng.Next(0, 100) + 1;
+            if (roll <= HeadPercent)
+                return Bones.HumanHead;
+            else if (roll <= HeadPercent + TorsoPercent)
+                return Random.Shared.GetItems(Skeleton.AllTorsoBones.Span, 1)[0];
+            else if (roll <= HeadPercent + TorsoPercent + ArmsPercent)
+                return Random.Shared.GetItems(Skeleton.AllArmsBones.Span, 1)[0];
+            else // Legs
+                return Random.Shared.GetItems(Skeleton.AllLegsBones.Span, 1)[0];
+        }
+    }
+
+    public sealed class SilentAimConfig
+    {
+        /// <summary>
+        /// Automatically select best target bone.
+        /// </summary>
+        [JsonPropertyName("autoBone")]
+        public bool AutoBone { get; set; } = false;
+
+        /// <summary>
+        /// Automatically 'unlock' if target bone leaves FOV.
+        /// </summary>
+        [JsonPropertyName("safeLock")]
+        public bool SafeLock { get; set; } = false;
+    }
+
     /// <summary>
     /// FOV (Field of View) Configuration Settings
     /// </summary>
@@ -2111,6 +2716,8 @@ namespace eft_dma_radar.UI.Misc
         }
 
         #endregion
+
+
     }
 
     public sealed class ESPWidgetsConfig
@@ -2160,69 +2767,27 @@ namespace eft_dma_radar.UI.Misc
     }
 
     /// <summary>
-    /// Aimbot Configuration (Makcu physical mouse movement).
+    /// Configuration for Web Radar.
     /// </summary>
-    public sealed class AimbotConfig
+    public sealed class WebRadarConfig
     {
-        /// <summary>
-        /// Enable the aimbot.
-        /// </summary>
-        [JsonPropertyName("enabled")]
-        public bool Enabled { get; set; } = false;
+        [JsonPropertyName("webClientUrl")]
+        public string WebClientURL { get; set; } = "http://radar.fd-mambo.org";
 
-        /// <summary>
-        /// COM port for the Makcu device (e.g. "COM3").
-        /// </summary>
-        [JsonPropertyName("makcuPort")]
-        public string MakcuPort { get; set; } = "COM3";
+        [JsonPropertyName("upnp")]
+        public bool UPnP { get; set; } = true;
 
-        /// <summary>
-        /// Automatically connect to the Makcu device on application startup.
-        /// </summary>
-        [JsonPropertyName("autoConnect")]
-        public bool AutoConnect { get; set; } = false;
+        [JsonPropertyName("host")]
+        public string IP { get; set; }
 
-        /// <summary>
-        /// Maximum FOV radius (degrees from crosshair) to consider a target.
-        /// </summary>
-        [JsonPropertyName("fovDegrees")]
-        public float FovDegrees { get; set; } = 10f;
+        [JsonPropertyName("port")]
+        public string Port { get; set; } = Random.Shared.Next(50000, 60000).ToString();
 
-        /// <summary>
-        /// Which bone to aim at.
-        /// </summary>
-        [JsonPropertyName("aimBone")]
-        public eft_dma_radar.Common.Unity.Bones AimBone { get; set; } = eft_dma_radar.Common.Unity.Bones.HumanHead;
+        [JsonPropertyName("tickRate")]
+        public string TickRate { get; set; } = "60";
 
-        /// <summary>
-        /// Horizontal lerp alpha [0.01–1.0]. moveX = lerp(0, delta.x, alpha). Lower = smoother.
-        /// </summary>
-        [JsonPropertyName("alphaX")]
-        public float AlphaX { get; set; } = 0.1f;
-
-        /// <summary>
-        /// Vertical lerp alpha [0.01–1.0]. moveY = lerp(0, delta.y, alpha). Lower = smoother.
-        /// </summary>
-        [JsonPropertyName("alphaY")]
-        public float AlphaY { get; set; } = 0.1f;
-
-        /// <summary>
-        /// Deadzone radius (pixels). Movement is skipped when the target is this close to center.
-        /// </summary>
-        [JsonPropertyName("deadzone")]
-        public float Deadzone { get; set; } = 3f;
-
-        /// <summary>
-        /// Standard deviation of Gaussian noise added to each mouse move. 0 = no noise.
-        /// </summary>
-        [JsonPropertyName("gaussianNoise")]
-        public float GaussianNoise { get; set; } = 0f;
-
-        /// <summary>
-        /// When true, AI-controlled enemies are also targeted.
-        /// </summary>
-        [JsonPropertyName("aimAI")]
-        public bool AimAI { get; set; } = true;
+        [JsonPropertyName("password")]
+        public string Password { get; set; }
     }
 
     /// <summary>
@@ -2230,6 +2795,10 @@ namespace eft_dma_radar.UI.Misc
     /// </summary>
     public sealed class PersistentCache
     {
+        [JsonPropertyName("F7xLmP2")]
+        [JsonInclude]
+        public LowLevelCache LowLevel { get; private set; } = new();
+
         [JsonPropertyName("profileApi")]
         [JsonInclude]
         public ProfileApiCache ProfileAPI { get; private set; } = new();
@@ -2244,5 +2813,19 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("cache")]
         [JsonInclude]
         public ConcurrentDictionary<string, ProfileData> Profiles { get; private set; } = new();
+    }
+
+    /// <summary>
+    /// Quest Planner filter settings.
+    /// </summary>
+    public sealed class QuestPlannerSettings
+    {
+        /// <summary>
+        /// When true, restricts the active quest display to Kappa-required quests only.
+        /// Maps with zero Kappa objectives are hidden and re-ranked.
+        /// </summary>
+        [JsonPropertyName("kappaFilter")]
+        public bool KappaFilter { get; set; } = false;
+
     }
 }

@@ -221,8 +221,6 @@ namespace eft_dma_radar.UI.SKWidgetControl
                     return PaintESPWidgetPScav;
                 case Player.PlayerType.SpecialPlayer:
                     return PaintESPWidgetSpecial;
-                case Player.PlayerType.Streamer:
-                    return PaintESPWidgetStreamer;
                 default:
                     return PaintESPWidgetUSEC;
             }

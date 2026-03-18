@@ -1,9 +1,16 @@
-﻿using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Unity;
+﻿using eft_dma_radar;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Common.Unity;
+using SkiaSharp;
+using System;
+using System.Collections.Generic;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace eft_dma_radar.Tarkov.GameWorld.Exits
 {
@@ -161,20 +168,20 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             {
                 var namePoint = point;
                 namePoint.Offset(nameXOffset, nameYOffset);
-                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
-                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextLoot);
+                canvas.DrawText(Name, namePoint, SKPaints.TextOutline);
+                canvas.DrawText(Name, namePoint, SKPaints.TextLoot);
             }
 
             if (Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
-                var distWidth = SKPaints.FontRadarLabel.MeasureText($"{(int)dist}");
+                var distWidth = SKPaints.TextLoot.MeasureText($"{(int)dist}");
                 var distPoint = new SKPoint(
                     point.X - (distWidth / 2),
                     point.Y + distanceYOffset
                 );
-                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextLoot);
+                canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKPaints.TextLoot);
             }
         }
 

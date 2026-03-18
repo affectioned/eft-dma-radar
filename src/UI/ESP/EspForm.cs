@@ -141,8 +141,6 @@ namespace eft_dma_radar.UI.ESP
         // TOP LOOT PER-FRAME CACHE
         // ─────────────────────────────────────────────
 
-        private int _topLootFrame = -1;
-
         private readonly List<TopLootEntry> _topLootCache = new(8);
         private string _topLootCachedText = "";
 

@@ -1,10 +1,10 @@
-﻿using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+﻿using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Common.Unity;
 
 namespace eft_dma_radar.Tarkov.Loot
 {
@@ -78,30 +78,30 @@ namespace eft_dma_radar.Tarkov.Loot
             {
                 var namePoint = point;
                 namePoint.Offset(nameXOffset, nameYOffset);
-                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
-                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextContainer);
+                canvas.DrawText(Name, namePoint, SKPaints.TextOutline);
+                canvas.DrawText(Name, namePoint, SKPaints.TextContainer);
             }
 
             if (Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
-                var distWidth = SKPaints.FontRadarLabel.MeasureText($"{(int)dist}");
+                var distWidth = SKPaints.TextContainer.MeasureText($"{(int)dist}");
                 var distPoint = new SKPoint(
                     point.X - (distWidth / 2),
                     point.Y + distanceYOffset
                 );
-                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextContainer);
+                canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKPaints.TextContainer);
             }
         }
 
         public override void DrawESP(SKCanvas canvas, LocalPlayer localPlayer)
         {
             var dist = Vector3.Distance(localPlayer.Position, Position);
-
+            
             if (dist > ESPSettings.RenderDistance)
                 return;
-
+            
             if (!CameraManagerBase.WorldToScreen(ref Position, out var scrPos))
                 return;
 

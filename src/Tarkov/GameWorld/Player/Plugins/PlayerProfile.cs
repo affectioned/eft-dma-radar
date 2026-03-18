@@ -1,6 +1,8 @@
-﻿using eft_dma_radar.Common.Misc.Data;
+﻿#nullable enable
 using eft_dma_radar.Tarkov.API;
+using eft_dma_radar.Common.Misc.Data;
 using HandyControl.Tools.Extension;
+using System.Threading;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -11,6 +13,65 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         {
             _player = player;
         }
+
+        /// <summary>
+        /// Resolves the account ID from the API cache (via ProfileID → API lookup).
+        /// </summary>
+        private string ResolvedAccountID
+        {
+            get
+            {
+                var profileId = _player.ProfileID;
+                if (string.IsNullOrEmpty(profileId))
+                    return null;
+                return PlayerLookupApiClient.TryGetCached(profileId)?.AccountId;
+            }
+        }
+
+        /// <summary>
+        /// Player's Nickname (via Profile Data).
+        /// </summary>
+        public string Nickname => this.Profile?.Info?.Nickname;
+
+        public int Prestige => this.Profile?.Info?.Prestige ?? -1;
+        /// <summary> Is the player flagged as streamer (from eft-api.tech top-level). </summary>
+        public bool IsStreamer => Meta?.IsStreamer ?? false;
+
+        /// <summary> Human-readable last updated from eft-api.tech if available, else relative “time ago”. </summary>
+        public string LastUpdatedReadable
+        {
+            get
+            {
+                // Try API "readable" first
+                var readable = Meta?.LastUpdated?.Readable;
+                if (!string.IsNullOrWhiteSpace(readable))
+                {
+                    if (DateTime.TryParse(readable, out var parsed))
+                    {
+                        var diff = DateTime.Now - parsed;
+                        return $"{diff.Days}d ago";
+                    }
+                }
+
+                // Fallback: use Updated property you already calculate
+                if (Updated != null)
+                {
+                    return Updated;
+                }
+
+                return "N/A";
+            }
+        }
+
+        private EFTProfileService.ProfileResponseContainer Meta
+        {
+            get
+            {
+                var acctID = ResolvedAccountID;
+                if (string.IsNullOrEmpty(acctID)) return null;
+                return EFTProfileService.TryGetEftApiMeta(acctID, out var m) ? m : null;
+            }
+        }
         /// <summary>
         /// Player's current profile (if Profile Lookups are enabled).
         /// Returns NULL if profile cannot be retrieved.
@@ -19,7 +80,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         {
             get
             {
-                string acctID = _player.AccountID;
+                string acctID = ResolvedAccountID;
                 if (string.IsNullOrEmpty(acctID))
                     return null;
                 else if (EFTProfileService.Profiles.TryGetValue(acctID, out var profile))
@@ -54,7 +115,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 return null;
             }
         }
-        private int? _raidCount;
+        public int? _raidCount;
         /// <summary>
         /// Player's Overall Raid Count (only human players).
         /// </summary>
@@ -118,9 +179,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 var stats = Profile?.PmcStats;
                 if (stats is not null)
                 {
-                    int? runnerObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x =>
-                        x.Key?.Contains("ExitStatus") == true &&
-                        x.Key?.Contains("Runner") == true &&
+                    int? runnerObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x => 
+                        x.Key?.Contains("ExitStatus") == true && 
+                        x.Key?.Contains("Runner") == true && 
                         x.Key?.Contains("Pmc") == true)?.Value;
                     if (runnerObj is int runner)
                         return _runThroughCount = runner;
@@ -142,8 +203,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 var stats = Profile?.ScavStats;
                 if (stats is not null)
                 {
-                    int? scavSessionsObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x =>
-                        x.Key?.Contains("Sessions") == true &&
+                    int? scavSessionsObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x => 
+                        x.Key?.Contains("Sessions") == true && 
                         x.Key?.Contains("Scav") == true)?.Value;
                     if (scavSessionsObj is int scavSessionsResult)
                         return _scavSessions = scavSessionsResult;

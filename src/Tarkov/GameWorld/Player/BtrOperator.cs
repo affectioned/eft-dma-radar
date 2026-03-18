@@ -65,7 +65,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         // ESP DRAW (screen space)
         // ─────────────────────────────────────────────
 
-        public void DrawESP(SKCanvas canvas, LocalPlayer localPlayer)
+        public new void DrawESP(SKCanvas canvas, LocalPlayer localPlayer)
         {
             var dist = Vector3.Distance(localPlayer.Position, _position);
             if (dist > ESPSettings.RenderDistance)
@@ -171,7 +171,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         // MAP DRAW (radar / minimap)
         // ─────────────────────────────────────────────
 
-        public void Draw(
+        public new void Draw(
             SKCanvas canvas,
             XMMapParams mapParams,
             ILocalPlayer localPlayer)
@@ -238,7 +238,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, paints.Item2);
             }
         }
-        private ValueTuple<SKPaint, SKPaint> GetPaints()
+        private new ValueTuple<SKPaint, SKPaint> GetPaints()
         {
             return new(
                 SKPaints.PaintRaider,

@@ -1,6 +1,12 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Threading;
+
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
+using SDK;
 
 namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 {
@@ -188,7 +194,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             var gom = GameObjectManager.Get(gomAddress);
             var first = Memory.ReadValue<LinkedListObject>(gom.ActiveNodes);
-            var last = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
+            var last  = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
 
             var current = first;
             int depth = 0;

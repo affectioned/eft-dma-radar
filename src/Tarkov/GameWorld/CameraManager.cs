@@ -5,14 +5,20 @@
  * MIT License
  */
 
+using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Tarkov.Unity.IL2CPP;
 using static eft_dma_radar.Common.Unity.UnityOffsets;
 using ObjectClass = eft_dma_radar.Common.Unity.ObjectClass;
+using SDK;
 
 namespace eft_dma_radar.Tarkov.GameWorld
 {
@@ -24,6 +30,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
     public sealed class CameraManager : CameraManagerBase
     {
         private static ulong _eftCameraManagerInstance;
+        private static int _resolveAttemptCount;
 
         /// <summary>
         /// FPS Camera (unscoped).
@@ -35,6 +42,11 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// </summary>
         public override ulong OpticCamera { get; }
 
+        // Optional debug fields
+        public static ulong ThermalVision;
+        public static ulong NightVision;
+        public static ulong FPSCamera_;
+
         public CameraManager() : base()
         {
             if (!TryResolveCameras(out var fpsCam, out var opticCam))
@@ -42,6 +54,8 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             FPSCamera = fpsCam;
             OpticCamera = opticCam;
+
+            FPSCamera_ = FPSCamera;
 
             XMLogging.WriteLine($"[CameraManager] FPSCamera:   0x{FPSCamera:X}");
             XMLogging.WriteLine($"[CameraManager] OpticCamera: 0x{OpticCamera:X}");
@@ -64,8 +78,11 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
                 if (!_eftCameraManagerInstance.IsValidVirtualAddress())
                 {
-                    XMLogging.WriteLine("[CameraManager] WARNING CameraManager.Instance not found - will fall back to AllCameras.");
-                    XMLogging.WriteLine("[CameraManager] Radar will still work (cameras are optional).");
+                    if (_resolveAttemptCount == 0)
+                    {
+                        XMLogging.WriteLine("[CameraManager] WARNING CameraManager.Instance not found - will fall back to AllCameras.");
+                        XMLogging.WriteLine("[CameraManager] Radar will still work (cameras are optional).");
+                    }
                     return;
                 }
 
@@ -73,8 +90,11 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[CameraManager] FAILED Init: {ex.Message}");
-                XMLogging.WriteLine("[CameraManager] Radar will still work (cameras are optional).");
+                if (_resolveAttemptCount == 0)
+                {
+                    XMLogging.WriteLine($"[CameraManager] FAILED Init: {ex.Message}");
+                    XMLogging.WriteLine("[CameraManager] Radar will still work (cameras are optional).");
+                }
                 _eftCameraManagerInstance = 0;
             }
         }
@@ -86,10 +106,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// </summary>
         private static bool TryResolveCameras(out ulong fpsCamera, out ulong opticCamera)
         {
+            bool verbose = _resolveAttemptCount == 0;
+
             // 1) Primary: IL2CPP CameraManager singleton
             if (TryResolveViaCameraManagerInstance(out fpsCamera, out opticCamera))
             {
                 XMLogging.WriteLine("[CameraManager] Using CameraManager.Instance cameras.");
+                _resolveAttemptCount = 0; // Reset for next raid
                 return true;
             }
 
@@ -97,12 +120,15 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (TryResolveViaAllCamerasByName(out fpsCamera, out opticCamera))
             {
                 XMLogging.WriteLine("[CameraManager] Using Unity AllCameras + name search fallback.");
+                _resolveAttemptCount = 0; // Reset for next raid
                 return true;
             }
 
             fpsCamera = 0;
             opticCamera = 0;
-            XMLogging.WriteLine("[CameraManager] ERROR: Could not resolve cameras via any path.");
+            if (verbose)
+                XMLogging.WriteLine("[CameraManager] ERROR: Could not resolve cameras via any path.");
+            _resolveAttemptCount++;
             return false;
         }
 
@@ -117,13 +143,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             try
             {
                 if (!_eftCameraManagerInstance.IsValidVirtualAddress())
-                {
-                    var inst = FindCameraManagerInstance();
-                    if (!inst.IsValidVirtualAddress())
-                        return false;
-
-                    _eftCameraManagerInstance = inst;
-                }
+                    return false; // Already tried in Initialize()
 
                 // FPS camera
                 var fpsCameraRef = Memory.ReadPtr(_eftCameraManagerInstance + Offsets.EFTCameraManager.Camera, false);
@@ -221,13 +241,16 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     return false;
                 }
 
-                XMLogging.WriteLine($"[CameraManager] AllCameras: items=0x{itemsPtr:X}, count={count}");
+                bool verbose = _resolveAttemptCount == 0;
+                if (verbose)
+                    XMLogging.WriteLine($"[CameraManager] AllCameras: items=0x{itemsPtr:X}, count={count}");
 
                 FindCamerasByName(itemsPtr, count, out fpsCamera, out opticCamera);
 
                 if (!fpsCamera.IsValidVirtualAddress() || !ValidateCameraMatrix(fpsCamera))
                 {
-                    XMLogging.WriteLine("[CameraManager] AllCameras fallback: FPS camera invalid/matrix failed.");
+                    if (verbose)
+                        XMLogging.WriteLine("[CameraManager] AllCameras fallback: FPS camera invalid/matrix failed.");
                     fpsCamera = 0;
                 }
 
@@ -348,45 +371,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     return 0;
                 }
 
-                ulong methodAddr = 0;
-                ulong methodAddrRva = 0;
-
-                try
-                {
-                    const string sig = "48 83 EC ? 80 3D ? ? ? ? 00 75 ? 48 8D 0D ? ? ? ? E8 ? ? ? ? C6 05 ? ? ? ? ? 48 8B 0D ? ? ? ? 83 B9 ? ? ? ? 00 75 ? E8 ? ? ? ? 48 8B 0D ? ? ? ? 48 8B 81 ? ? ? ? ? ? ? 48 85 C0";
-                    XMLogging.WriteLine("[CameraManager] Starting GameAssembly.dll signature scan...");
-                    ulong addr = Memory.FindSignature(sig, "GameAssembly.dll");
-                    XMLogging.WriteLine($"[CameraManager] Signature scan done, result=0x{addr:X}");
-                    if (addr.IsValidVirtualAddress())
-                    {
-                        int rva = Memory.ReadValue<int>(addr + 3);
-                        ulong ptr = Memory.ReadPtr(addr + 7 + (ulong)rva, false);
-
-                        if (ptr.IsValidVirtualAddress())
-                        {
-                            XMLogging.WriteLine("[CameraManager] get_Instance located via signature");
-                            methodAddr = Memory.ReadPtr(ptr);
-                            methodAddrRva = ptr - gameAssemblyBase;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    XMLogging.WriteLine($"[CameraManager] get_Instance signature scan failed: {ex.Message}");
-                }
-
-                if (methodAddr == 0)
-                {
-                    ulong fallback = gameAssemblyBase + Offsets.EFTCameraManager.GetInstance_RVA;
-                    if (fallback.IsValidVirtualAddress())
-                    {
-                        XMLogging.WriteLine("[CameraManager] get_Instance located via hardcoded offset");
-                        methodAddr = fallback;
-                        methodAddrRva = Offsets.EFTCameraManager.GetInstance_RVA;
-                    }
-                }
-
-                XMLogging.WriteLine($"[CameraManager] get_Instance at 0x{methodAddr:X} (GameAssembly+0x{methodAddrRva:X})");
+                // Calculate get_Instance method address
+                ulong methodAddr = gameAssemblyBase + Offsets.EFTCameraManager.GetInstance_RVA;
+                if (_resolveAttemptCount == 0)
+                    XMLogging.WriteLine($"[CameraManager] get_Instance at 0x{methodAddr:X} (GameAssembly+0x{Offsets.EFTCameraManager.GetInstance_RVA:X})");
 
                 // Read method bytes
                 byte[] methodBytes = Memory.ReadBuffer(methodAddr, 128, false);
@@ -401,35 +389,31 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     if (methodBytes[i] == 0x48 && methodBytes[i + 1] == 0x8D && methodBytes[i + 2] == 0x0D)
                     {
-                        try
+                        int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
+                        ulong classMetadataAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
+
+                        ulong classPtr = Memory.ReadPtr(classMetadataAddr, false);
+                        if (classPtr.IsValidVirtualAddress())
                         {
-                            int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
-                            ulong classMetadataAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
-
-                            ulong classPtr = Memory.ReadValue<ulong>(classMetadataAddr, false);
-                            if (!classPtr.IsValidVirtualAddress())
-                                continue;
-
                             uint[] staticFieldsOffsets = { 0xB8, 0xC0, 0xC8, 0xD0, 0xA8, 0xB0 };
                             foreach (var offset in staticFieldsOffsets)
                             {
-                                ulong staticFieldsPtr = Memory.ReadValue<ulong>(classPtr + offset, false);
-                                if (!staticFieldsPtr.IsValidVirtualAddress())
-                                    continue;
-
-                                ulong instancePtr = Memory.ReadValue<ulong>(staticFieldsPtr, false);
-                                if (!instancePtr.IsValidVirtualAddress())
-                                    continue;
-
-                                ulong testCamera = Memory.ReadValue<ulong>(instancePtr + Offsets.EFTCameraManager.Camera, false);
-                                if (testCamera.IsValidVirtualAddress())
+                                ulong staticFieldsPtr = Memory.ReadPtr(classPtr + offset, false);
+                                if (staticFieldsPtr.IsValidVirtualAddress())
                                 {
-                                    XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 1: 0x{instancePtr:X}");
-                                    return instancePtr;
+                                    ulong instancePtr = Memory.ReadPtr(staticFieldsPtr, false);
+                                    if (instancePtr.IsValidVirtualAddress())
+                                    {
+                                        ulong testCamera = Memory.ReadPtr(instancePtr + Offsets.EFTCameraManager.Camera, false);
+                                        if (testCamera.IsValidVirtualAddress())
+                                        {
+                                            XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 1: 0x{instancePtr:X}");
+                                            return instancePtr;
+                                        }
+                                    }
                                 }
                             }
                         }
-                        catch { /* skip this match, try next */ }
                     }
                 }
 
@@ -438,16 +422,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     if (methodBytes[i] == 0x48 && methodBytes[i + 1] == 0x8B && methodBytes[i + 2] == 0x05)
                     {
-                        try
+                        int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
+                        ulong staticFieldAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
+
+                        ulong instancePtr = Memory.ReadPtr(staticFieldAddr, false);
+                        if (instancePtr.IsValidVirtualAddress())
                         {
-                            int disp32 = BitConverter.ToInt32(methodBytes, i + 3);
-                            ulong staticFieldAddr = methodAddr + (ulong)i + 7 + (ulong)disp32;
-
-                            ulong instancePtr = Memory.ReadValue<ulong>(staticFieldAddr, false);
-                            if (!instancePtr.IsValidVirtualAddress())
-                                continue;
-
-                            ulong testCamera = Memory.ReadValue<ulong>(instancePtr + Offsets.EFTCameraManager.Camera, false);
+                            ulong testCamera = Memory.ReadPtr(instancePtr + Offsets.EFTCameraManager.Camera, false);
                             if (testCamera.IsValidVirtualAddress())
                             {
                                 XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 2 at +0x{i:X}");
@@ -455,15 +436,20 @@ namespace eft_dma_radar.Tarkov.GameWorld
                                 return instancePtr;
                             }
                         }
-                        catch { /* skip this match, try next */ }
                     }
                 }
 
+                if (_resolveAttemptCount == 0)
+                {
+                    XMLogging.WriteLine("[CameraManager] FAILED No valid pattern found in get_Instance");
+                    XMLogging.WriteLine($"[CameraManager] Update GetInstance_RVA! Current: 0x{Offsets.EFTCameraManager.GetInstance_RVA:X}");
+                }
                 return 0;
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[CameraManager] FAILED Error in FindCameraManagerInstance: {ex.Message}");
+                if (_resolveAttemptCount == 0)
+                    XMLogging.WriteLine($"[CameraManager] FAILED Error in FindCameraManagerInstance: {ex.Message}");
                 return 0;
             }
         }
@@ -471,6 +457,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static void MemDMA_GameStopped(object sender, EventArgs e)
         {
             _eftCameraManagerInstance = default;
+            _resolveAttemptCount = 0;
         }
 
         /// <summary>
@@ -543,10 +530,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 ref Matrix4x4 vm = ref x1.GetRef<Matrix4x4>(0);
                 if (!Unsafe.IsNullRef(ref vm))
                 {
-                    lock (_matrixLock)
-                    {
-                        _viewMatrix.Update(ref vm);
-                    }
+                    _viewMatrix.Update(ref vm);
                 }
             };
 
@@ -565,17 +549,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     if (x2.TryGetResult<float>(1, out var fov))
                     {
                         if (fov > 1f && fov < 180f)
-                        {
-                            lock (_matrixLock) { _fov = fov; }
-                        }
+                            _fov = fov;
                     }
 
                     if (x2.TryGetResult<float>(2, out var aspect))
                     {
                         if (aspect > 0.1f && aspect < 5f)
-                        {
-                            lock (_matrixLock) { _aspect = aspect; }
-                        }
+                            _aspect = aspect;
                     }
                 };
             }
