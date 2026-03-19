@@ -1,9 +1,11 @@
-﻿using eft_dma_radar.Common.DMA.ScatterAPI;
+using System.Numerics;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Common.Unity;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
+using SkiaSharp;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer
 {
@@ -17,10 +19,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         private Vector3 _position;
         public static EntityTypeSettingsESP ESPSettings => ESP.Config.EntityTypeESPSettings.GetSettings("BTR");
         public static EntityTypeSettings Settings =>
-            Program.Config.EntityTypeSettings.GetSettings("BTR");
-        // ─────────────────────────────────────────────
+            Program.Config.EntityTypeSettings.GetSettings("BTR");        
+        // ---------------------------------------------
         // Identity overrides
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
 
         public override ref Vector3 Position => ref _position;
 
@@ -32,22 +34,22 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         public new PlayerType Type => PlayerType.AIRaider;
 
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
         // Construction
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
 
         public BtrOperator(ulong btrView, ulong playerBase)
             : base(playerBase)
         {
             _btrView = btrView;
 
-            // Hard force — never allow reassignment
+            // Hard force � never allow reassignment
             UpdatePlayerType(PlayerType.AIRaider);
         }
 
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
         // Realtime update (position only)
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
 
         public override void OnRealtimeLoop(ScatterReadIndex index)
         {
@@ -61,9 +63,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             };
         }
 
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
         // ESP DRAW (screen space)
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
 
         public new void DrawESP(SKCanvas canvas, LocalPlayer localPlayer)
         {
@@ -167,9 +169,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
         }
 
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
         // MAP DRAW (radar / minimap)
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
 
         public new void Draw(
             SKCanvas canvas,
@@ -178,22 +180,22 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             if (_position == Vector3.Zero)
                 return;
-
+        
             var dist = Vector3.Distance(localPlayer.Position, _position);
             if (dist > Settings.RenderDistance)
                 return;
-
+        
             var heightDiff = _position.Y - localPlayer.Position.Y;
             var point = _position.ToMapPos(mapParams.Map).ToZoomedPos(mapParams);
             MouseoverPosition = new Vector2(point.X, point.Y);
-
+        
             var paints = GetPaints();
-
+        
             SKPaints.ShapeOutline.StrokeWidth = 1f;
-
+        
             float distanceYOffset;
             float nameYOffset;
-
+        
             if (heightDiff > 1.85f)
             {
                 using var path = point.GetUpArrow(5f);
@@ -212,30 +214,30 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             else
             {
-                canvas.DrawText("■", point, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
-                canvas.DrawText("■", point, SKTextAlign.Left, SKPaints.FontRadarLabel, paints.Item2);
+                canvas.DrawText("�", point, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                canvas.DrawText("�", point, SKTextAlign.Left, SKPaints.RadarFontRegular12, paints.Item2);
                 distanceYOffset = 12f * MainWindow.UIScale;
                 nameYOffset = 0f;
             }
-
+        
             if (Settings.ShowName)
             {
                 var namePoint = point;
                 namePoint.Offset(7f * MainWindow.UIScale, nameYOffset);
-                canvas.DrawText("BTR", namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
-                canvas.DrawText("BTR", namePoint, SKTextAlign.Left, SKPaints.FontRadarLabel, paints.Item2);
+                canvas.DrawText("BTR", namePoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                canvas.DrawText("BTR", namePoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paints.Item2);
             }
-
+        
             if (Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
-                var width = SKPaints.FontRadarLabel.MeasureText(distText);
+                var width = SKPaints.RadarFontRegular12.MeasureText(distText, paints.Item2);
                 var distPoint = new SKPoint(
                     point.X - (width / 2),
                     point.Y + distanceYOffset);
 
-                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.FontRadarLabel, paints.Item2);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paints.Item2);
             }
         }
         private new ValueTuple<SKPaint, SKPaint> GetPaints()

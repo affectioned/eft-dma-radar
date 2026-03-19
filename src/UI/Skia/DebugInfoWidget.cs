@@ -29,7 +29,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 return;
             }
 
-            var lineSpacing = _debugTextPaint.FontSpacing;
+            var lineSpacing = _debugFont.Spacing;
             var textLines = new[]
             {
                 $"Radar FPS: {_displayedFps}",
@@ -39,7 +39,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 $"AimbotTarget: {_aimbotTarget}"
             };
 
-            var maxTextWidth = textLines.Max(text => _debugTextPaint.MeasureText(text));
+            var maxTextWidth = textLines.Max(text => _debugFont.MeasureText(text));
 
             Size = new SKSize(maxTextWidth + _textPadding * 2, (lineSpacing * textLines.Length) + _textPadding * 2);
             Location = Location;
@@ -50,7 +50,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 var textPoint = new SKPoint(
                     ClientRectangle.Left + _textPadding,
                     ClientRectangle.Top + lineSpacing * (i + 0.5f) + _textPadding);
-                canvas.DrawText(textLines[i], textPoint, _debugTextPaint);
+                canvas.DrawText(textLines[i], textPoint, SKTextAlign.Left, _debugFont, _debugTextPaint);
             }
         }
 
@@ -64,20 +64,17 @@ namespace eft_dma_radar.UI.SKWidgetControl
             base.SetScaleFactor(newScale);
             lock (_debugTextPaint)
             {
-                _debugTextPaint.TextSize = 12 * newScale;
+                _debugFont.Size = 12 * newScale;
             }
         }
 
         private static readonly SKPaint _debugTextPaint = new()
         {
-            SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 12,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"),
-            FilterQuality = SKFilterQuality.High
         };
+
+        private static readonly SKFont _debugFont = new(SKTypeface.FromFamilyName("Consolas"), 12) { Subpixel = true };
     }
 }

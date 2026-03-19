@@ -1,9 +1,14 @@
 ﻿using eft_dma_radar.Common.Misc;
+using SkiaSharp;
 using SkiaSharp.Views.WPF;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Input;
-using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 namespace eft_dma_radar.UI.SKWidgetControl
 {
@@ -419,22 +424,25 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             canvas.DrawRect(TitleBar, TitleBarPaint);
             var titleCenterY = TitleBar.Top + (TitleBar.Height / 2);
-            var titleMetrics = TitleBarFont.Metrics;
-            var titleYOffset = (titleMetrics.Ascent + titleMetrics.Descent) / 2;
+            var titleYOffset = (TitleBarFont.Metrics.Ascent + TitleBarFont.Metrics.Descent) / 2;
 
             canvas.DrawText(Title,
                 new(TitleBar.Left + 2.5f * ScaleFactor,
                 titleCenterY - titleYOffset),
-                SKTextAlign.Left, TitleBarFont, TitleBarText);
+                SKTextAlign.Left,
+                TitleBarFont,
+                TitleBarText);
 
             if (!string.IsNullOrEmpty(RightTitleInfo))
             {
-                var rightInfoWidth = RightTitleInfoFont.MeasureText(RightTitleInfo);
+                var rightInfoWidth = RightTitleInfoFont.MeasureText(RightTitleInfo, RightTitleInfoText);
                 var rightX = TitleBar.Right - rightInfoWidth - 2.5f * ScaleFactor - TitleBarHeight; // Leave space for minimize button
 
                 canvas.DrawText(RightTitleInfo,
                     new(rightX, titleCenterY - titleYOffset),
-                    SKTextAlign.Left, RightTitleInfoFont, RightTitleInfoText);
+                    SKTextAlign.Left,
+                    RightTitleInfoFont,
+                    RightTitleInfoText);
             }
 
             canvas.DrawRect(MinimizeButton, ButtonBackgroundPaint);
@@ -559,7 +567,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
             IsAntialias = true,
         };
 
-        private static readonly SKFont TitleBarFont = new SKFont
+        private static readonly SKFont TitleBarFont = new()
         {
             Subpixel = true,
             Size = 12f,
@@ -572,7 +580,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
             IsAntialias = true,
         };
 
-        private static readonly SKFont RightTitleInfoFont = new SKFont
+        private static readonly SKFont RightTitleInfoFont = new()
         {
             Subpixel = true,
             Size = 12f,

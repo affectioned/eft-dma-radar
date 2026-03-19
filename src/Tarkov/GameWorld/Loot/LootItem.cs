@@ -1,13 +1,15 @@
-﻿using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.UI.ESP;
-using eft_dma_radar.UI.LootFilters;
+using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
+using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.UI.ESP;
+using eft_dma_radar.Common.Misc.Pools;
+using eft_dma_radar.UI.LootFilters;
 
 namespace eft_dma_radar.Tarkov.Loot
 {
@@ -16,6 +18,7 @@ namespace eft_dma_radar.Tarkov.Loot
         private static Config Config => Program.Config;
         private readonly TarkovMarketItem _item;
         private static readonly Dictionary<string, DateTime> _lastNotifyTimes = new();
+        private static readonly TimeSpan NotifyCooldown = TimeSpan.FromSeconds(30);
 
         public static EntityTypeSettings LootSettings => Config.EntityTypeSettings.GetSettings("RegularLoot");
         public static EntityTypeSettingsESP LootESPSettings => ESP.Config.EntityTypeESPSettings.GetSettings("RegularLoot");
@@ -32,7 +35,7 @@ namespace eft_dma_radar.Tarkov.Loot
         public static EntityTypeSettings AirdropSettings => Config.EntityTypeSettings.GetSettings("Airdrop");
         public static EntityTypeSettingsESP AirdropESPSettings => ESP.Config.EntityTypeESPSettings.GetSettings("Airdrop");
 
-        private static bool QuestHelperEnabled => Config.QuestHelper.Enabled;
+        private static bool QuestHelperEnabled = Config.QuestHelper.Enabled;
 
         private const float HEIGHT_INDICATOR_THRESHOLD = 1.85f;
 
@@ -72,6 +75,7 @@ namespace eft_dma_radar.Tarkov.Loot
         public string ShortName => _item.ShortName;
 
         public ulong InteractiveClass { get; set; }
+        static Dictionary<ulong, List<int>> _originalMaterials = new();
         /// <summary>
         /// Item's Price (In roubles).
         /// </summary>
@@ -154,17 +158,17 @@ namespace eft_dma_radar.Tarkov.Loot
         {
             var groups = LootFilterManager.CurrentGroups?.Groups?
                 .OrderBy(g => g.Index);
-
+        
             foreach (var group in groups)
             {
                 if (!group.Enabled)
                     continue;
-
+        
                 var match = group.Items.FirstOrDefault(i => i.Enabled && i.ItemID == ID);
                 if (match != null)
                     return (group, match);
             }
-
+        
             return null;
         }
 
@@ -391,150 +395,150 @@ namespace eft_dma_radar.Tarkov.Loot
             return predicate(this);
         }
 
-        public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer localPlayer)
+public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer localPlayer)
+{
+    if (this is LootCorpse && (!CorpseSettings.Enabled || !MeetsCorpseValueThreshold) && !HasImportantItems)
+        return;
+
+    EntityTypeSettings entitySettings;
+
+    if (this is LootAirdrop)
+        entitySettings = AirdropSettings;
+    else if (this is LootCorpse)
+        entitySettings = CorpseSettings;
+    else if (this is QuestItem || (QuestHelperEnabled && IsQuestCondition))
+        entitySettings = QuestItemSettings;
+    else if (IsImportant || IsValuableLoot)
+        entitySettings = ImportantLootSettings;
+    else
+        entitySettings = LootSettings;
+
+    var dist = Vector3.Distance(localPlayer.Position, Position);
+    if (dist > entitySettings.RenderDistance)
+        return;
+
+    var label      = GetEntityUILabel(entitySettings);
+    var paints     = GetPaints();
+    var heightDiff = Position.Y - localPlayer.Position.Y;
+
+    var point = Position
+        .ToMapPos(mapParams.Map)
+        .ToZoomedPos(mapParams);
+
+    MouseoverPosition = new Vector2(point.X, point.Y);
+    SKPaints.ShapeOutline.StrokeWidth = 2f;
+
+    // ---------------------------------------------
+    // SNAPSHOT CORPSE LOOT ONCE (CRITICAL FIX)
+    // ---------------------------------------------
+    List<LootItem> importantLootItems = null;
+
+    if (this is LootCorpse corpse && CorpseSettings.ShowImportantLoot)
+    {
+        var corpseLootSnapshot = corpse.Loot?.ToList();
+        if (corpseLootSnapshot is not null)
         {
-            if (this is LootCorpse && (!CorpseSettings.Enabled || !MeetsCorpseValueThreshold) && !HasImportantItems)
-                return;
-
-            EntityTypeSettings entitySettings;
-
-            if (this is LootAirdrop)
-                entitySettings = AirdropSettings;
-            else if (this is LootCorpse)
-                entitySettings = CorpseSettings;
-            else if (this is QuestItem || (QuestHelperEnabled && IsQuestCondition))
-                entitySettings = QuestItemSettings;
-            else if (IsImportant || IsValuableLoot)
-                entitySettings = ImportantLootSettings;
-            else
-                entitySettings = LootSettings;
-
-            var dist = Vector3.Distance(localPlayer.Position, Position);
-            if (dist > entitySettings.RenderDistance)
-                return;
-
-            var label = GetEntityUILabel(entitySettings);
-            var paints = GetPaints();
-            var heightDiff = Position.Y - localPlayer.Position.Y;
-
-            var point = Position
-                .ToMapPos(mapParams.Map)
-                .ToZoomedPos(mapParams);
-
-            MouseoverPosition = new Vector2(point.X, point.Y);
-            SKPaints.ShapeOutline.StrokeWidth = 2f;
-
-            // ─────────────────────────────────────────────
-            // SNAPSHOT CORPSE LOOT ONCE (CRITICAL FIX)
-            // ─────────────────────────────────────────────
-            List<LootItem> importantLootItems = null;
-
-            if (this is LootCorpse corpse && CorpseSettings.ShowImportantLoot)
-            {
-                var corpseLootSnapshot = corpse.Loot?.ToList();
-                if (corpseLootSnapshot is not null)
-                {
-                    importantLootItems = corpseLootSnapshot
-                        .Where(item =>
-                               item.IsImportant ||
-                               item is QuestItem ||
-                               (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
-                               item.IsWishlisted ||
-                               (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
-                               (LootFilterControl.ShowMeds && item.IsMeds) ||
-                               (LootFilterControl.ShowFood && item.IsFood) ||
-                               (LootFilterControl.ShowWeapons && item.IsWeapon) ||
-                               item.IsValuableLoot ||
-                               (!item.IsGroupedBlacklisted &&
-                                item.MatchedFilter?.Color != null &&
-                                !string.IsNullOrEmpty(item.MatchedFilter.Color)))
-                        .OrderLoot()
-                        .Take(5)
-                        .ToList();
-                }
-            }
-
-            float distanceYOffset;
-            float nameXOffset = 7f * MainWindow.UIScale;
-            float nameYOffset;
-
-            if (heightDiff > HEIGHT_INDICATOR_THRESHOLD)
-            {
-                using var path = point.GetUpArrow(5);
-                canvas.DrawPath(path, SKPaints.ShapeOutline);
-                canvas.DrawPath(path, paints.Item1);
-                distanceYOffset = 18f * MainWindow.UIScale;
-                nameYOffset = 6f * MainWindow.UIScale;
-            }
-            else if (heightDiff < -HEIGHT_INDICATOR_THRESHOLD)
-            {
-                using var path = point.GetDownArrow(5);
-                canvas.DrawPath(path, SKPaints.ShapeOutline);
-                canvas.DrawPath(path, paints.Item1);
-                distanceYOffset = 12f * MainWindow.UIScale;
-                nameYOffset = 1f * MainWindow.UIScale;
-            }
-            else
-            {
-                var size = 5 * MainWindow.UIScale;
-                canvas.DrawCircle(point, size, SKPaints.ShapeOutline);
-                canvas.DrawCircle(point, size, paints.Item1);
-                distanceYOffset = 16f * MainWindow.UIScale;
-                nameYOffset = 4f * MainWindow.UIScale;
-            }
-
-            if (entitySettings.ShowName || entitySettings.ShowValue)
-            {
-                point.Offset(nameXOffset, nameYOffset);
-
-                if (!string.IsNullOrEmpty(label))
-                {
-                    canvas.DrawText(label, point, SKPaints.TextOutline);
-                    canvas.DrawText(label, point, paints.Item2);
-                }
-            }
-
-            var currentBottomY = point.Y + distanceYOffset - nameYOffset;
-
-            if (entitySettings.ShowDistance)
-            {
-                var distText = $"{(int)dist}m";
-                var distWidth = paints.Item2.MeasureText(distText);
-
-                var distPoint = new SKPoint(
-                    point.X - (distWidth / 2) - nameXOffset,
-                    currentBottomY
-                );
-
-                canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, paints.Item2);
-            }
-
-            if (importantLootItems?.Count > 0)
-            {
-                var spacing = 1 * MainWindow.UIScale;
-                var textSize = 12 * MainWindow.UIScale;
-
-                currentBottomY += textSize + spacing;
-
-                foreach (var item in importantLootItems)
-                {
-                    var itemText = item.GetUILabel();
-                    var itemPaint = GetItemTextPaint(item);
-                    var itemWidth = itemPaint.MeasureText(itemText);
-
-                    var itemPoint = new SKPoint(
-                        point.X - (itemWidth / 2) - nameXOffset,
-                        currentBottomY
-                    );
-
-                    canvas.DrawText(itemText, itemPoint, SKPaints.TextOutline);
-                    canvas.DrawText(itemText, itemPoint, itemPaint);
-
-                    currentBottomY += textSize + spacing;
-                }
-            }
+            importantLootItems = corpseLootSnapshot
+                .Where(item =>
+                       item.IsImportant ||
+                       item is QuestItem ||
+                       (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
+                       item.IsWishlisted ||
+                       (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
+                       (LootFilterControl.ShowMeds && item.IsMeds) ||
+                       (LootFilterControl.ShowFood && item.IsFood) ||
+                       (LootFilterControl.ShowWeapons && item.IsWeapon) ||
+                       item.IsValuableLoot ||
+                       (!item.IsGroupedBlacklisted &&
+                        item.MatchedFilter?.Color != null &&
+                        !string.IsNullOrEmpty(item.MatchedFilter.Color)))
+                .OrderLoot()
+                .Take(5)
+                .ToList();
         }
+    }
+
+    float distanceYOffset;
+    float nameXOffset = 7f * MainWindow.UIScale;
+    float nameYOffset;
+
+    if (heightDiff > HEIGHT_INDICATOR_THRESHOLD)
+    {
+        using var path = point.GetUpArrow(5);
+        canvas.DrawPath(path, SKPaints.ShapeOutline);
+        canvas.DrawPath(path, paints.Item1);
+        distanceYOffset = 18f * MainWindow.UIScale;
+        nameYOffset     = 6f * MainWindow.UIScale;
+    }
+    else if (heightDiff < -HEIGHT_INDICATOR_THRESHOLD)
+    {
+        using var path = point.GetDownArrow(5);
+        canvas.DrawPath(path, SKPaints.ShapeOutline);
+        canvas.DrawPath(path, paints.Item1);
+        distanceYOffset = 12f * MainWindow.UIScale;
+        nameYOffset     = 1f * MainWindow.UIScale;
+    }
+    else
+    {
+        var size = 5 * MainWindow.UIScale;
+        canvas.DrawCircle(point, size, SKPaints.ShapeOutline);
+        canvas.DrawCircle(point, size, paints.Item1);
+        distanceYOffset = 16f * MainWindow.UIScale;
+        nameYOffset     = 4f * MainWindow.UIScale;
+    }
+
+    if (entitySettings.ShowName || entitySettings.ShowValue)
+    {
+        point.Offset(nameXOffset, nameYOffset);
+
+        if (!string.IsNullOrEmpty(label))
+        {
+            canvas.DrawText(label, point, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+            canvas.DrawText(label, point, SKTextAlign.Left, SKPaints.RadarFontRegular12, paints.Item2);
+        }
+    }
+
+    var currentBottomY = point.Y + distanceYOffset - nameYOffset;
+
+    if (entitySettings.ShowDistance)
+    {
+        var distText  = $"{(int)dist}m";
+        var distWidth = SKPaints.RadarFontRegular12.MeasureText(distText, paints.Item2);
+
+        var distPoint = new SKPoint(
+            point.X - (distWidth / 2) - nameXOffset,
+            currentBottomY
+        );
+
+        canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+        canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paints.Item2);
+    }
+
+    if (importantLootItems?.Count > 0)
+    {
+        var spacing  = 1 * MainWindow.UIScale;
+        var textSize = 12 * MainWindow.UIScale;
+
+        currentBottomY += textSize + spacing;
+
+        foreach (var item in importantLootItems)
+        {
+            var itemText  = item.GetUILabel();
+            var itemPaint = GetItemTextPaint(item);
+            var itemWidth = SKPaints.RadarFontRegular12.MeasureText(itemText, itemPaint);
+
+            var itemPoint = new SKPoint(
+                point.X - (itemWidth / 2) - nameXOffset,
+                currentBottomY
+            );
+
+            canvas.DrawText(itemText, itemPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+            canvas.DrawText(itemText, itemPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, itemPaint);
+
+            currentBottomY += textSize + spacing;
+        }
+    }
+}
 
 
         private Vector3 _position;
@@ -760,6 +764,71 @@ namespace eft_dma_radar.Tarkov.Loot
                 lines.Add((lootItem.Name, itemPaint));
 
                 Position.ToMapPos(mapParams.Map).ToZoomedPos(mapParams).DrawMouseoverText(canvas, lines);
+            }
+        }
+
+        public static void ApplyItemChams(ulong interactiveClass, int desiredMaterialId)
+        {
+            try
+            {
+                if (interactiveClass == 0)
+                {
+                    XMLogging.WriteLine("[ApplyItemChams] Skipped: interactiveClass is 0");
+                    return;
+                }
+        
+                var rendererList = Memory.ReadPtr(interactiveClass + 0x90);
+                if (rendererList == 0)
+                {
+                    XMLogging.WriteLine($"[ApplyItemChams] Skipped: rendererList is 0 for {interactiveClass:X}");
+                    return;
+                }
+        
+                int rendererCount = Memory.ReadValue<int>(rendererList + 0x18);
+                if (rendererCount <= 0 || rendererCount > 1000)
+                {
+                    XMLogging.WriteLine($"[ApplyItemChams] Skipped: invalid rendererCount ({rendererCount}) for {interactiveClass:X}");
+                    return;
+                }
+        
+                var rendererBase = Memory.ReadPtr(rendererList + 0x10);
+                if (rendererBase == 0)
+                {
+                    XMLogging.WriteLine($"[ApplyItemChams] Skipped: rendererBase is 0 for {interactiveClass:X}");
+                    return;
+                }
+        
+                for (int i = 0; i < rendererCount; i++)
+                {
+                    var renderer = Memory.ReadPtr(rendererBase + 0x20 + (ulong)(i * 0x8));
+                    if (renderer == 0) continue;
+        
+                    var materialDict = Memory.ReadPtr(renderer + 0x10);
+                    if (materialDict == 0) continue;
+        
+                    int matCount = Memory.ReadValue<int>(materialDict + 0x158);
+                    if (matCount <= 0 || matCount > 100)
+                    {
+                        XMLogging.WriteLine($"[ApplyItemChams] Skipped: invalid matCount ({matCount}) at {materialDict:X}");
+                        continue;
+                    }
+        
+                    var matArray = Memory.ReadPtr(materialDict + 0x148);
+                    if (matArray == 0)
+                    {
+                        XMLogging.WriteLine($"[ApplyItemChams] Skipped: matArray is 0 at {materialDict:X}");
+                        continue;
+                    }
+        
+                    for (int j = 0; j < matCount; j++)
+                    {
+                        Memory.WriteValue(matArray + (ulong)(j * 0x4), desiredMaterialId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                XMLogging.WriteLine($"[ApplyItemChams] Failed for {interactiveClass:X}: {ex.Message}");
             }
         }
 
@@ -1228,18 +1297,12 @@ namespace eft_dma_radar.Tarkov.Loot
                         StrokeWidth = 3f * MainWindow.UIScale,
                         Style = SKPaintStyle.Fill,
                         IsAntialias = true,
-                        FilterQuality = SKFilterQuality.High
                     };
                     var text = new SKPaint
                     {
-                        SubpixelText = true,
                         Color = skColor,
                         IsStroke = false,
-                        TextSize = 12f * MainWindow.UIScale,
-                        TextEncoding = SKTextEncoding.Utf8,
                         IsAntialias = true,
-                        Typeface = CustomFonts.SKFontFamilyRegular,
-                        FilterQuality = SKFilterQuality.High
                     };
                     var espPaint = new SKPaint()
                     {
@@ -1247,27 +1310,18 @@ namespace eft_dma_radar.Tarkov.Loot
                         StrokeWidth = 0.25f,
                         Style = SKPaintStyle.Fill,
                         IsAntialias = true,
-                        FilterQuality = SKFilterQuality.High
                     };
                     var espText = new SKPaint()
                     {
-                        SubpixelText = true,
                         Color = skColor,
                         IsStroke = false,
-                        TextSize = 12f,
-                        TextAlign = SKTextAlign.Center,
-                        TextEncoding = SKTextEncoding.Utf8,
                         IsAntialias = true,
-                        Typeface = CustomFonts.SKFontFamilyMedium,
-                        FilterQuality = SKFilterQuality.High
                     };
                     return new Tuple<SKPaint, SKPaint, SKPaint, SKPaint>(paint, text, espPaint, espText);
                 },
                 (key, existingValue) =>
                 {
                     existingValue.Item1.StrokeWidth = 3f * MainWindow.UIScale;
-                    existingValue.Item2.TextSize = 12f * MainWindow.UIScale;
-                    existingValue.Item4.TextSize = 12f; // * ESP.Config.FontScale;
                     return existingValue;
                 });
             return result;

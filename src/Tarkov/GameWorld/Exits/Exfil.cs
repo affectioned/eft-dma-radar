@@ -1,12 +1,13 @@
-﻿using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Common.Unity.Collections;
+using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 
 namespace eft_dma_radar.Tarkov.GameWorld.Exits
 {
@@ -111,10 +112,9 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             if (player == null)
                 return false;
 
-            // If entry sets are empty (not yet loaded), assume eligible rather than hiding all exits.
-            var pmcEligible = player.IsPmc && (PmcEntries.Count == 0 || PmcEntries.Contains(player.EntryPoint ?? "NULL"));
-            var scavEligible = player.IsScav && (ScavIds.Count == 0 || ScavIds.Contains(player.ProfileId));
-            var isEligiblePlayer = pmcEligible || scavEligible || IsSecret;
+            var isEligiblePlayer = (player.IsPmc && PmcEntries.Contains(player.EntryPoint ?? "NULL")) ||
+                                    (player.IsScav && ScavIds.Contains(player.ProfileId)) ||
+                                    IsSecret;
 
             if (!isEligiblePlayer)
                 return false;
@@ -185,20 +185,20 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             {
                 var namePoint = point;
                 namePoint.Offset(nameXOffset, nameYOffset);
-                canvas.DrawText(Name, namePoint, SKPaints.TextOutline);
-                canvas.DrawText(Name, namePoint, paint.Item2);
-            }
+                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paint.Item2);
+                }
 
-            if (Settings.ShowDistance)
-            {
-                var distText = $"{(int)dist}m";
-                var distWidth = paint.Item2.MeasureText($"{(int)dist}");
-                var distPoint = new SKPoint(
-                    point.X - (distWidth / 2),
-                    point.Y + distanceYOffset
-                );
-                canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, paint.Item2);
+                if (Settings.ShowDistance)
+                {
+                    var distText = $"{(int)dist}m";
+                    var distWidth = SKPaints.RadarFontRegular12.MeasureText($"{(int)dist}", paint.Item2);
+                    var distPoint = new SKPoint(
+                        point.X - (distWidth / 2),
+                        point.Y + distanceYOffset
+                    );
+                    canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                    canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paint.Item2);
             }
         }
 
@@ -264,14 +264,9 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
 
             if (!isRelevantSecret)
             {
-                if (Status is EStatus.Closed)
-                    return;
-
-                // Only filter by eligible entry points once they've been loaded from memory.
-                // When the set is empty (Update() hasn't run yet), show exits based on status alone.
-                if (localPlayer.IsPmc && PmcEntries.Count > 0 && !PmcEntries.Contains(localPlayer.EntryPoint))
-                    return;
-                if (localPlayer.IsScav && ScavIds.Count > 0 && !ScavIds.Contains(localPlayer.ProfileId))
+                if ((Status is EStatus.Closed) ||
+                    (localPlayer.IsPmc && !PmcEntries.Contains(localPlayer.EntryPoint)) ||
+                    (localPlayer.IsScav && !ScavIds.Contains(localPlayer.ProfileId)))
                     return;
             }
 

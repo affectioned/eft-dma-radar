@@ -393,21 +393,21 @@
 
             canvas.DrawRect(TitleBar, TitleBarPaint);
             var titleCenterY = TitleBar.Top + (TitleBar.Height / 2);
-            var titleYOffset = (TitleBarText.FontMetrics.Ascent + TitleBarText.FontMetrics.Descent) / 2;
+            var titleYOffset = (_espWidgetFont.Metrics.Ascent + _espWidgetFont.Metrics.Descent) / 2;
 
             canvas.DrawText(Title,
                 new(TitleBar.Left + 2.5f * ScaleFactor,
                 titleCenterY - titleYOffset),
-                TitleBarText);
+                SKTextAlign.Left, _espWidgetFont, TitleBarText);
 
             if (!string.IsNullOrEmpty(RightTitleInfo))
             {
-                var rightInfoWidth = RightTitleInfoText.MeasureText(RightTitleInfo);
+                var rightInfoWidth = _espWidgetFont.MeasureText(RightTitleInfo);
                 var rightX = TitleBar.Right - rightInfoWidth - 2.5f * ScaleFactor - TitleBarHeight;
 
                 canvas.DrawText(RightTitleInfo,
                     new(rightX, titleCenterY - titleYOffset),
-                    RightTitleInfoText);
+                    SKTextAlign.Left, _espWidgetFont, RightTitleInfoText);
             }
 
             canvas.DrawRect(MinimizeButton, ButtonBackgroundPaint);
@@ -423,8 +423,7 @@
             ScaleFactor = newScale;
             InitializeResizeTriangle();
 
-            TitleBarText.TextSize = 12F * newScale;
-            RightTitleInfoText.TextSize = 12F * newScale;
+            _espWidgetFont.Size = 12F * newScale;
             SymbolPaint.StrokeWidth = 2f * newScale;
         }
         #endregion
@@ -527,27 +526,19 @@
 
         private static readonly SKPaint TitleBarText = new SKPaint()
         {
-            SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 12f,
-            TextAlign = SKTextAlign.Left,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            FilterQuality = SKFilterQuality.High
         };
 
         private static readonly SKPaint RightTitleInfoText = new SKPaint()
         {
-            SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 12f,
-            TextAlign = SKTextAlign.Left,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            FilterQuality = SKFilterQuality.High
         };
+
+        private static readonly SKFont _espWidgetFont = new(SKTypeface.FromFamilyName("Consolas"), 12) { Subpixel = true };
         #endregion
 
         #region IDisposable

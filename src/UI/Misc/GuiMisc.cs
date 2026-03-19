@@ -1,11 +1,12 @@
-﻿using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Pages;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Unity;
+using System.Collections.Generic;
 
 namespace eft_dma_radar.UI.Misc
 {
@@ -86,7 +87,7 @@ namespace eft_dma_radar.UI.Misc
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Quest ID: {Id}");
             sb.AppendLine($"Name: {Name}");
-
+            
             // Get quest data from QuestManager if available
             if (Memory.Game is Tarkov.GameWorld.LocalGameWorld lgw && lgw.QuestManager != null)
             {
@@ -99,7 +100,7 @@ namespace eft_dma_radar.UI.Misc
                     sb.AppendLine("=== OBJECTIVES ===");
                     foreach (var obj in quest.Objectives)
                     {
-                        var status = obj.IsCompleted ? "✓" : "○";
+                        var status = obj.IsCompleted ? "?" : "?";
                         var optional = obj.Optional ? " (Optional)" : "";
                         sb.AppendLine($"{status} [{obj.Id}]{optional}");
                         sb.AppendLine($"   Type: {obj.Type}");
@@ -114,13 +115,13 @@ namespace eft_dma_radar.UI.Misc
                         if (obj.RequiredItemIds.Any())
                             sb.AppendLine($"   Items: {string.Join(", ", obj.RequiredItemIds)}");
                     }
-
+                    
                     if (quest.CompletedConditions.Any())
                     {
                         sb.AppendLine();
                         sb.AppendLine("=== COMPLETED CONDITIONS ===");
                         foreach (var cond in quest.CompletedConditions)
-                            sb.AppendLine($"  ✓ {cond}");
+                            sb.AppendLine($"  ? {cond}");
                     }
                 }
                 else
@@ -132,7 +133,7 @@ namespace eft_dma_radar.UI.Misc
             {
                 sb.AppendLine("(QuestManager not available)");
             }
-
+            
             DebugTooltip = sb.ToString().TrimEnd();
         }
 
@@ -388,7 +389,7 @@ namespace eft_dma_radar.UI.Misc
             float maxLength = 0;
             foreach (var line in lines)
             {
-                var length = SKPaints.TextMouseover.MeasureText(line);
+                var length = SKPaints.RadarFontRegular12.MeasureText(line, SKPaints.TextMouseover);
                 if (length > maxLength)
                     maxLength = length;
             }
@@ -405,7 +406,7 @@ namespace eft_dma_radar.UI.Misc
             {
                 if (string.IsNullOrEmpty(line?.Trim()))
                     continue;
-                canvas.DrawText(line, zoomedMapPos, SKPaints.TextMouseover); // draw line text
+                canvas.DrawText(line, zoomedMapPos, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextMouseover); // draw line text
                 zoomedMapPos.Offset(0, 12f * MainWindow.UIScale);
             }
         }
@@ -421,7 +422,7 @@ namespace eft_dma_radar.UI.Misc
             float maxLength = 0;
             foreach (var line in lineList)
             {
-                var length = line.paint.MeasureText(line.text);
+                var length = SKPaints.RadarFontRegular12.MeasureText(line.text, line.paint);
                 if (length > maxLength)
                     maxLength = length;
             }
@@ -440,7 +441,7 @@ namespace eft_dma_radar.UI.Misc
             {
                 if (string.IsNullOrEmpty(line.text?.Trim()))
                     continue;
-                canvas.DrawText(line.text, zoomedMapPos, line.paint);
+                canvas.DrawText(line.text, zoomedMapPos, SKTextAlign.Left, SKPaints.RadarFontRegular12, line.paint);
                 zoomedMapPos.Offset(0, 12f * MainWindow.UIScale);
             }
         }
@@ -472,8 +473,8 @@ namespace eft_dma_radar.UI.Misc
                 if (string.IsNullOrEmpty(x?.Trim()))
                     continue;
 
-                canvas.DrawText(x, screenPos, paint);
-                screenPos.Y += paint.TextSize;
+                canvas.DrawText(x, screenPos, SKTextAlign.Center, SKPaints.ESPFontMedium12, paint);
+                screenPos.Y += SKPaints.ESPFontMedium12.Size;
             }
         }
 
@@ -494,16 +495,13 @@ namespace eft_dma_radar.UI.Misc
                 textWithDist += distStr;
             }
 
-            canvas.DrawText(textWithDist, screenPos, paint);
+            canvas.DrawText(textWithDist, screenPos, SKTextAlign.Center, SKPaints.ESPFontMedium12, paint);
         }
-
-        /// <summary>
-        /// Draw ESP text with colored entries for important items in a corpse
-        /// </summary>
         public static void DrawESPText(this SKPoint screenPos, SKCanvas canvas, IESPEntity entity, LocalPlayer localPlayer, bool printDist, SKPaint paint, string mainLabel, IEnumerable<LootItem> importantItems = null)
         {
             var scale = ESP.ESP.Config.FontScale;
             var currentPos = screenPos;
+            using var scaledFont = new SKFont(CustomFonts.SKFontFamilyMedium, 12f * scale) { Subpixel = true };
 
             if (!string.IsNullOrEmpty(mainLabel))
             {
@@ -516,21 +514,8 @@ namespace eft_dma_radar.UI.Misc
                     textWithDist += distStr;
                 }
 
-                var scaledMainPaint = new SKPaint
-                {
-                    SubpixelText = paint.SubpixelText,
-                    Color = paint.Color,
-                    IsStroke = paint.IsStroke,
-                    TextSize = 12f * scale,
-                    TextAlign = paint.TextAlign,
-                    TextEncoding = paint.TextEncoding,
-                    IsAntialias = paint.IsAntialias,
-                    Typeface = paint.Typeface,
-                    FilterQuality = paint.FilterQuality
-                };
-
-                canvas.DrawText(textWithDist, currentPos, scaledMainPaint);
-                currentPos.Y += scaledMainPaint.TextSize * 1.2f;
+                canvas.DrawText(textWithDist, currentPos, SKTextAlign.Center, scaledFont, paint);
+                currentPos.Y += scaledFont.Size * 1.2f;
             }
 
             if (importantItems != null)
@@ -538,21 +523,9 @@ namespace eft_dma_radar.UI.Misc
                 foreach (var item in importantItems.Take(5))
                 {
                     var basePaint = GetItemESPPaint(item);
-                    var scaledItemPaint = new SKPaint
-                    {
-                        SubpixelText = basePaint.SubpixelText,
-                        Color = basePaint.Color,
-                        IsStroke = basePaint.IsStroke,
-                        TextSize = 12f * scale,
-                        TextAlign = basePaint.TextAlign,
-                        TextEncoding = basePaint.TextEncoding,
-                        IsAntialias = basePaint.IsAntialias,
-                        Typeface = basePaint.Typeface,
-                        FilterQuality = basePaint.FilterQuality
-                    };
 
-                    canvas.DrawText(item.ShortName, currentPos, scaledItemPaint);
-                    currentPos.Y += scaledItemPaint.TextSize * 1.2f;
+                    canvas.DrawText(item.ShortName, currentPos, SKTextAlign.Center, scaledFont, basePaint);
+                    currentPos.Y += scaledFont.Size * 1.2f;
                 }
             }
         }
@@ -564,6 +537,7 @@ namespace eft_dma_radar.UI.Misc
         {
             var scale = ESP.ESP.Config.FontScale;
             var currentPos = screenPos;
+            using var scaledFont = new SKFont(CustomFonts.SKFontFamilyMedium, 12f * scale) { Subpixel = true };
 
             if (!string.IsNullOrEmpty(weaponInfo))
             {
@@ -574,21 +548,8 @@ namespace eft_dma_radar.UI.Misc
                     if (string.IsNullOrEmpty(line?.Trim()))
                         continue;
 
-                    var scaledPaint = new SKPaint
-                    {
-                        SubpixelText = paint.SubpixelText,
-                        Color = paint.Color,
-                        IsStroke = paint.IsStroke,
-                        TextSize = 12f * scale,
-                        TextAlign = paint.TextAlign,
-                        TextEncoding = paint.TextEncoding,
-                        IsAntialias = paint.IsAntialias,
-                        Typeface = paint.Typeface,
-                        FilterQuality = paint.FilterQuality
-                    };
-
-                    canvas.DrawText(line, currentPos, scaledPaint);
-                    currentPos.Y += scaledPaint.TextSize;
+                    canvas.DrawText(line, currentPos, SKTextAlign.Center, scaledFont, paint);
+                    currentPos.Y += scaledFont.Size;
                 }
             }
 
@@ -597,21 +558,9 @@ namespace eft_dma_radar.UI.Misc
                 foreach (var item in importantLoot.Take(5))
                 {
                     var basePaint = GetItemESPPaint(item);
-                    var scaledItemPaint = new SKPaint
-                    {
-                        SubpixelText = basePaint.SubpixelText,
-                        Color = basePaint.Color,
-                        IsStroke = basePaint.IsStroke,
-                        TextSize = 12f * scale,
-                        TextAlign = basePaint.TextAlign,
-                        TextEncoding = basePaint.TextEncoding,
-                        IsAntialias = basePaint.IsAntialias,
-                        Typeface = basePaint.Typeface,
-                        FilterQuality = basePaint.FilterQuality
-                    };
 
-                    canvas.DrawText(item.ShortName, currentPos, scaledItemPaint);
-                    currentPos.Y += scaledItemPaint.TextSize;
+                    canvas.DrawText(item.ShortName, currentPos, SKTextAlign.Center, scaledFont, basePaint);
+                    currentPos.Y += scaledFont.Size;
                 }
             }
         }
@@ -628,17 +577,9 @@ namespace eft_dma_radar.UI.Misc
                 {
                     return new SKPaint
                     {
-                        SubpixelText = true,
                         Color = filterColor,
                         IsStroke = false,
-                        TextSize = 12f,
-                        TextAlign = SKTextAlign.Center,
-                        TextEncoding = SKTextEncoding.Utf8,
                         IsAntialias = true,
-#pragma warning disable CS0618 // Typeface/FilterQuality obsolete — codebase-wide SkiaSharp migration needed
-                        Typeface = CustomFonts.SKFontFamilyMedium,
-                        FilterQuality = SKFilterQuality.Low
-#pragma warning restore CS0618
                     };
                 }
             }

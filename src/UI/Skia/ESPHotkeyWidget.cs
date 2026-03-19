@@ -1,4 +1,4 @@
-﻿using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data.EFT;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
@@ -29,30 +29,7 @@ namespace eft_dma_radar.UI.ESP
         {
             base.SetScaleFactor(scale);
 
-            lock (_hotkeyTextPaint)
-            {
-                _hotkeyTextPaint.TextSize = 13 * scale;
-            }
-
-            lock (_hotkeyActivePaint)
-            {
-                _hotkeyActivePaint.TextSize = 13 * scale;
-            }
-
-            lock (_hotkeyInactivePaint)
-            {
-                _hotkeyInactivePaint.TextSize = 13 * scale;
-            }
-
-            lock (_hotkeyKeyPaint)
-            {
-                _hotkeyKeyPaint.TextSize = 13 * scale;
-            }
-
-            lock (_hotkeyTypePaint)
-            {
-                _hotkeyTypePaint.TextSize = 13 * scale;
-            }
+            _hotkeyFont.Size = 13 * scale;
 
             _lastCalculatedHeight = 0f;
         }
@@ -62,7 +39,7 @@ namespace eft_dma_radar.UI.ESP
         /// </summary>
         private float CalculateRequiredHeight(List<HotkeyDisplayModel> hotkeysToDisplay)
         {
-            var lineSpacing = _hotkeyTextPaint.FontSpacing;
+            var lineSpacing = _hotkeyFont.Spacing;
             var height = _padding * 2;
             height += lineSpacing * 1.5f;
 
@@ -129,11 +106,11 @@ namespace eft_dma_radar.UI.ESP
                 canvas.Save();
                 canvas.ClipRect(ClientRectangle);
 
-                var emptyLineSpacing = _hotkeyTextPaint.FontSpacing;
+                var emptyLineSpacing = _hotkeyFont.Spacing;
                 var emptyDrawPt = new SKPoint(ClientRectangle.Left + _padding, ClientRectangle.Top + emptyLineSpacing * 0.8f + _padding);
 
                 var emptyText = "No hotkeys configured";
-                canvas.DrawText(emptyText, emptyDrawPt, _hotkeyTextPaint);
+                canvas.DrawText(emptyText, emptyDrawPt, SKTextAlign.Left, _hotkeyFont, _hotkeyTextPaint);
 
                 canvas.Restore();
                 return;
@@ -142,7 +119,7 @@ namespace eft_dma_radar.UI.ESP
             canvas.Save();
             canvas.ClipRect(ClientRectangle);
 
-            var lineSpacing = _hotkeyTextPaint.FontSpacing;
+            var lineSpacing = _hotkeyFont.Spacing;
             var drawPt = new SKPoint(ClientRectangle.Left + _padding, ClientRectangle.Top + lineSpacing * 0.8f + _padding);
 
             var showKeySymbol = _showKey ? "[x]" : "[ ]";
@@ -150,13 +127,13 @@ namespace eft_dma_radar.UI.ESP
             var onlyActiveSymbol = _onlyActive ? "[x]" : "[ ]";
 
             var filtersText = $"Filters: {showKeySymbol} Show Key  {showKeyTypeSymbol} Show Type  {onlyActiveSymbol} Only Active";
-            canvas.DrawText(filtersText, drawPt, _hotkeyTextPaint);
+            canvas.DrawText(filtersText, drawPt, SKTextAlign.Left, _hotkeyFont, _hotkeyTextPaint);
 
             drawPt.Y += lineSpacing * 1f;
 
-            var nameColumnWidth = hotkeysToDisplay.Any() ? hotkeysToDisplay.Max(x => _hotkeyTextPaint.MeasureText(x.Action)) : 100f;
-            var keyColumnWidth = _showKey && hotkeysToDisplay.Any() ? hotkeysToDisplay.Max(x => _hotkeyKeyPaint.MeasureText($"[{x.Key}]")) : 0f;
-            var typeColumnWidth = _showKeyType && hotkeysToDisplay.Any() ? hotkeysToDisplay.Max(x => _hotkeyTypePaint.MeasureText($"({x.Type})")) : 0f;
+            var nameColumnWidth = hotkeysToDisplay.Any() ? hotkeysToDisplay.Max(x => _hotkeyFont.MeasureText(x.Action)) : 100f;
+            var keyColumnWidth = _showKey && hotkeysToDisplay.Any() ? hotkeysToDisplay.Max(x => _hotkeyFont.MeasureText($"[{x.Key}]")) : 0f;
+            var typeColumnWidth = _showKeyType && hotkeysToDisplay.Any() ? hotkeysToDisplay.Max(x => _hotkeyFont.MeasureText($"({x.Type})")) : 0f;
 
             var columnPadding = 15f * ScaleFactor;
 
@@ -167,17 +144,17 @@ namespace eft_dma_radar.UI.ESP
 
                 var currentX = drawPt.X;
 
-                canvas.DrawText(hotkey.Action, currentX, drawPt.Y, textPaint);
+                canvas.DrawText(hotkey.Action, currentX, drawPt.Y, SKTextAlign.Left, _hotkeyFont, textPaint);
                 currentX += nameColumnWidth + columnPadding;
 
                 if (_showKey)
                 {
-                    canvas.DrawText($"[{hotkey.Key}]", currentX, drawPt.Y, _hotkeyKeyPaint);
+                    canvas.DrawText($"[{hotkey.Key}]", currentX, drawPt.Y, SKTextAlign.Left, _hotkeyFont, _hotkeyKeyPaint);
                     currentX += keyColumnWidth + columnPadding;
                 }
 
                 if (_showKeyType)
-                    canvas.DrawText($"({hotkey.Type})", currentX, drawPt.Y, _hotkeyTypePaint);
+                    canvas.DrawText($"({hotkey.Type})", currentX, drawPt.Y, SKTextAlign.Left, _hotkeyFont, _hotkeyTypePaint);
 
                 drawPt.Y += lineSpacing;
             }
@@ -187,7 +164,7 @@ namespace eft_dma_radar.UI.ESP
 
         public override bool HandleClientAreaClick(SKPoint point)
         {
-            var lineSpacing = _hotkeyTextPaint.FontSpacing;
+            var lineSpacing = _hotkeyFont.Spacing;
             var startY = ClientRectangle.Top + lineSpacing * 0.8f + _padding;
             var filterLineY = startY;
 
@@ -197,11 +174,11 @@ namespace eft_dma_radar.UI.ESP
                 var currentX = startX;
 
                 var filtersText = "Filters: ";
-                var filtersWidth = _hotkeyTextPaint.MeasureText(filtersText);
+                var filtersWidth = _hotkeyFont.MeasureText(filtersText);
                 currentX += filtersWidth;
 
                 var showKeyCheckbox = _showKey ? "[x] Show Key  " : "[ ] Show Key  ";
-                var showKeyWidth = _hotkeyTextPaint.MeasureText(showKeyCheckbox);
+                var showKeyWidth = _hotkeyFont.MeasureText(showKeyCheckbox);
                 if (point.X >= currentX && point.X <= currentX + showKeyWidth)
                 {
                     _showKey = !_showKey;
@@ -212,7 +189,7 @@ namespace eft_dma_radar.UI.ESP
                 currentX += showKeyWidth;
 
                 var showKeyTypeCheckbox = _showKeyType ? "[x] Show Type  " : "[ ] Show Type  ";
-                var showKeyTypeWidth = _hotkeyTextPaint.MeasureText(showKeyTypeCheckbox);
+                var showKeyTypeWidth = _hotkeyFont.MeasureText(showKeyTypeCheckbox);
                 if (point.X >= currentX && point.X <= currentX + showKeyTypeWidth)
                 {
                     _showKeyType = !_showKeyType;
@@ -223,7 +200,7 @@ namespace eft_dma_radar.UI.ESP
                 currentX += showKeyTypeWidth;
 
                 var onlyActiveCheckbox = _onlyActive ? "[x] Only Active" : "[ ] Only Active";
-                var onlyActiveWidth = _hotkeyTextPaint.MeasureText(onlyActiveCheckbox);
+                var onlyActiveWidth = _hotkeyFont.MeasureText(onlyActiveCheckbox);
                 if (point.X >= currentX && point.X <= currentX + onlyActiveWidth)
                 {
                     _onlyActive = !_onlyActive;
@@ -458,63 +435,40 @@ namespace eft_dma_radar.UI.ESP
         #region Static Paint Objects
         private static readonly SKPaint _hotkeyTextPaint = new()
         {
-            SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 13,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"),
-            FilterQuality = SKFilterQuality.High
         };
 
         private static readonly SKPaint _hotkeyActivePaint = new()
         {
-            SubpixelText = true,
             Color = SKColors.LightGreen,
             IsStroke = false,
-            TextSize = 13,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"),
-            FilterQuality = SKFilterQuality.High
         };
 
         private static readonly SKPaint _hotkeyInactivePaint = new()
         {
-            SubpixelText = true,
             Color = SKColors.Gray,
             IsStroke = false,
-            TextSize = 13,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"),
-            FilterQuality = SKFilterQuality.High
         };
 
         private static readonly SKPaint _hotkeyKeyPaint = new()
         {
-            SubpixelText = true,
             Color = SKColors.Yellow,
             IsStroke = false,
-            TextSize = 13,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"),
-            FilterQuality = SKFilterQuality.High
         };
 
         private static readonly SKPaint _hotkeyTypePaint = new()
         {
-            SubpixelText = true,
             Color = SKColors.Cyan,
             IsStroke = false,
-            TextSize = 13,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"),
-            FilterQuality = SKFilterQuality.High
         };
+
+        private static readonly SKFont _hotkeyFont = new(SKTypeface.FromFamilyName("Consolas"), 13) { Subpixel = true };
         #endregion
     }
 }

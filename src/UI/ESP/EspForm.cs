@@ -1,19 +1,24 @@
-﻿using eft_dma_radar.Common.Maps;
-using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Features;
+using eft_dma_radar.Tarkov.Features.MemoryWrites;
+using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
 using eft_dma_radar.Tarkov.GameWorld.Interactables;
 using eft_dma_radar.Tarkov.Loot;
-using eft_dma_radar.UI.ESP.eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
+using eft_dma_radar.UI.SKWidgetControl;
 using RectFSer = eft_dma_radar.UI.Misc.RectFSer;
 using Switch = eft_dma_radar.Tarkov.GameWorld.Exits.Switch;
+using System.ComponentModel;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.Common.Maps;
+using eft_dma_radar.UI.ESP.eft_dma_radar.UI.ESP;
 
 namespace eft_dma_radar.UI.ESP
 {
@@ -137,9 +142,9 @@ namespace eft_dma_radar.UI.ESP
         private static IEnumerable<StaticLootContainer> Containers => Memory.Loot?.StaticLootContainers;
 
         private static EntityTypeSettingsESP MineSettings = ESP.Config.EntityTypeESPSettings.GetSettings("Mine");
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
         // TOP LOOT PER-FRAME CACHE
-        // ─────────────────────────────────────────────
+        // ---------------------------------------------
 
         private readonly List<TopLootEntry> _topLootCache = new(8);
         private string _topLootCachedText = "";
@@ -154,7 +159,7 @@ namespace eft_dma_radar.UI.ESP
         public ESPForm()
         {
             InitializeComponent();
-
+        
             skglControl_ESP = new SKGLControl();
             skglControl_ESP.Name = "skglControl_ESP";
             skglControl_ESP.BackColor = Color.Black;
@@ -163,18 +168,18 @@ namespace eft_dma_radar.UI.ESP
             skglControl_ESP.Margin = new Padding(4, 3, 4, 3);
             skglControl_ESP.Size = new Size(624, 441);
             skglControl_ESP.TabIndex = 0;
-            skglControl_ESP.VSync = false; // VSync on SKGLControl blocks the UI thread; we simulate it via timer interval
-
+            skglControl_ESP.VSync = false;
+        
             skglControl_ESP.MouseDown += ESPForm_MouseDown;
             skglControl_ESP.MouseMove += ESPForm_MouseMove;
             skglControl_ESP.MouseUp += ESPForm_MouseUp;
-
+        
             this.Controls.Add(skglControl_ESP);
-
+        
             CenterToScreen();
             skglControl_ESP.DoubleClick += ESPForm_DoubleClick;
             _fpsSw.Start();
-
+        
             var allScreens = Screen.AllScreens;
             // Change SelectedScreen to EspTargetScreen
             if (ESPConfig.AutoFullscreen && ESPConfig.EspTargetScreen < allScreens.Length)
@@ -185,19 +190,15 @@ namespace eft_dma_radar.UI.ESP
                 Location = new Point(bounds.Left, bounds.Top);
                 Size = CameraManagerBase.Viewport.Size;
             }
-
+        
             LoadUIPositions();
             SetupESPWidgets();
             InitializeUIElements();
-
-            // Interval is finalized in ESPForm_Shown once the window handle exists (needed for Screen.FromControl).
-            // Use FPSCap as a safe initial value; VSync mode will update to the actual refresh rate in Shown.
-            var interval = ESPConfig.FPSCap == 0
-                ? TimeSpan.Zero
-                : TimeSpan.FromMilliseconds(1000d / ESPConfig.FPSCap);
-
+        
+            var interval = ESPConfig.FPSCap == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(1000d / ESPConfig.FPSCap);
+        
             _renderTimer = new PrecisionTimer(interval);
-
+        
             this.Shown += ESPForm_Shown;
         }
 
@@ -216,10 +217,6 @@ namespace eft_dma_radar.UI.ESP
             Window = this;
             Instance = this;
             CameraManagerBase.EspRunning = true;
-
-            // Now that the window handle exists, we can resolve the actual screen refresh rate.
-            if (ESPConfig.VSync)
-                _renderTimer.Interval = TimeSpan.FromMilliseconds(1000d / MonitorInfo.GetRefreshRate(Screen.FromControl(this)));
 
             _renderTimer.Start();
 
@@ -445,21 +442,8 @@ namespace eft_dma_radar.UI.ESP
 
         public void UpdateRenderTimerInterval(int targetFPS)
         {
-            if (ESPConfig.VSync) return;
-            var interval = targetFPS == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(1000d / targetFPS);
+            var interval = TimeSpan.FromMilliseconds(1000d / targetFPS);
             _renderTimer.Interval = interval;
-        }
-
-        public void UpdateVSync(bool enabled)
-        {
-            // We never set skglControl_ESP.VSync = true because SwapBuffers with VSync
-            // blocks the WinForms UI thread, freezing the form. Instead, when VSync is
-            // requested we pace the timer to the monitor's actual refresh rate.
-            _renderTimer.Interval = enabled
-                ? TimeSpan.FromMilliseconds(1000d / MonitorInfo.GetRefreshRate(Screen.FromControl(this)))
-                : ESPConfig.FPSCap == 0
-                    ? TimeSpan.Zero
-                    : TimeSpan.FromMilliseconds(1000d / ESPConfig.FPSCap);
         }
 
         /// <summary>
@@ -685,7 +669,7 @@ namespace eft_dma_radar.UI.ESP
 
                 if (drawExplosives)
                     DrawExplosives(canvas, localPlayer);
-                if (drawKillFeed)
+                if(drawKillFeed)
                 {
                     DrawKillfeed(canvas);
                 }
@@ -709,14 +693,10 @@ namespace eft_dma_radar.UI.ESP
                 if (ESPConfig.ShowRaidStats)
                     DrawRaidStats(canvas, players);
 
-                if (ESPConfig.ShowAimFOV)
+                if (ESPConfig.ShowAimFOV &&
+                    MemWriteFeature<Aimbot>.Instance.Enabled)
                 {
-                    var aimCfg = (SharedProgram.Config as Config)?.Aimbot;
-                    if (aimCfg != null)
-                    {
-                        float halfWidth = CameraManagerBase.Viewport.Width / 2f;
-                        AimFOV = halfWidth * MathF.Tan(aimCfg.FovDegrees * (MathF.PI / 180f));
-                    }
+                    AimFOV = Aimbot.Config.FOV;
                     DrawAimFOV(canvas);
                 }
 
@@ -725,6 +705,9 @@ namespace eft_dma_radar.UI.ESP
 
                 if (ESPConfig.ShowMagazine)
                     DrawMagazine(canvas, localPlayer);
+
+                if (ESPConfig.ShowFireportAim)
+                    DrawFireportAim(canvas, localPlayer);
 
                 if (ESPConfig.ShowStatusText)
                     DrawStatusText(canvas);
@@ -742,7 +725,7 @@ namespace eft_dma_radar.UI.ESP
                 {
                     UpdateTopLootCache(localPlayer);
                 }
-
+                
                 if (ESPConfig.ShowTopLoot)
                     DrawTopLoot(canvas, localPlayer);
 
@@ -768,27 +751,27 @@ namespace eft_dma_radar.UI.ESP
         {
             _topLootCache.Clear();
             _topLootCachedText = "";
-
+        
             var loot = Loot;
             if (loot == null)
                 return;
-
+        
             Vector3 localPos = localPlayer.Position;
-
+        
             Dictionary<string, TopLootEntry> map = new(32);
-
+        
             foreach (var item in loot)
             {
                 if (item is QuestItem)
                     continue;
-
+        
                 string name = item.Name;
                 if (string.IsNullOrEmpty(name))
                     continue;
-
+        
                 float distSq = Vector3.DistanceSquared(localPos, item.Position);
                 int price = item.Price;
-
+        
                 if (!map.TryGetValue(name, out var entry))
                 {
                     entry = new TopLootEntry
@@ -807,24 +790,24 @@ namespace eft_dma_radar.UI.ESP
                     if (price > entry.Value)
                         entry.Value = price;
                 }
-
+        
                 map[name] = entry;
             }
-
+        
             if (map.Count == 0)
                 return;
-
+        
             foreach (var kv in map)
                 InsertTopLoot(kv.Value);
-
+        
             for (int i = 0; i < _topLootCache.Count; i++)
             {
                 var e = _topLootCache[i];
                 float dist = MathF.Sqrt(e.ClosestDistSq);
-
+        
                 if (i > 0)
                     _topLootCachedText += "\n";
-
+        
                 _topLootCachedText +=
                     e.Count > 1
                         ? $"{e.Name} (x{e.Count}) ({dist:F0}m)"
@@ -845,7 +828,7 @@ namespace eft_dma_radar.UI.ESP
 
             if (_topLootCache.Count > 5)
                 _topLootCache.RemoveAt(5);
-        }
+        }     
         /// <summary>
         /// Draws a crosshair at the center of the screen based on selected style.
         /// </summary>
@@ -915,10 +898,10 @@ namespace eft_dma_radar.UI.ESP
                     return;
 
                 var clientArea = skglControl_ESP.ClientRectangle;
-                var labelWidth = SKPaints.TextESPStatusText.MeasureText(_lastStatusText);
+                var labelWidth = SKPaints.ESPFontMedium13.MeasureText(_lastStatusText);
                 var spacing = 1f * ESPConfig.FontScale;
                 var top = clientArea.Top + spacing;
-                var labelHeight = SKPaints.TextESPStatusText.FontSpacing;
+                var labelHeight = SKPaints.ESPFontMedium13.Spacing;
 
                 var anchorX = clientArea.Width / 2 + _statusTextOffset.X;
                 var anchorY = top + _statusTextOffset.Y;
@@ -932,13 +915,57 @@ namespace eft_dma_radar.UI.ESP
                 canvas.DrawRect(bgRect, SKPaints.PaintTransparentBacker);
 
                 var textLoc = new SKPoint(anchorX, anchorY + labelHeight);
-                canvas.DrawText(_lastStatusText, textLoc, SKPaints.TextESPStatusText);
+                canvas.DrawText(_lastStatusText, textLoc, SKTextAlign.Center, SKPaints.ESPFontMedium13, SKPaints.TextESPStatusText);
             }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"ERROR Setting ESP Status Text: {ex}");
             }
         }
+
+        /// <summary>
+        /// Draw fireport aim in front of player.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
+{
+    if (localPlayer.Firearm.FireportPosition is not Vector3 fireportPos)
+        return;
+
+    if (!CameraManagerBase.WorldToScreen(ref fireportPos, out var fireportScr))
+        return;
+
+    Vector3 targetWorldPos;
+
+    var aimbotCache = MemWriteFeature<Aimbot>.Instance.Cache;
+
+    // ?? AIM LOCK ACTIVE ? snap line to target
+    if (ESP.Config.ShowAimLock &&
+        aimbotCache?.AimbotLockedPlayer is Player locked &&
+        locked.IsAlive &&
+        aimbotCache.CurrentTargetBonePos is Vector3 lastPos)
+    {
+        targetWorldPos = lastPos;
+    }
+    else
+    {
+        // Free aim preview
+        if (localPlayer.Firearm.FireportRotation is not Quaternion rot)
+            return;
+
+        var forward = rot.Down();
+        targetWorldPos = fireportPos + forward * 1000f;
+    }
+
+    if (!CameraManagerBase.WorldToScreen(ref targetWorldPos, out var targetScr))
+        return;
+
+    canvas.DrawLine(
+        fireportScr,
+        targetScr,
+        SKPaints.PaintFireportAimESP
+    );
+}
 
         /// <summary>
         /// Draw player's Magazine/Ammo Count on ESP.
@@ -960,23 +987,23 @@ namespace eft_dma_radar.UI.ESP
                 _lastMagazineText = magazineText;
             }
 
-            var counterWidth = SKPaints.TextMagazineESP.MeasureText(counter);
-            var wepInfoWidth = wepInfo is not null ? SKPaints.TextMagazineInfoESP.MeasureText(wepInfo) : 0f;
+            var counterWidth = SKPaints.ESPFontBold42.MeasureText(counter);
+            var wepInfoWidth = wepInfo is not null ? SKPaints.ESPFontItalic16.MeasureText(wepInfo) : 0f;
             var maxWidth = Math.Max(counterWidth, wepInfoWidth);
 
-            var textHeight = SKPaints.TextMagazineESP.FontSpacing + SKPaints.TextMagazineInfoESP.FontSpacing;
+            var textHeight = SKPaints.ESPFontBold42.Spacing + SKPaints.ESPFontItalic16.Spacing;
             var anchorX = CameraManagerBase.Viewport.Width - 15f * ESPConfig.FontScale + _magazineOffset.X;
             var anchorY = CameraManagerBase.Viewport.Height - CameraManagerBase.Viewport.Height * 0.10f - textHeight + 4f * ESPConfig.FontScale + _magazineOffset.Y;
 
             if (wepInfo is not null)
             {
                 var wepInfoX = anchorX - wepInfoWidth / 2;
-                canvas.DrawText(wepInfo, wepInfoX, anchorY, SKPaints.TextMagazineInfoESP);
+                canvas.DrawText(wepInfo, wepInfoX, anchorY, SKTextAlign.Left, SKPaints.ESPFontItalic16, SKPaints.TextMagazineInfoESP);
             }
 
             var counterX = anchorX - counterWidth / 2;
-            var counterY = anchorY + (SKPaints.TextMagazineESP.FontSpacing - SKPaints.TextMagazineInfoESP.FontSpacing + 6f * ESPConfig.FontScale);
-            canvas.DrawText(counter, counterX, counterY, SKPaints.TextMagazineESP);
+            var counterY = anchorY + (SKPaints.ESPFontBold42.Spacing - SKPaints.ESPFontItalic16.Spacing + 6f * ESPConfig.FontScale);
+            canvas.DrawText(counter, counterX, counterY, SKTextAlign.Left, SKPaints.ESPFontBold42, SKPaints.TextMagazineESP);
         }
 
         /// <summary>
@@ -1098,7 +1125,7 @@ namespace eft_dma_radar.UI.ESP
         {
             var textPt = new SKPoint(CameraManagerBase.Viewport.Left + 4.5f * ESPConfig.FontScale,
                 CameraManagerBase.Viewport.Top + 14f * ESPConfig.FontScale);
-            canvas.DrawText("ESP Hidden", textPt, SKPaints.TextBasicESPLeftAligned);
+            canvas.DrawText("ESP Hidden", textPt, SKTextAlign.Left, SKPaints.ESPFontMedium12, SKPaints.TextBasicESPLeftAligned);
         }
 
         /// <summary>
@@ -1115,25 +1142,21 @@ namespace eft_dma_radar.UI.ESP
                 _lastFPSText = fpsText;
             }
 
-            var textWidth = SKPaints.TextESPFPS.MeasureText(fpsText);
+            var textWidth = SKPaints.ESPFontMedium12.MeasureText(fpsText);
             var anchorX = CameraManagerBase.Viewport.Left + 25f * ESPConfig.FontScale + _fpsOffset.X;
             var anchorY = CameraManagerBase.Viewport.Top + 14f * ESPConfig.FontScale + _fpsOffset.Y;
 
             var textPt = new SKPoint(anchorX - textWidth / 2, anchorY);
-            canvas.DrawText(fpsText, textPt, SKPaints.TextESPFPS);
+            canvas.DrawText(fpsText, textPt, SKTextAlign.Left, SKPaints.ESPFontMedium12, SKPaints.TextESPFPS);
         }
 
         /// <summary>
-        /// Draw the Aim FOV Circle. Green when aimbot is actively engaged.
+        /// Draw the Aim FOV Circle.
         /// </summary>
         private static float AimFOV;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawAimFOV(SKCanvas canvas)
-        {
-            var paint = SKPaints.PaintAimbotFOVESP;
-            paint.Color = Aimbot.Engaged ? SKColors.LimeGreen : SKColors.White;
-            canvas.DrawCircle(CameraManagerBase.ViewportCenter, AimFOV, paint);
-        }
+        private static void DrawAimFOV(SKCanvas canvas) =>
+            canvas.DrawCircle(CameraManagerBase.ViewportCenter, AimFOV, SKPaints.PaintAimbotFOVESP);
 
         /// <summary>
         /// Draw all filtered Loot Items within range.
@@ -1341,7 +1364,7 @@ namespace eft_dma_radar.UI.ESP
                 InvalidateElementCache(UIElement.ClosestPlayer);
             }
 
-            var textWidth = SKPaints.TextESPClosestPlayer.MeasureText(closestText);
+            var textWidth = SKPaints.ESPFontMedium13.MeasureText(closestText);
 
             var anchorX =
                 CameraManagerBase.ViewportCenter.X +
@@ -1349,11 +1372,12 @@ namespace eft_dma_radar.UI.ESP
 
             var anchorY =
                 CameraManagerBase.ViewportCenter.Y +
+                Aimbot.Config.FOV +
                 15f * ESPConfig.FontScale +
                 _closestPlayerOffset.Y;
 
             var textPt = new SKPoint(anchorX - textWidth / 2f, anchorY);
-            canvas.DrawText(closestText, textPt, SKPaints.TextESPClosestPlayer);
+            canvas.DrawText(closestText, textPt, SKTextAlign.Left, SKPaints.ESPFontMedium13, SKPaints.TextESPClosestPlayer);
         }
 
 
@@ -1382,20 +1406,20 @@ namespace eft_dma_radar.UI.ESP
             {
                 var e = _topLootCache[i];
                 nameCol = Math.Max(nameCol,
-                    SKPaints.TextESPTopLoot.MeasureText(
+                    SKPaints.ESPFontMedium13.MeasureText(
                         e.Count > 1 ? $"{e.Name} (x{e.Count})" : e.Name));
 
                 valueCol = Math.Max(valueCol,
-                    SKPaints.TextESPTopLoot.MeasureText(
+                    SKPaints.ESPFontMedium13.MeasureText(
                         TarkovMarketItem.FormatPrice(e.Value)));
 
                 distCol = Math.Max(distCol,
-                    SKPaints.TextESPTopLoot.MeasureText(
+                    SKPaints.ESPFontMedium13.MeasureText(
                         $"{MathF.Sqrt(e.ClosestDistSq):F0}m"));
             }
 
             float pad = 12f * ESPConfig.FontScale;
-            float lineH = SKPaints.TextESPTopLoot.FontSpacing;
+            float lineH = SKPaints.ESPFontMedium13.Spacing;
 
             float totalW = nameCol + valueCol + distCol + pad * 2;
 
@@ -1407,9 +1431,9 @@ namespace eft_dma_radar.UI.ESP
 
             float anchorY =
                 CameraManagerBase.Viewport.Top +
-                SKPaints.TextESPRaidStats.TextSize +
+                SKPaints.ESPFontMedium12.Size +
                 CameraManagerBase.Viewport.Height * 0.0575f * ESPConfig.FontScale +
-                (SKPaints.TextESPRaidStats.FontSpacing * 4) +
+                (SKPaints.ESPFontMedium12.Spacing * 4) +
                 10f * ESPConfig.FontScale +
                 _topLootOffset.Y;
 
@@ -1422,9 +1446,9 @@ namespace eft_dma_radar.UI.ESP
                 string val = TarkovMarketItem.FormatPrice(e.Value);
                 string dist = $"{MathF.Sqrt(e.ClosestDistSq):F0}m";
 
-                canvas.DrawText(name, anchorX, y, SKPaints.TextESPTopLoot);
-                canvas.DrawText(val, anchorX + nameCol + pad, y, SKPaints.TextESPTopLoot);
-                canvas.DrawText(dist, anchorX + nameCol + valueCol + pad * 2, y, SKPaints.TextESPTopLoot);
+                canvas.DrawText(name, anchorX, y, SKTextAlign.Left, SKPaints.ESPFontMedium13, SKPaints.TextESPTopLoot);
+                canvas.DrawText(val, anchorX + nameCol + pad, y, SKTextAlign.Left, SKPaints.ESPFontMedium13, SKPaints.TextESPTopLoot);
+                canvas.DrawText(dist, anchorX + nameCol + valueCol + pad * 2, y, SKTextAlign.Left, SKPaints.ESPFontMedium13, SKPaints.TextESPTopLoot);
             }
         }
 
@@ -1451,15 +1475,15 @@ namespace eft_dma_radar.UI.ESP
                 new { Type = "Boss", Count = bossCount }
             };
 
-            var typeColumnWidth = statsData.Max(x => SKPaints.TextESPRaidStats.MeasureText(x.Type));
-            var countColumnWidth = statsData.Max(x => SKPaints.TextESPRaidStats.MeasureText(x.Count.ToString()));
+            var typeColumnWidth = statsData.Max(x => SKPaints.ESPFontMedium12.MeasureText(x.Type));
+            var countColumnWidth = statsData.Max(x => SKPaints.ESPFontMedium12.MeasureText(x.Count.ToString()));
 
             var columnPadding = 12f * ESPConfig.FontScale;
             var totalWidth = typeColumnWidth + countColumnWidth + columnPadding;
 
-            var lineHeight = SKPaints.TextESPRaidStats.FontSpacing;
+            var lineHeight = SKPaints.ESPFontMedium12.Spacing;
             var anchorX = CameraManagerBase.Viewport.Right - 3f * ESPConfig.FontScale + _raidStatsOffset.X;
-            var anchorY = CameraManagerBase.Viewport.Top + SKPaints.TextESPRaidStats.TextSize +
+            var anchorY = CameraManagerBase.Viewport.Top + SKPaints.ESPFontMedium12.Size +
                          CameraManagerBase.Viewport.Height * 0.0575f * ESPConfig.FontScale + _raidStatsOffset.Y;
 
             for (int i = 0; i < statsData.Length; i++)
@@ -1468,10 +1492,10 @@ namespace eft_dma_radar.UI.ESP
                 var rowY = anchorY + (i * lineHeight);
 
                 var typeX = anchorX - totalWidth;
-                canvas.DrawText(data.Type, typeX, rowY, SKPaints.TextESPRaidStats);
+                canvas.DrawText(data.Type, typeX, rowY, SKTextAlign.Left, SKPaints.ESPFontMedium12, SKPaints.TextESPRaidStats);
 
                 var countX = anchorX - totalWidth + typeColumnWidth + columnPadding;
-                canvas.DrawText(data.Count.ToString(), countX, rowY, SKPaints.TextESPRaidStats);
+                canvas.DrawText(data.Count.ToString(), countX, rowY, SKTextAlign.Left, SKPaints.ESPFontMedium12, SKPaints.TextESPRaidStats);
             }
         }
 
@@ -1547,12 +1571,12 @@ namespace eft_dma_radar.UI.ESP
             var textPaint = SKPaints.TextEnergyHydrationBarESP;
             var outlineTextPaint = SKPaints.TextEnergyHydrationBarOutlineESP;
 
-            var textWidth = textPaint.MeasureText(text);
+            var textWidth = SKPaints.ESPFontMedium12.MeasureText(text);
             var centerX = barX + (barWidth / 2f) - (textWidth / 2f);
-            var centerY = barY + (barHeight / 2f) + (textPaint.TextSize / 3f);
+            var centerY = barY + (barHeight / 2f) + (SKPaints.ESPFontMedium12.Size / 3f);
 
-            canvas.DrawText(text, centerX, centerY, outlineTextPaint);
-            canvas.DrawText(text, centerX, centerY, textPaint);
+            canvas.DrawText(text, centerX, centerY, SKTextAlign.Left, SKPaints.ESPFontMedium12, outlineTextPaint);
+            canvas.DrawText(text, centerX, centerY, SKTextAlign.Left, SKPaints.ESPFontMedium12, textPaint);
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -1703,313 +1727,314 @@ namespace eft_dma_radar.UI.ESP
 
         #endregion
 
-        #region Mini Radar (Optimized – Layer-Stable & Throttled)
+#region Mini Radar (Optimized � Layer-Stable & Throttled)
 
-        private static readonly SKPaint _radarBgPaint =
-            new SKPaint { Color = new SKColor(0, 0, 0, 180) };
+private static readonly SKPaint _radarBgPaint =
+    new SKPaint { Color = new SKColor(0, 0, 0, 180) };
 
-        private SKRect _radarRect = new SKRect(20, 20, 220, 220);
-        private float _radarZoom;
-        private bool _radarFreeMode = false;
-        private Vector2 _radarPanPosition = SKPoint.Empty;
+private SKRect _radarRect = new SKRect(20, 20, 220, 220);
+private float _radarZoom;
+private bool _radarFreeMode = false;
+private Vector2 _radarPanPosition = SKPoint.Empty;
 
-        private SKSurface _radarMapSurface;
-        private XMMapParams _lastRadarParams;
-        private float _lastRadarZoom = -1;
-        private Vector2 _lastRadarCenter;
+private SKSurface _radarMapSurface;
+private XMMapParams _lastRadarParams;
+private float _lastRadarZoom = -1;
+private Vector2 _lastRadarCenter;
 
-        private long _lastRadarRebuildMs;
-        private const int RadarRebuildMinIntervalMs = 150; // ~6 Hz max
+private long _lastRadarRebuildMs;
+private const int RadarRebuildMinIntervalMs = 150; // ~6 Hz max
 
-        private const float MinRadarSize = 100f;
-        private const float MaxRadarSize = 400f;
-        private const float HandleSize = 10f;
+private const float MinRadarSize = 100f;
+private const float MaxRadarSize = 400f;
+private const float HandleSize = 10f;
 
-        private void ClampRadarRect()
+private void ClampRadarRect()
+{
+    var formW = Math.Max(Width, 100);
+    var formH = Math.Max(Height, 100);
+
+    var width = Math.Clamp(_radarRect.Width, MinRadarSize, Math.Min(MaxRadarSize, formW));
+    var height = Math.Clamp(_radarRect.Height, MinRadarSize, Math.Min(MaxRadarSize, formH));
+
+    var left = Math.Clamp(_radarRect.Left, 0, formW - width);
+    var top = Math.Clamp(_radarRect.Top, 0, formH - height);
+
+    _radarRect = new SKRect(left, top, left + width, top + height);
+}
+
+private static bool MapParamsEquivalent(XMMapParams a, XMMapParams b)
+{
+    const float eps = 0.01f;
+
+    return
+        Math.Abs(a.Bounds.Left   - b.Bounds.Left)   < eps &&
+        Math.Abs(a.Bounds.Top    - b.Bounds.Top)    < eps &&
+        Math.Abs(a.Bounds.Width  - b.Bounds.Width)  < eps &&
+        Math.Abs(a.Bounds.Height - b.Bounds.Height) < eps;
+}
+
+
+private void DrawRadar(SKCanvas canvas, LocalPlayer localPlayer)
+{
+    if (localPlayer == null || XMMapManager.Map == null)
+        return;
+
+    canvas.Save();
+    canvas.ClipRect(_radarRect);
+
+    _radarZoom = ESPConfig.RadarZoom;
+
+    canvas.DrawRect(_radarRect, _radarBgPaint);
+
+    var map = XMMapManager.Map;
+    var mapCfg = map.Config;
+
+    var playerPos = localPlayer.Position;
+    var playerMapPos = playerPos.ToMapPos(mapCfg);
+
+    var radarSize = new SKSize(_radarRect.Width, _radarRect.Height);
+    var center = _radarFreeMode ? _radarPanPosition : playerMapPos;
+
+    var mapParams = map.GetParametersE(radarSize, _radarZoom, ref center);
+
+    // ------------------------------------------------------------
+    // MAP CACHE � STABLE & FLOAT-SAFE
+    // ------------------------------------------------------------
+
+    long now = Environment.TickCount64;
+
+    bool centerMoved =
+        (_lastRadarCenter - center).LengthSquared() > 0.25f; // ~0.5px tolerance
+
+    bool needsRebuild =
+        _radarMapSurface == null ||
+        _radarZoom != _lastRadarZoom ||
+        centerMoved ||
+        !_lastRadarParams.Equals(default) &&
+        !MapParamsEquivalent(_lastRadarParams, mapParams);
+
+    if (needsRebuild && now - _lastRadarRebuildMs >= RadarRebuildMinIntervalMs)
+    {
+        _lastRadarRebuildMs = now;
+
+        _radarMapSurface?.Dispose();
+
+        var info = new SKImageInfo(
+            (int)_radarRect.Width,
+            (int)_radarRect.Height,
+            SKColorType.Rgba8888,
+            SKAlphaType.Premul);
+
+        _radarMapSurface = SKSurface.Create(info);
+
+        var mapCanvas = _radarMapSurface.Canvas;
+        mapCanvas.Clear(SKColors.Transparent);
+
+        // Draw into surface-local space
+        mapCanvas.Translate(-_radarRect.Left, -_radarRect.Top);
+
+        map.Draw(
+            mapCanvas,
+            playerPos.Y,          // <-- KEEP EXACT LOGIC
+            mapParams.Bounds,
+            _radarRect);
+
+        _lastRadarZoom = _radarZoom;
+        _lastRadarCenter = center;
+        _lastRadarParams = mapParams;
+    }
+
+    if (_radarMapSurface != null)
+    {
+        canvas.DrawSurface(
+            _radarMapSurface,
+            _radarRect.Left,
+            _radarRect.Top);
+    }
+
+    // ------------------------------------------------------------
+    // DYNAMIC OVERLAYS
+    // ------------------------------------------------------------
+
+    if (ESPConfig.MiniRadar.ShowLoot)
+        DrawRadarLoot(canvas, mapParams, mapCfg);
+
+    DrawRadarPlayers(canvas, localPlayer, mapParams, mapCfg);
+    DrawLocalPlayerIndicator(canvas, localPlayer);
+    DrawRadarBorder(canvas);
+    DrawRadarResizeHandle(canvas);
+    DrawRadarInfo(canvas);
+
+    canvas.Restore();
+}
+
+
+private void DrawRadarPlayers(
+    SKCanvas canvas,
+    LocalPlayer localPlayer,
+    XMMapParams mapParams,
+    XMMapConfig mapCfg)
+{
+    var players = AllPlayers;
+    if (players == null)
+        return;
+
+    float scale = ESPConfig.MiniRadar.Scale;
+    float radius = RADAR_PLAYER_SIZE * scale;
+    float lineLen = RADAR_AIMLINE_LENGTH * scale;
+    float lineWidth = RADAR_AIMLINE_WIDTH * scale;
+
+    float left = _radarRect.Left;
+    float top = _radarRect.Top;
+    float w = _radarRect.Width;
+    float h = _radarRect.Height;
+
+    foreach (var player in players)
+    {
+        if (player == localPlayer)
+            continue;
+
+        if (!player.IsHostileActive && !player.IsFriendlyActive)
+            continue;
+
+        var mapPos = player.Position.ToMapPos(mapCfg);
+        if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
+            continue;
+
+        float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
+        float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
+
+        var paint = player.GetMiniRadarPaint();
+        canvas.DrawCircle(sx, sy, radius, paint);
+
+        if (player.MapRotation != 0)
         {
-            var formW = Math.Max(Width, 100);
-            var formH = Math.Max(Height, 100);
+            paint.StrokeWidth = lineWidth;
+            float r = player.MapRotation.ToRadians();
+            canvas.DrawLine(
+                sx, sy,
+                sx + lineLen * MathF.Cos(r),
+                sy + lineLen * MathF.Sin(r),
+                paint);
+        }
+    }
+}
 
-            var width = Math.Clamp(_radarRect.Width, MinRadarSize, Math.Min(MaxRadarSize, formW));
-            var height = Math.Clamp(_radarRect.Height, MinRadarSize, Math.Min(MaxRadarSize, formH));
+private void DrawLocalPlayerIndicator(SKCanvas canvas, LocalPlayer localPlayer)
+{
+    float scale = ESPConfig.MiniRadar.Scale;
+    float radius = RADAR_PLAYER_SIZE * scale;
+    float lineLen = RADAR_AIMLINE_LENGTH * scale;
+    float lineWidth = RADAR_AIMLINE_WIDTH * scale;
 
-            var left = Math.Clamp(_radarRect.Left, 0, formW - width);
-            var top = Math.Clamp(_radarRect.Top, 0, formH - height);
+    float cx = _radarRect.MidX;
+    float cy = _radarRect.MidY;
 
-            _radarRect = new SKRect(left, top, left + width, top + height);
+    var paint = localPlayer.GetMiniRadarPaint();
+    canvas.DrawCircle(cx, cy, radius, paint);
+
+    if (localPlayer.MapRotation != 0)
+    {
+        paint.StrokeWidth = lineWidth;
+        float r = localPlayer.MapRotation.ToRadians();
+        canvas.DrawLine(
+            cx, cy,
+            cx + lineLen * MathF.Cos(r),
+            cy + lineLen * MathF.Sin(r),
+            paint);
+    }
+}
+
+private void DrawRadarLoot(
+    SKCanvas canvas,
+    XMMapParams mapParams,
+    XMMapConfig mapCfg)
+{
+    if (Config.BattleMode || !Config.ProcessLoot || Loot == null)
+        return;
+
+    float scale = ESPConfig.MiniRadar.Scale;
+    float size = RADAR_LOOT_SIZE * scale;
+
+    float left = _radarRect.Left;
+    float top = _radarRect.Top;
+    float w = _radarRect.Width;
+    float h = _radarRect.Height;
+
+    foreach (var item in Loot)
+    {
+        bool isQuest = item is QuestItem;
+        bool isCorpse = item is LootCorpse;
+
+        if (isQuest && !LootItem.QuestItemSettings.Enabled)
+            continue;
+
+        if (!isQuest)
+        {
+            if (isCorpse && !LootItem.CorpseSettings.Enabled)
+                continue;
+
+            if (!LootItem.CorpseSettings.Enabled &&
+                !LootItem.LootSettings.Enabled &&
+                !LootItem.ImportantLootSettings.Enabled)
+                continue;
         }
 
-        private static bool MapParamsEquivalent(XMMapParams a, XMMapParams b)
-        {
-            const float eps = 0.01f;
+        var mapPos = item.Position.ToMapPos(mapCfg);
+        if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
+            continue;
 
-            return
-                Math.Abs(a.Bounds.Left - b.Bounds.Left) < eps &&
-                Math.Abs(a.Bounds.Top - b.Bounds.Top) < eps &&
-                Math.Abs(a.Bounds.Width - b.Bounds.Width) < eps &&
-                Math.Abs(a.Bounds.Height - b.Bounds.Height) < eps;
-        }
+        float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
+        float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
 
+        if (!_radarRect.Contains(sx, sy))
+            continue;
 
-        private void DrawRadar(SKCanvas canvas, LocalPlayer localPlayer)
-        {
-            if (localPlayer == null || XMMapManager.Map == null)
-                return;
+        var paint = item.GetMiniRadarPaint();
+        canvas.DrawRect(
+            new SKRect(sx - size, sy - size, sx + size, sy + size),
+            paint);
+    }
+}
 
-            canvas.Save();
-            canvas.ClipRect(_radarRect);
+private void DrawRadarBorder(SKCanvas canvas)
+{
+    canvas.DrawRect(_radarRect, SKPaints.PaintMiniRadarOutlineESP);
+}
 
-            _radarZoom = ESPConfig.RadarZoom;
+private void DrawRadarResizeHandle(SKCanvas canvas)
+{
+    var path = GetPath();
 
-            canvas.DrawRect(_radarRect, _radarBgPaint);
+    path.MoveTo(_radarRect.Right, _radarRect.Bottom - HandleSize);
+    path.LineTo(_radarRect.Right, _radarRect.Bottom);
+    path.LineTo(_radarRect.Right - HandleSize, _radarRect.Bottom);
+    path.Close();
 
-            var map = XMMapManager.Map;
-            var mapCfg = map.Config;
+    canvas.DrawPath(path, SKPaints.PaintMiniRadarResizeHandleESP);
+    ReturnPath(path);
+}
 
-            var playerPos = localPlayer.Position;
-            var playerMapPos = playerPos.ToMapPos(mapCfg);
+private void DrawRadarInfo(SKCanvas canvas)
+{
+    using var textPaint = new SKPaint
+    {
+        Color = SKColors.White,
+        IsAntialias = true
+    };
 
-            var radarSize = new SKSize(_radarRect.Width, _radarRect.Height);
-            var center = _radarFreeMode ? _radarPanPosition : playerMapPos;
+    string mode = _radarFreeMode ? "FREE" : "LOCKED";
+    canvas.DrawText(
+        $"RADAR [{mode}] Zoom: {_radarZoom:F1}x",
+        _radarRect.Left + 5,
+        _radarRect.Top + 15,
+        SKTextAlign.Left,
+        SKPaints.ESPFontMedium12,
+        textPaint);
+}
 
-            var mapParams = map.GetParametersE(radarSize, _radarZoom, ref center);
-
-            // ------------------------------------------------------------
-            // MAP CACHE — STABLE & FLOAT-SAFE
-            // ------------------------------------------------------------
-
-            long now = Environment.TickCount64;
-
-            bool centerMoved =
-                (_lastRadarCenter - center).LengthSquared() > 0.25f; // ~0.5px tolerance
-
-            bool needsRebuild =
-                _radarMapSurface == null ||
-                _radarZoom != _lastRadarZoom ||
-                centerMoved ||
-                !_lastRadarParams.Equals(default) &&
-                !MapParamsEquivalent(_lastRadarParams, mapParams);
-
-            if (needsRebuild && now - _lastRadarRebuildMs >= RadarRebuildMinIntervalMs)
-            {
-                _lastRadarRebuildMs = now;
-
-                _radarMapSurface?.Dispose();
-
-                var info = new SKImageInfo(
-                    (int)_radarRect.Width,
-                    (int)_radarRect.Height,
-                    SKColorType.Rgba8888,
-                    SKAlphaType.Premul);
-
-                _radarMapSurface = SKSurface.Create(info);
-
-                var mapCanvas = _radarMapSurface.Canvas;
-                mapCanvas.Clear(SKColors.Transparent);
-
-                // Draw into surface-local space
-                mapCanvas.Translate(-_radarRect.Left, -_radarRect.Top);
-
-                map.Draw(
-                    mapCanvas,
-                    playerPos.Y,          // <-- KEEP EXACT LOGIC
-                    mapParams.Bounds,
-                    _radarRect);
-
-                _lastRadarZoom = _radarZoom;
-                _lastRadarCenter = center;
-                _lastRadarParams = mapParams;
-            }
-
-            if (_radarMapSurface != null)
-            {
-                canvas.DrawSurface(
-                    _radarMapSurface,
-                    _radarRect.Left,
-                    _radarRect.Top);
-            }
-
-            // ------------------------------------------------------------
-            // DYNAMIC OVERLAYS
-            // ------------------------------------------------------------
-
-            if (ESPConfig.MiniRadar.ShowLoot)
-                DrawRadarLoot(canvas, mapParams, mapCfg);
-
-            DrawRadarPlayers(canvas, localPlayer, mapParams, mapCfg);
-            DrawLocalPlayerIndicator(canvas, localPlayer);
-            DrawRadarBorder(canvas);
-            DrawRadarResizeHandle(canvas);
-            DrawRadarInfo(canvas);
-
-            canvas.Restore();
-        }
-
-
-        private void DrawRadarPlayers(
-            SKCanvas canvas,
-            LocalPlayer localPlayer,
-            XMMapParams mapParams,
-            XMMapConfig mapCfg)
-        {
-            var players = AllPlayers;
-            if (players == null)
-                return;
-
-            float scale = ESPConfig.MiniRadar.Scale;
-            float radius = RADAR_PLAYER_SIZE * scale;
-            float lineLen = RADAR_AIMLINE_LENGTH * scale;
-            float lineWidth = RADAR_AIMLINE_WIDTH * scale;
-
-            float left = _radarRect.Left;
-            float top = _radarRect.Top;
-            float w = _radarRect.Width;
-            float h = _radarRect.Height;
-
-            foreach (var player in players)
-            {
-                if (player == localPlayer)
-                    continue;
-
-                if (!player.IsHostileActive && !player.IsFriendlyActive)
-                    continue;
-
-                var mapPos = player.Position.ToMapPos(mapCfg);
-                if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
-                    continue;
-
-                float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
-                float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
-
-                var paint = player.GetMiniRadarPaint();
-                canvas.DrawCircle(sx, sy, radius, paint);
-
-                if (player.MapRotation != 0)
-                {
-                    paint.StrokeWidth = lineWidth;
-                    float r = player.MapRotation.ToRadians();
-                    canvas.DrawLine(
-                        sx, sy,
-                        sx + lineLen * MathF.Cos(r),
-                        sy + lineLen * MathF.Sin(r),
-                        paint);
-                }
-            }
-        }
-
-        private void DrawLocalPlayerIndicator(SKCanvas canvas, LocalPlayer localPlayer)
-        {
-            float scale = ESPConfig.MiniRadar.Scale;
-            float radius = RADAR_PLAYER_SIZE * scale;
-            float lineLen = RADAR_AIMLINE_LENGTH * scale;
-            float lineWidth = RADAR_AIMLINE_WIDTH * scale;
-
-            float cx = _radarRect.MidX;
-            float cy = _radarRect.MidY;
-
-            var paint = localPlayer.GetMiniRadarPaint();
-            canvas.DrawCircle(cx, cy, radius, paint);
-
-            if (localPlayer.MapRotation != 0)
-            {
-                paint.StrokeWidth = lineWidth;
-                float r = localPlayer.MapRotation.ToRadians();
-                canvas.DrawLine(
-                    cx, cy,
-                    cx + lineLen * MathF.Cos(r),
-                    cy + lineLen * MathF.Sin(r),
-                    paint);
-            }
-        }
-
-        private void DrawRadarLoot(
-            SKCanvas canvas,
-            XMMapParams mapParams,
-            XMMapConfig mapCfg)
-        {
-            if (Config.BattleMode || !Config.ProcessLoot || Loot == null)
-                return;
-
-            float scale = ESPConfig.MiniRadar.Scale;
-            float size = RADAR_LOOT_SIZE * scale;
-
-            float left = _radarRect.Left;
-            float top = _radarRect.Top;
-            float w = _radarRect.Width;
-            float h = _radarRect.Height;
-
-            foreach (var item in Loot)
-            {
-                bool isQuest = item is QuestItem;
-                bool isCorpse = item is LootCorpse;
-
-                if (isQuest && !LootItem.QuestItemSettings.Enabled)
-                    continue;
-
-                if (!isQuest)
-                {
-                    if (isCorpse && !LootItem.CorpseSettings.Enabled)
-                        continue;
-
-                    if (!LootItem.CorpseSettings.Enabled &&
-                        !LootItem.LootSettings.Enabled &&
-                        !LootItem.ImportantLootSettings.Enabled)
-                        continue;
-                }
-
-                var mapPos = item.Position.ToMapPos(mapCfg);
-                if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
-                    continue;
-
-                float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
-                float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
-
-                if (!_radarRect.Contains(sx, sy))
-                    continue;
-
-                var paint = item.GetMiniRadarPaint();
-                canvas.DrawRect(
-                    new SKRect(sx - size, sy - size, sx + size, sy + size),
-                    paint);
-            }
-        }
-
-        private void DrawRadarBorder(SKCanvas canvas)
-        {
-            canvas.DrawRect(_radarRect, SKPaints.PaintMiniRadarOutlineESP);
-        }
-
-        private void DrawRadarResizeHandle(SKCanvas canvas)
-        {
-            var path = GetPath();
-
-            path.MoveTo(_radarRect.Right, _radarRect.Bottom - HandleSize);
-            path.LineTo(_radarRect.Right, _radarRect.Bottom);
-            path.LineTo(_radarRect.Right - HandleSize, _radarRect.Bottom);
-            path.Close();
-
-            canvas.DrawPath(path, SKPaints.PaintMiniRadarResizeHandleESP);
-            ReturnPath(path);
-        }
-
-        private void DrawRadarInfo(SKCanvas canvas)
-        {
-            using var textPaint = new SKPaint
-            {
-                Color = SKColors.White,
-                TextSize = 12,
-                IsAntialias = true
-            };
-
-            string mode = _radarFreeMode ? "FREE" : "LOCKED";
-            canvas.DrawText(
-                $"RADAR [{mode}] Zoom: {_radarZoom:F1}x",
-                _radarRect.Left + 5,
-                _radarRect.Top + 15,
-                textPaint);
-        }
-
-        #endregion
+#endregion
 
 
 
@@ -2023,8 +2048,7 @@ namespace eft_dma_radar.UI.ESP
                 GetCurrentText = GetCurrentMagazineText,
                 CalculateBounds = CalculateMagazineBounds,
                 CalculateBaseBounds = CalculateMagazineBaseBounds,
-                SetOffset = offset =>
-                {
+                SetOffset = offset => {
                     _magazineOffset = offset;
                     var info = _uiElements[UIElement.Magazine];
                     info.Offset = offset;
@@ -2038,8 +2062,7 @@ namespace eft_dma_radar.UI.ESP
                 GetCurrentText = () => "StatusBars",
                 CalculateBounds = CalculateStatusBarsBounds,
                 CalculateBaseBounds = CalculateStatusBarsBaseBounds,
-                SetOffset = offset =>
-                {
+                SetOffset = offset => {
                     _statusBarOffset = offset;
                     var info = _uiElements[UIElement.StatusBars];
                     info.Offset = offset;
@@ -2053,8 +2076,7 @@ namespace eft_dma_radar.UI.ESP
                 GetCurrentText = () => "RaidStats",
                 CalculateBounds = CalculateRaidStatsBounds,
                 CalculateBaseBounds = CalculateRaidStatsBaseBounds,
-                SetOffset = offset =>
-                {
+                SetOffset = offset => {
                     _raidStatsOffset = offset;
                     var info = _uiElements[UIElement.RaidStats];
                     info.Offset = offset;
@@ -2068,8 +2090,7 @@ namespace eft_dma_radar.UI.ESP
                 GetCurrentText = GetCurrentStatusText,
                 CalculateBounds = CalculateStatusTextBounds,
                 CalculateBaseBounds = CalculateStatusTextBaseBounds,
-                SetOffset = offset =>
-                {
+                SetOffset = offset => {
                     _statusTextOffset = offset;
                     var info = _uiElements[UIElement.StatusText];
                     info.Offset = offset;
@@ -2083,8 +2104,7 @@ namespace eft_dma_radar.UI.ESP
                 GetCurrentText = GetCurrentFPSText,
                 CalculateBounds = CalculateFPSBounds,
                 CalculateBaseBounds = CalculateFPSBaseBounds,
-                SetOffset = offset =>
-                {
+                SetOffset = offset => {
                     _fpsOffset = offset;
                     var info = _uiElements[UIElement.FPS];
                     info.Offset = offset;
@@ -2098,8 +2118,7 @@ namespace eft_dma_radar.UI.ESP
                 GetCurrentText = GetCurrentClosestPlayerText,
                 CalculateBounds = CalculateClosestPlayerBounds,
                 CalculateBaseBounds = CalculateClosestPlayerBaseBounds,
-                SetOffset = offset =>
-                {
+                SetOffset = offset => {
                     _closestPlayerOffset = offset;
                     var info = _uiElements[UIElement.ClosestPlayer];
                     info.Offset = offset;
@@ -2113,8 +2132,7 @@ namespace eft_dma_radar.UI.ESP
                 GetCurrentText = GetCurrentTopLootText,
                 CalculateBounds = CalculateTopLootBounds,
                 CalculateBaseBounds = CalculateTopLootBaseBounds,
-                SetOffset = offset =>
-                {
+                SetOffset = offset => {
                     _topLootOffset = offset;
                     var info = _uiElements[UIElement.TopLoot];
                     info.Offset = offset;
@@ -2137,7 +2155,7 @@ namespace eft_dma_radar.UI.ESP
                     _killfeedOffset = offset;
                     ESPConfig.KillfeedOffset = new PointFSer(offset.X, offset.Y);
                 }
-            };
+            }; 
         }
 
         private void InvalidateBoundsCache()
@@ -2198,11 +2216,11 @@ namespace eft_dma_radar.UI.ESP
             var counter = lines.Last();
             var wepInfo = lines.Length > 1 ? lines.First() : null;
 
-            var counterWidth = SKPaints.TextMagazineESP.MeasureText(counter);
-            var wepInfoWidth = wepInfo is not null ? SKPaints.TextMagazineInfoESP.MeasureText(wepInfo) : 0f;
+            var counterWidth = SKPaints.ESPFontBold42.MeasureText(counter);
+            var wepInfoWidth = wepInfo is not null ? SKPaints.ESPFontItalic16.MeasureText(wepInfo) : 0f;
             var maxWidth = Math.Max(counterWidth, wepInfoWidth);
 
-            var textHeight = SKPaints.TextMagazineESP.FontSpacing + SKPaints.TextMagazineInfoESP.FontSpacing;
+            var textHeight = SKPaints.ESPFontBold42.Spacing + SKPaints.ESPFontItalic16.Spacing;
 
             var anchorX = CameraManagerBase.Viewport.Width - 15f * ESPConfig.FontScale + _magazineOffset.X;
             var anchorY = CameraManagerBase.Viewport.Height - CameraManagerBase.Viewport.Height * 0.10f - textHeight + 4f * ESPConfig.FontScale + _magazineOffset.Y;
@@ -2210,19 +2228,19 @@ namespace eft_dma_radar.UI.ESP
             if (wepInfo is not null)
             {
                 var wepInfoY = anchorY;
-                var counterSpacing = SKPaints.TextMagazineESP.FontSpacing - SKPaints.TextMagazineInfoESP.FontSpacing + 6f * ESPConfig.FontScale;
+                var counterSpacing = SKPaints.ESPFontBold42.Spacing - SKPaints.ESPFontItalic16.Spacing + 6f * ESPConfig.FontScale;
                 var counterY = anchorY + counterSpacing;
-                var topY = wepInfoY - SKPaints.TextMagazineInfoESP.TextSize;
+                var topY = wepInfoY - SKPaints.ESPFontItalic16.Size;
                 var bottomY = counterY;
 
                 return new SKRect(anchorX - maxWidth / 2, topY, anchorX + maxWidth / 2, bottomY);
             }
             else
             {
-                var counterSpacing = SKPaints.TextMagazineESP.FontSpacing - SKPaints.TextMagazineInfoESP.FontSpacing + 6f * ESPConfig.FontScale;
+                var counterSpacing = SKPaints.ESPFontBold42.Spacing - SKPaints.ESPFontItalic16.Spacing + 6f * ESPConfig.FontScale;
                 var counterY = anchorY + counterSpacing;
 
-                var topY = counterY - SKPaints.TextMagazineESP.TextSize;
+                var topY = counterY - SKPaints.ESPFontBold42.Size;
                 var bottomY = counterY;
 
                 return new SKRect(anchorX - counterWidth / 2, topY, anchorX + counterWidth / 2, bottomY);
@@ -2234,18 +2252,18 @@ namespace eft_dma_radar.UI.ESP
             var sampleCounter = "30 / 30";
             var sampleWepInfo = "Single: M61";
 
-            var counterWidth = SKPaints.TextMagazineESP.MeasureText(sampleCounter);
-            var wepInfoWidth = SKPaints.TextMagazineInfoESP.MeasureText(sampleWepInfo);
+            var counterWidth = SKPaints.ESPFontBold42.MeasureText(sampleCounter);
+            var wepInfoWidth = SKPaints.ESPFontItalic16.MeasureText(sampleWepInfo);
             var maxWidth = Math.Max(counterWidth, wepInfoWidth);
 
-            var textHeight = SKPaints.TextMagazineESP.FontSpacing + SKPaints.TextMagazineInfoESP.FontSpacing;
+            var textHeight = SKPaints.ESPFontBold42.Spacing + SKPaints.ESPFontItalic16.Spacing;
             var anchorX = CameraManagerBase.Viewport.Width - 15f * ESPConfig.FontScale;
             var anchorY = CameraManagerBase.Viewport.Height - CameraManagerBase.Viewport.Height * 0.10f - textHeight + 4f * ESPConfig.FontScale;
             var wepInfoY = anchorY;
-            var counterSpacing = SKPaints.TextMagazineESP.FontSpacing - SKPaints.TextMagazineInfoESP.FontSpacing + 6f * ESPConfig.FontScale;
+            var counterSpacing = SKPaints.ESPFontBold42.Spacing - SKPaints.ESPFontItalic16.Spacing + 6f * ESPConfig.FontScale;
             var counterY = anchorY + counterSpacing;
 
-            var topY = wepInfoY - SKPaints.TextMagazineInfoESP.TextSize;
+            var topY = wepInfoY - SKPaints.ESPFontItalic16.Size;
             var bottomY = counterY;
 
             return new SKRect(anchorX - maxWidth / 2, topY, anchorX + maxWidth / 2, bottomY);
@@ -2311,25 +2329,25 @@ namespace eft_dma_radar.UI.ESP
                 new { Type = "Boss", Count = 4 }
             };
 
-            var typeColumnWidth = sampleData.Max(x => SKPaints.TextESPRaidStats.MeasureText(x.Type));
-            var countColumnWidth = sampleData.Max(x => SKPaints.TextESPRaidStats.MeasureText(x.Count.ToString()));
+            var typeColumnWidth = sampleData.Max(x => SKPaints.ESPFontMedium12.MeasureText(x.Type));
+            var countColumnWidth = sampleData.Max(x => SKPaints.ESPFontMedium12.MeasureText(x.Count.ToString()));
 
             var columnPadding = 12f * ESPConfig.FontScale;
             var totalWidth = typeColumnWidth + countColumnWidth + columnPadding;
 
-            var lineHeight = SKPaints.TextESPRaidStats.FontSpacing;
+            var lineHeight = SKPaints.ESPFontMedium12.Spacing;
             var totalHeight = lineHeight * sampleData.Length;
 
             var scale = ESPConfig.FontScale;
             var anchorX = CameraManagerBase.Viewport.Right - 3f * scale + _raidStatsOffset.X;
-            var startY = CameraManagerBase.Viewport.Top + SKPaints.TextESPRaidStats.TextSize +
+            var startY = CameraManagerBase.Viewport.Top + SKPaints.ESPFontMedium12.Size +
                          CameraManagerBase.Viewport.Height * 0.0575f * scale + _raidStatsOffset.Y;
 
             return new SKRect(
                 anchorX - totalWidth,
-                startY - SKPaints.TextESPRaidStats.TextSize,
+                startY - SKPaints.ESPFontMedium12.Size,
                 anchorX,
-                startY + totalHeight - SKPaints.TextESPRaidStats.TextSize
+                startY + totalHeight - SKPaints.ESPFontMedium12.Size
             );
         }
 
@@ -2343,25 +2361,25 @@ namespace eft_dma_radar.UI.ESP
                 new { Type = "Boss", Count = 4 }
             };
 
-            var typeColumnWidth = sampleData.Max(x => SKPaints.TextESPRaidStats.MeasureText(x.Type));
-            var countColumnWidth = sampleData.Max(x => SKPaints.TextESPRaidStats.MeasureText(x.Count.ToString()));
+            var typeColumnWidth = sampleData.Max(x => SKPaints.ESPFontMedium12.MeasureText(x.Type));
+            var countColumnWidth = sampleData.Max(x => SKPaints.ESPFontMedium12.MeasureText(x.Count.ToString()));
 
             var columnPadding = 12f * ESPConfig.FontScale;
             var totalWidth = typeColumnWidth + countColumnWidth + columnPadding;
 
-            var lineHeight = SKPaints.TextESPRaidStats.FontSpacing;
+            var lineHeight = SKPaints.ESPFontMedium12.Spacing;
             var totalHeight = lineHeight * sampleData.Length;
 
             var scale = ESPConfig.FontScale;
             var anchorX = CameraManagerBase.Viewport.Right - 3f * scale;
-            var startY = CameraManagerBase.Viewport.Top + SKPaints.TextESPRaidStats.TextSize +
+            var startY = CameraManagerBase.Viewport.Top + SKPaints.ESPFontMedium12.Size +
                          CameraManagerBase.Viewport.Height * 0.0575f * scale;
 
             return new SKRect(
                 anchorX - totalWidth,
-                startY - SKPaints.TextESPRaidStats.TextSize,
+                startY - SKPaints.ESPFontMedium12.Size,
                 anchorX,
-                startY + totalHeight - SKPaints.TextESPRaidStats.TextSize
+                startY + totalHeight - SKPaints.ESPFontMedium12.Size
             );
         }
 
@@ -2371,8 +2389,8 @@ namespace eft_dma_radar.UI.ESP
             if (string.IsNullOrEmpty(currentFPSText))
                 return SKRect.Empty;
 
-            var textWidth = SKPaints.TextESPFPS.MeasureText(currentFPSText);
-            var textHeight = SKPaints.TextESPFPS.TextSize;
+            var textWidth = SKPaints.ESPFontMedium12.MeasureText(currentFPSText);
+            var textHeight = SKPaints.ESPFontMedium12.Size;
 
             var anchorX = CameraManagerBase.Viewport.Left + 25f * ESPConfig.FontScale + _fpsOffset.X;
             var anchorY = CameraManagerBase.Viewport.Top + 14f * ESPConfig.FontScale + _fpsOffset.Y;
@@ -2385,8 +2403,8 @@ namespace eft_dma_radar.UI.ESP
         private SKRect CalculateFPSBaseBounds()
         {
             var sampleFpsText = "9999fps";
-            var textWidth = SKPaints.TextESPFPS.MeasureText(sampleFpsText);
-            var textHeight = SKPaints.TextESPFPS.TextSize;
+            var textWidth = SKPaints.ESPFontMedium12.MeasureText(sampleFpsText);
+            var textHeight = SKPaints.ESPFontMedium12.Size;
 
             var anchorX = CameraManagerBase.Viewport.Left + 25f * ESPConfig.FontScale;
             var anchorY = CameraManagerBase.Viewport.Top + 14f * ESPConfig.FontScale;
@@ -2407,11 +2425,11 @@ namespace eft_dma_radar.UI.ESP
             if (string.IsNullOrEmpty(currentClosestPlayerText))
                 return SKRect.Empty;
 
-            var textWidth = SKPaints.TextESPClosestPlayer.MeasureText(currentClosestPlayerText);
-            var textHeight = SKPaints.TextESPClosestPlayer.TextSize;
+            var textWidth = SKPaints.ESPFontMedium13.MeasureText(currentClosestPlayerText);
+            var textHeight = SKPaints.ESPFontMedium13.Size;
 
             var anchorX = CameraManagerBase.ViewportCenter.X + _closestPlayerOffset.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + 15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
 
             var x = anchorX - textWidth / 2;
 
@@ -2422,7 +2440,7 @@ namespace eft_dma_radar.UI.ESP
             var entries = KillfeedManager.Entries;
 
             float scale = ESPConfig.FontScale;
-            float lineH = SKPaints.TextESPClosestPlayer.FontSpacing;
+            float lineH = SKPaints.ESPFontMedium13.Spacing;
 
             float anchorX =
                 CameraManagerBase.Viewport.Right -
@@ -2441,8 +2459,8 @@ namespace eft_dma_radar.UI.ESP
             {
                 const string placeholder = "Killfeed";
 
-                float w = SKPaints.TextESPClosestPlayer.MeasureText(placeholder);
-                float h = SKPaints.TextESPClosestPlayer.TextSize;
+                float w = SKPaints.ESPFontMedium13.MeasureText(placeholder);
+                float h = SKPaints.ESPFontMedium13.Size;
 
                 var rect = new SKRect(
                     anchorX - w - 8f * scale,
@@ -2468,6 +2486,8 @@ namespace eft_dma_radar.UI.ESP
                     placeholder,
                     anchorX - w,
                     anchorY,
+                    SKTextAlign.Left,
+                    SKPaints.ESPFontMedium13,
                     SKPaints.TextESPClosestPlayer);
 
                 return;
@@ -2479,16 +2499,14 @@ namespace eft_dma_radar.UI.ESP
             for (int i = 0; i < entries.Count; i++)
             {
                 var e = entries[i];
-
+            
                 float y = anchorY + i * lineH;
                 byte alpha = GetFadeAlpha(i);
-
+            
                 // Clone paint with fade
                 using var paint = new SKPaint
                 {
                     Color = SKPaints.TextESPClosestPlayer.Color.WithAlpha(alpha),
-                    TextSize = SKPaints.TextESPClosestPlayer.TextSize,
-                    Typeface = SKPaints.TextESPClosestPlayer.Typeface,
                     IsAntialias = SKPaints.TextESPClosestPlayer.IsAntialias
                 };
 
@@ -2521,14 +2539,14 @@ namespace eft_dma_radar.UI.ESP
                 string text =
                     $"{levelPart}{killer} Killed {e.Victim}{bracketPart}";
 
-                float w = paint.MeasureText(text);
-                canvas.DrawText(text, anchorX - w, y, paint);
+                float w = SKPaints.ESPFontMedium13.MeasureText(text);
+                canvas.DrawText(text, anchorX - w, y, SKTextAlign.Left, SKPaints.ESPFontMedium13, paint);
             }
 
         }
         private static byte GetFadeAlpha(int index)
         {
-            // index: 0 (newest) → 4 (oldest)
+            // index: 0 (newest) ? 4 (oldest)
             return index switch
             {
                 0 => 255,
@@ -2552,8 +2570,8 @@ namespace eft_dma_radar.UI.ESP
                 150f * scale;
 
             // --- placeholder size ---
-            float w = SKPaints.TextESPClosestPlayer.MeasureText("Killfeed");
-            float h = SKPaints.TextESPClosestPlayer.TextSize;
+            float w = SKPaints.ESPFontMedium13.MeasureText("Killfeed");
+            float h = SKPaints.ESPFontMedium13.Size;
 
             return new SKRect(
                 anchorX - w - 8f * scale,
@@ -2567,34 +2585,34 @@ namespace eft_dma_radar.UI.ESP
         private SKRect CalculateKillfeedBounds()
         {
             var entries = KillfeedManager.Entries;
-
+        
             if (entries.Count == 0)
                 return CalculateKillfeedBaseBounds();
-
+        
             float scale = ESPConfig.FontScale;
-            float lineH = SKPaints.TextESPClosestPlayer.FontSpacing;
-
+            float lineH = SKPaints.ESPFontMedium13.Spacing;
+        
             float maxW = 0;
             foreach (var e in entries)
                 maxW = Math.Max(
                     maxW,
-                    SKPaints.TextESPClosestPlayer.MeasureText(
-                        $"{e.Killer} → {e.Victim} [{e.Weapon}]"));
-
+                    SKPaints.ESPFontMedium13.MeasureText(
+                        $"{e.Killer} ? {e.Victim} [{e.Weapon}]"));
+        
             float x =
                 CameraManagerBase.Viewport.Right -
                 25f * scale +
                 _killfeedOffset.X -
                 maxW;
-
+        
             float y =
                 CameraManagerBase.Viewport.Top +
                 150f * scale +
                 _killfeedOffset.Y;
-
+        
             return new SKRect(
                 x,
-                y - SKPaints.TextESPClosestPlayer.TextSize,
+                y - SKPaints.ESPFontMedium13.Size,
                 x + maxW,
                 y + entries.Count * lineH
             );
@@ -2606,22 +2624,22 @@ namespace eft_dma_radar.UI.ESP
             if (string.IsNullOrEmpty(currentClosestPlayerText))
             {
                 var sampleText = "B:VeryLongPlayerName123 (999m), L:99, KD:99.99, R:9999, SR:99.9, HR: 9999";
-                var sampleWidth = SKPaints.TextESPClosestPlayer.MeasureText(sampleText);
-                var sampleHeight = SKPaints.TextESPClosestPlayer.TextSize;
+                var sampleWidth = SKPaints.ESPFontMedium13.MeasureText(sampleText);
+                var sampleHeight = SKPaints.ESPFontMedium13.Size;
 
                 var sampleAnchorX = CameraManagerBase.ViewportCenter.X;
-                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + 15f * ESPConfig.FontScale;
+                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale;
 
                 var sampleX = sampleAnchorX - sampleWidth / 2;
 
                 return new SKRect(sampleX, sampleAnchorY - sampleHeight, sampleX + sampleWidth, sampleAnchorY);
             }
 
-            var textWidth = SKPaints.TextESPClosestPlayer.MeasureText(currentClosestPlayerText);
-            var textHeight = SKPaints.TextESPClosestPlayer.TextSize;
+            var textWidth = SKPaints.ESPFontMedium13.MeasureText(currentClosestPlayerText);
+            var textHeight = SKPaints.ESPFontMedium13.Size;
 
             var anchorX = CameraManagerBase.ViewportCenter.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + 15f * ESPConfig.FontScale;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale;
 
             var x = anchorX - textWidth / 2;
 
@@ -2703,28 +2721,28 @@ namespace eft_dma_radar.UI.ESP
                 DistanceText = $"{item.ClosestDistance:F0}m"
             }).ToList();
 
-            var nameColumnWidth = lootData.Max(x => SKPaints.TextESPTopLoot.MeasureText(x.NameText));
-            var valueColumnWidth = lootData.Max(x => SKPaints.TextESPTopLoot.MeasureText(x.ValueText));
-            var distanceColumnWidth = lootData.Max(x => SKPaints.TextESPTopLoot.MeasureText(x.DistanceText));
+            var nameColumnWidth = lootData.Max(x => SKPaints.ESPFontMedium13.MeasureText(x.NameText));
+            var valueColumnWidth = lootData.Max(x => SKPaints.ESPFontMedium13.MeasureText(x.ValueText));
+            var distanceColumnWidth = lootData.Max(x => SKPaints.ESPFontMedium13.MeasureText(x.DistanceText));
 
             var columnPadding = 12f * ESPConfig.FontScale;
             var totalWidth = nameColumnWidth + valueColumnWidth + distanceColumnWidth + (columnPadding * 2);
 
-            var lineHeight = SKPaints.TextESPTopLoot.FontSpacing;
+            var lineHeight = SKPaints.ESPFontMedium13.Spacing;
             var totalHeight = lineHeight * lootData.Count;
 
             var anchorX = CameraManagerBase.Viewport.Right - totalWidth - 3f * ESPConfig.FontScale + _topLootOffset.X;
-            var anchorY = CameraManagerBase.Viewport.Top + SKPaints.TextESPRaidStats.TextSize +
+            var anchorY = CameraManagerBase.Viewport.Top + SKPaints.ESPFontMedium12.Size +
                           CameraManagerBase.Viewport.Height * 0.0575f * ESPConfig.FontScale +
-                          (SKPaints.TextESPRaidStats.FontSpacing * 4) +
+                          (SKPaints.ESPFontMedium12.Spacing * 4) +
                           10f * ESPConfig.FontScale +
                           _topLootOffset.Y;
 
             return new SKRect(
                 anchorX,
-                anchorY - SKPaints.TextESPTopLoot.TextSize,
+                anchorY - SKPaints.ESPFontMedium13.Size,
                 anchorX + totalWidth,
-                anchorY + totalHeight - SKPaints.TextESPTopLoot.TextSize
+                anchorY + totalHeight - SKPaints.ESPFontMedium13.Size
             );
         }
 
@@ -2739,27 +2757,27 @@ namespace eft_dma_radar.UI.ESP
                 new { NameText = "Fifth Long Item Name (x55)", ValueText = "555K", DistanceText = "555m" }
             };
 
-            var nameColumnWidth = sampleData.Max(x => SKPaints.TextESPTopLoot.MeasureText(x.NameText));
-            var valueColumnWidth = sampleData.Max(x => SKPaints.TextESPTopLoot.MeasureText(x.ValueText));
-            var distanceColumnWidth = sampleData.Max(x => SKPaints.TextESPTopLoot.MeasureText(x.DistanceText));
+            var nameColumnWidth = sampleData.Max(x => SKPaints.ESPFontMedium13.MeasureText(x.NameText));
+            var valueColumnWidth = sampleData.Max(x => SKPaints.ESPFontMedium13.MeasureText(x.ValueText));
+            var distanceColumnWidth = sampleData.Max(x => SKPaints.ESPFontMedium13.MeasureText(x.DistanceText));
 
             var columnPadding = 12f * ESPConfig.FontScale;
             var totalWidth = nameColumnWidth + valueColumnWidth + distanceColumnWidth + (columnPadding * 2);
 
-            var lineHeight = SKPaints.TextESPTopLoot.FontSpacing;
+            var lineHeight = SKPaints.ESPFontMedium13.Spacing;
             var totalHeight = lineHeight * sampleData.Length;
 
             var anchorX = CameraManagerBase.Viewport.Right - totalWidth - 3f * ESPConfig.FontScale;
-            var anchorY = CameraManagerBase.Viewport.Top + SKPaints.TextESPRaidStats.TextSize +
+            var anchorY = CameraManagerBase.Viewport.Top + SKPaints.ESPFontMedium12.Size +
                           CameraManagerBase.Viewport.Height * 0.0575f * ESPConfig.FontScale +
-                          (SKPaints.TextESPRaidStats.FontSpacing * 4) +
+                          (SKPaints.ESPFontMedium12.Spacing * 4) +
                           10f * ESPConfig.FontScale;
 
             return new SKRect(
                 anchorX,
-                anchorY - SKPaints.TextESPTopLoot.TextSize,
+                anchorY - SKPaints.ESPFontMedium13.Size,
                 anchorX + totalWidth,
-                anchorY + totalHeight - SKPaints.TextESPTopLoot.TextSize
+                anchorY + totalHeight - SKPaints.ESPFontMedium13.Size
             );
         }
 
@@ -2801,9 +2819,9 @@ namespace eft_dma_radar.UI.ESP
             if (string.IsNullOrEmpty(currentText))
                 return SKRect.Empty;
 
-            var labelWidth = SKPaints.TextESPStatusText.MeasureText(currentText);
+            var labelWidth = SKPaints.ESPFontMedium13.MeasureText(currentText);
             var spacing = 1f * ESPConfig.FontScale;
-            var labelHeight = SKPaints.TextESPStatusText.FontSpacing;
+            var labelHeight = SKPaints.ESPFontMedium13.Spacing;
 
             var clientArea = skglControl_ESP.ClientRectangle;
             var anchorX = clientArea.Width / 2 + _statusTextOffset.X;
@@ -2821,9 +2839,9 @@ namespace eft_dma_radar.UI.ESP
         private SKRect CalculateStatusTextBaseBounds()
         {
             var sampleText = "AIMBOT: HEAD (MOVE) (LTW)";
-            var labelWidth = SKPaints.TextESPStatusText.MeasureText(sampleText);
+            var labelWidth = SKPaints.ESPFontMedium13.MeasureText(sampleText);
             var spacing = 1f * ESPConfig.FontScale;
-            var labelHeight = SKPaints.TextESPStatusText.FontSpacing;
+            var labelHeight = SKPaints.ESPFontMedium13.Spacing;
 
             var clientArea = skglControl_ESP.ClientRectangle;
             var anchorX = clientArea.Width / 2;
@@ -2851,9 +2869,35 @@ namespace eft_dma_radar.UI.ESP
 
         private string GenerateCurrentStatusText()
         {
+            var aimEnabled = MemWriteFeature<Aimbot>.Instance.Enabled;
+            var rageMode = Config.MemWritesEnabled && Config.MemWrites.RageMode;
+            var wideLeanEnabled = MemWrites.Enabled && MemWriteFeature<WideLean>.Instance.Enabled;
+            //var lootThroughWallsZoomed = MemWrites.Enabled && MemWriteFeature<LootThroughWalls>.Instance.Enabled && LootThroughWalls.ZoomEngaged;
+            //var moveSpeedEnabled = MemWrites.Enabled && MemWriteFeature<MoveSpeed>.Instance.Enabled;
+
             string label = null;
 
+            if (rageMode)
+                label = aimEnabled ? $"{Aimbot.Config.TargetingMode.GetDescription()}: RAGE MODE" : "RAGE MODE";
+            else if (aimEnabled)
+            {
+                var mode = Aimbot.Config.TargetingMode.GetDescription();
+                if (Aimbot.Config.RandomBone.Enabled)
+                    label = $"{mode}: Random Bone";
+                else if (Aimbot.Config.SilentAim.AutoBone)
+                    label = $"{mode}: Auto Bone";
+                else
+                    label = $"{mode}: {Aimbot.Config.Bone.GetDescription()}";
+            }
+
             var secondaryFeatures = new List<string>();
+
+            if (wideLeanEnabled)
+                secondaryFeatures.Add("Lean");
+            //if (lootThroughWallsZoomed)
+            //    secondaryFeatures.Add("LTW");
+            //else if (moveSpeedEnabled)
+            //    secondaryFeatures.Add("MOVE");
 
             if (secondaryFeatures.Any())
             {
@@ -2919,7 +2963,7 @@ namespace eft_dma_radar.UI.ESP
                     return ESPConfig.MiniRadar.Enabled;
 
                 case UIElement.Killfeed:
-                    return ESPConfig.ShowKillFeed; // 👈 ALWAYS draggable
+                    return ESPConfig.ShowKillFeed; // ?? ALWAYS draggable
 
                 default:
                     return false;

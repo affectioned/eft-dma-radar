@@ -1,10 +1,16 @@
-﻿using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Common.Unity;
+using SkiaSharp;
 using SkiaSharp.Views.WPF;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace eft_dma_radar.UI.SKWidgetControl
 {
@@ -112,7 +118,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
                 _aimviewCanvas.DrawRect(boxPt, PaintESPWidgetLoot);
                 var label = item.GetUILabel() + $" ({dist:n1}m)";
-                _aimviewCanvas.DrawText(label, textPt, TextESPWidgetLoot);
+                _aimviewCanvas.DrawText(label, textPt, SKTextAlign.Center, AimviewLootFont, TextESPWidgetLoot);
             }
         }
 
@@ -145,7 +151,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
                 _aimviewCanvas.DrawRect(boxPt, PaintESPWidgetLoot);
                 var label = $"{container.Name} ({dist:n1}m)";
-                _aimviewCanvas.DrawText(label, textPt, TextESPWidgetLoot);
+                _aimviewCanvas.DrawText(label, textPt, SKTextAlign.Center, AimviewLootFont, TextESPWidgetLoot);
             }
         }
 
@@ -246,7 +252,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 PaintESPWidgetPScav.StrokeWidth = 1 * newScale;
                 PaintESPWidgetFocused.StrokeWidth = 1 * newScale;
                 PaintESPWidgetLoot.StrokeWidth = 0.75f * newScale;
-                TextESPWidgetLoot.TextSize = 9f * newScale;
+                AimviewLootFont.Size = 9f * newScale;
             }
         }
 
@@ -358,21 +364,16 @@ namespace eft_dma_radar.UI.SKWidgetControl
             StrokeWidth = 0.75f,
             Style = SKPaintStyle.Fill,
             IsAntialias = true,
-            FilterQuality = SKFilterQuality.High
         };
 
         internal static SKPaint TextESPWidgetLoot { get; } = new()
         {
-            SubpixelText = true,
             Color = SKColors.WhiteSmoke,
             IsStroke = false,
-            TextSize = 9f,
-            TextAlign = SKTextAlign.Center,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = CustomFonts.SKFontFamilyRegular,
-            FilterQuality = SKFilterQuality.High
         };
+
+        internal static SKFont AimviewLootFont { get; } = new(CustomFonts.SKFontFamilyRegular, 9f) { Subpixel = true };
 
         #endregion
     }
