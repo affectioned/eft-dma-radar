@@ -69,7 +69,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                         }
                         catch (Exception)
                         {
-                            //XMLogging.WriteLine($"[EXP-RTL] Scatter Execute error: {ex}");
+                            //XMLogging.WriteLine($"[EXP-RTL] Scatter Execute error");
                         }
 
                         // Apply results
@@ -81,7 +81,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                             }
                             catch (Exception)
                             {
-                                //XMLogging.WriteLine($"[EXP-RTL] OnRefresh error for 0x{explosive.Addr:X}: {ex}");
+                                //XMLogging.WriteLine($"[EXP-RTL] OnRefresh error for 0x{explosive.Addr:X}");
                             }
                         }
                     }
@@ -145,7 +145,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                     catch (Exception)
                     {
                         // Silently skip invalid grenades to reduce log spam
-                        // XMLogging.WriteLine($"[EXP-RTL] Grenade create error @ 0x{grenadeAddr:X}: {ex}");
+                        // XMLogging.WriteLine($"[EXP-RTL] Grenade create error @ 0x{grenadeAddr:X}");
                     }
                 }
             }
