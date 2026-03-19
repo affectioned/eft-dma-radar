@@ -1,4 +1,8 @@
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace eft_dma_radar.Common.Misc
 {
@@ -6,6 +10,7 @@ namespace eft_dma_radar.Common.Misc
     {
         private static StreamWriter _writer;
         private static bool _consoleAllocated = false;
+        private static readonly Lock _writeLock = new();
 
         // P/Invoke for console allocation
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -22,10 +27,14 @@ namespace eft_dma_radar.Common.Misc
             // Always allocate console for debugging IL2CPP migration
             AllocateConsole();
 
-            string logFileName = $"log-{DateTime.UtcNow.ToFileTime()}.txt";
-            var fs = new FileStream(logFileName, FileMode.Create, FileAccess.Write);
-            _writer = new StreamWriter(fs, Encoding.UTF8, 0x1000);
-            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+            string[] args = Environment.GetCommandLineArgs();
+            if (args?.Contains("-logging", StringComparer.OrdinalIgnoreCase) ?? false)
+            {
+                string logFileName = $"log-{DateTime.UtcNow.ToFileTime().ToString()}.txt";
+                var fs = new FileStream(logFileName, FileMode.Create, FileAccess.Write);
+                _writer = new StreamWriter(fs, Encoding.UTF8, 0x1000);
+                AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+            }
         }
 
         /// <summary>
@@ -44,10 +53,13 @@ namespace eft_dma_radar.Common.Misc
                     // Allocate new console
                     if (AllocConsole())
                     {
-                        // Redirect standard output to the console
-                        Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
-                        Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
+                        // Enable UTF-8 output so box-drawing and Unicode render correctly
+                        Console.OutputEncoding = Encoding.UTF8;
 
+                        // Redirect standard output to the console with UTF-8 encoding
+                        Console.SetOut(new StreamWriter(Console.OpenStandardOutput(), Encoding.UTF8) { AutoFlush = true });
+                        Console.SetError(new StreamWriter(Console.OpenStandardError(), Encoding.UTF8) { AutoFlush = true });
+                        
                         Console.Title = "WPF-RADAR Debug Console - IL2CPP Migration";
                         Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.WriteLine("================================================================");
@@ -55,7 +67,7 @@ namespace eft_dma_radar.Common.Misc
                         Console.WriteLine("================================================================");
                         Console.ResetColor();
                         Console.WriteLine();
-
+                        
                         _consoleAllocated = true;
                     }
                 }
@@ -83,7 +95,27 @@ namespace eft_dma_radar.Common.Misc
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteLine(object data)
         {
-            var message = data?.ToString() ?? string.Empty;
+            lock (_writeLock)
+            {
+                WriteLineCore(data?.ToString() ?? string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Write multiple lines atomically, each with its own timestamp.
+        /// Prevents other threads from interleaving output between lines.
+        /// </summary>
+        public static void WriteBlock(List<string> lines)
+        {
+            lock (_writeLock)
+            {
+                foreach (var line in lines)
+                    WriteLineCore(line);
+            }
+        }
+
+        private static void WriteLineCore(string message)
+        {
             var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
             var formattedMessage = $"[{timestamp}] {message}";
 
@@ -106,7 +138,7 @@ namespace eft_dma_radar.Common.Misc
                     Console.WriteLine(formattedMessage);
                     Console.ResetColor();
                 }
-                else if (message.Contains("WARN") || message.Contains("[GOM]") || message.Contains("[Signature]"))
+                else if (message.Contains("[GOM]") || message.Contains("[Signature]"))
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine(formattedMessage);
