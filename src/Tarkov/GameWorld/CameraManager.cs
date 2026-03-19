@@ -30,6 +30,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
     public sealed class CameraManager : CameraManagerBase
     {
         private static ulong _eftCameraManagerInstance;
+        private static ulong _allCamerasAddr;
         private static int _resolveAttemptCount;
 
         /// <summary>
@@ -75,6 +76,8 @@ namespace eft_dma_radar.Tarkov.GameWorld
             try
             {
                 _eftCameraManagerInstance = FindCameraManagerInstance();
+                _allCamerasAddr = ResolveAllCamerasAddr();
+                ResolveCameraOffsets();
 
                 if (!_eftCameraManagerInstance.IsValidVirtualAddress())
                 {
@@ -154,7 +157,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (!string.Equals(name, "Camera", StringComparison.Ordinal))
                     return false;
 
-                fpsCamera = Memory.ReadPtr(fpsCameraRef + Offsets.EFTCameraManager.CameraDerefOffset, false);
+                fpsCamera = Memory.ReadPtr(fpsCameraRef + UnityOffsets.ObjectClass.MonoBehaviourOffset, false);
                 if (!fpsCamera.IsValidVirtualAddress() || !ValidateCameraMatrix(fpsCamera))
                     return false;
 
@@ -171,7 +174,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (!string.Equals(name, "Camera", StringComparison.Ordinal))
                     return false;
 
-                opticCamera = Memory.ReadPtr(opticCameraRef + Offsets.EFTCameraManager.CameraDerefOffset, false);
+                opticCamera = Memory.ReadPtr(opticCameraRef + UnityOffsets.ObjectClass.MonoBehaviourOffset, false);
                 if (!opticCamera.IsValidVirtualAddress())
                     return false;
 
@@ -196,22 +199,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             try
             {
-                var unityBase = Memory.UnityBase;
-                if (!unityBase.IsValidVirtualAddress())
+                if (!_allCamerasAddr.IsValidVirtualAddress())
                 {
-                    XMLogging.WriteLine("[CameraManager] Unity base not loaded; cannot use AllCameras.");
+                    XMLogging.WriteLine("[CameraManager] AllCameras address not resolved.");
                     return false;
                 }
 
-                // NOTE: adjust UnityOffsets.ModuleBase.AllCameras if your name differs
-                var allCamerasStatic = unityBase + ModuleBase.AllCameras;
-                if (!allCamerasStatic.IsValidVirtualAddress())
-                {
-                    XMLogging.WriteLine("[CameraManager] AllCameras static address invalid.");
-                    return false;
-                }
-
-                var allCamerasPtr = Memory.ReadPtr(allCamerasStatic, false);
+                var allCamerasPtr = Memory.ReadPtr(_allCamerasAddr, false);
                 if (!allCamerasPtr.IsValidVirtualAddress())
                 {
                     XMLogging.WriteLine("[CameraManager] AllCameras pointer invalid.");
@@ -357,6 +351,408 @@ namespace eft_dma_radar.Tarkov.GameWorld
         }
 
         /// <summary>
+        /// Candidate signatures for locating the AllCameras global in UnityPlayer.dll.
+        /// All reference the global via mov/lea reg,[rip+rel32] — rel32 at offset 3, instruction ends at 7.
+        /// Ordered by uniqueness (most distinctive first).
+        /// </summary>
+        private static readonly (string Sig, int RelOffset, int InstrLen, string Desc)[] AllCamerasSigs =
+        [
+            // IDA 0x6DE0A9: mov rax,[rip+rel32]; mov r14,imm; mov ecx,[rax+?]; test ecx,ecx; jz; mov [rsp+?],rbx
+            ("48 8B 05 ? ? ? ? 49 C7 C6 ? ? ? ? 8B 48 ? 85 C9 0F 84 ? ? ? ? 48 89 9C 24", 3, 7, "AllCameras@6DE0A9: mov rax,[rip]; mov r14,imm; test ecx; jz; mov [rsp],rbx"),
+            // IDA 0x790214: mov r8,[rip+rel32]; xor edx,edx; mov rcx,[r8+?]
+            ("4C 8B 05 ? ? ? ? 33 D2 49 8B 48", 3, 7, "AllCameras@790214: mov r8,[rip]; xor edx; mov rcx,[r8]"),
+            // IDA 0xC30645: mov rax,[rip+rel32]; mov r14,imm; mov ecx,[rax+?]; test ecx,ecx; jz; mov [rsp+?],rsi
+            ("48 8B 05 ? ? ? ? 49 C7 C6 ? ? ? ? 8B 48 ? 85 C9 0F 84 ? ? ? ? 48 89 B4 24", 3, 7, "AllCameras@C30645: mov rax,[rip]; mov r14,imm; test ecx; jz; mov [rsp],rsi"),
+            // IDA 0xD3A139: mov rbx,[rip+rel32]; mov rsi,[rbx+?]; mov rax,[rbx+?]; inc rsi; ...
+            ("48 8B 1D ? ? ? ? 48 8B 73 ? 48 8B 43 ? 48 FF C6", 3, 7, "AllCameras@D3A139: mov rbx,[rip]; mov rsi,[rbx]; mov rax,[rbx]; inc rsi"),
+        ];
+
+        /// <summary>
+        /// Resolves the AllCameras global address via signature scan on UnityPlayer.dll,
+        /// falling back to the hardcoded <see cref="ModuleBase.AllCameras"/> offset.
+        /// </summary>
+        private static ulong ResolveAllCamerasAddr()
+        {
+            var unityBase = Memory.UnityBase;
+            if (!unityBase.IsValidVirtualAddress())
+            {
+                XMLogging.WriteLine("[CameraManager] Unity base not loaded; AllCameras unavailable.");
+                return 0;
+            }
+
+            // DEBUG: Uncomment to test all signatures and log which ones are still valid
+            //DebugTestAllSignatures();
+
+            // Try signature scan first
+            foreach (var (sig, relOff, instrLen, desc) in AllCamerasSigs)
+            {
+                try
+                {
+                    var sigAddr = Memory.FindSignature(sig, "UnityPlayer.dll");
+                    if (sigAddr == 0)
+                        continue;
+
+                    int disp32 = Memory.ReadValue<int>(sigAddr + (ulong)relOff, false);
+                    ulong resolved = sigAddr + (ulong)instrLen + (ulong)(long)disp32;
+
+                    if (!resolved.IsValidVirtualAddress())
+                        continue;
+
+                    // Validate: the resolved address should point to a list with a valid items pointer
+                    var listPtr = Memory.ReadPtr(resolved, false);
+                    if (listPtr.IsValidVirtualAddress())
+                    {
+                        var items = Memory.ReadPtr(listPtr, false);
+                        int count = Memory.ReadValue<int>(listPtr + 0x8, false);
+                        if (items.IsValidVirtualAddress() && count >= 0 && count < 1024)
+                        {
+                            XMLogging.WriteLine($"[CameraManager] AllCameras resolved via sig scan ({desc}): 0x{resolved:X}");
+                            return resolved;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Try next signature
+                }
+            }
+
+            // Fallback: hardcoded offset
+            var fallbackAddr = unityBase + ModuleBase.AllCameras;
+            if (fallbackAddr.IsValidVirtualAddress())
+            {
+                XMLogging.WriteLine($"[CameraManager] AllCameras using hardcoded fallback: 0x{fallbackAddr:X}");
+                return fallbackAddr;
+            }
+
+            XMLogging.WriteLine("[CameraManager] AllCameras resolution failed — all strategies exhausted.");
+            return 0;
+        }
+
+        /// <summary>
+        /// DEBUG: Tests all signatures (AllCameras + Camera struct offsets) and logs which ones still resolve correctly.
+        /// Call from Initialize() to audit signature health after game updates.
+        /// </summary>
+        private static void DebugTestAllSignatures()
+        {
+            var unityBase = Memory.UnityBase;
+            if (!unityBase.IsValidVirtualAddress())
+            {
+                XMLogging.WriteLine("[CameraManager] DEBUG: Unity base not loaded — skipping sig audit.");
+                return;
+            }
+
+            XMLogging.WriteLine("[CameraManager] ===== DEBUG: Signature Health Audit =====");
+
+            // --- AllCameras signatures ---
+            XMLogging.WriteLine("[CameraManager] --- AllCameras Signatures ---");
+            for (int idx = 0; idx < AllCamerasSigs.Length; idx++)
+            {
+                var (sig, relOff, instrLen, desc) = AllCamerasSigs[idx];
+                try
+                {
+                    var sigAddr = Memory.FindSignature(sig, "UnityPlayer.dll");
+                    if (sigAddr == 0)
+                    {
+                        XMLogging.WriteLine($"[CameraManager]   [{idx}] MISS  — {desc}");
+                        continue;
+                    }
+
+                    int disp32 = Memory.ReadValue<int>(sigAddr + (ulong)relOff, false);
+                    ulong resolved = sigAddr + (ulong)instrLen + (ulong)(long)disp32;
+                    string status;
+
+                    if (!resolved.IsValidVirtualAddress())
+                    {
+                        status = $"BAD ADDR 0x{resolved:X}";
+                    }
+                    else
+                    {
+                        var listPtr = Memory.ReadPtr(resolved, false);
+                        if (!listPtr.IsValidVirtualAddress())
+                        {
+                            status = $"BAD LIST PTR 0x{listPtr:X}";
+                        }
+                        else
+                        {
+                            var items = Memory.ReadPtr(listPtr, false);
+                            int count = Memory.ReadValue<int>(listPtr + 0x8, false);
+                            bool valid = items.IsValidVirtualAddress() && count >= 0 && count < 1024;
+                            status = valid
+                                ? $"OK resolved=0x{resolved:X} RVA=0x{resolved - unityBase:X} count={count}"
+                                : $"INVALID items=0x{items:X} count={count}";
+                        }
+                    }
+
+                    XMLogging.WriteLine($"[CameraManager]   [{idx}] {status} — {desc} (matched at UnityPlayer+0x{sigAddr - unityBase:X})");
+                }
+                catch (Exception ex)
+                {
+                    XMLogging.WriteLine($"[CameraManager]   [{idx}] ERROR {ex.Message} — {desc}");
+                }
+            }
+
+            // --- Camera struct offset signatures ---
+            DebugTestCameraOffsetSigs("ViewMatrix", ViewMatrixSigs, UnityOffsets.Camera.ViewMatrix, unityBase);
+            DebugTestCameraOffsetSigs("FOV", FovSigs, UnityOffsets.Camera.FOV, unityBase);
+            DebugTestCameraOffsetSigs("AspectRatio", AspectRatioSigs, UnityOffsets.Camera.AspectRatio, unityBase);
+
+            XMLogging.WriteLine("[CameraManager] ===== END DEBUG =====");
+        }
+
+        /// <summary>
+        /// DEBUG helper: tests a set of Camera struct offset signatures and logs results.
+        /// </summary>
+        private static void DebugTestCameraOffsetSigs(string fieldName, CameraOffsetSig[] sigs, uint currentValue, ulong unityBase)
+        {
+            XMLogging.WriteLine($"[CameraManager] --- {fieldName} Signatures (current=0x{currentValue:X}) ---");
+            for (int idx = 0; idx < sigs.Length; idx++)
+            {
+                var entry = sigs[idx];
+                try
+                {
+                    var sigAddr = Memory.FindSignature(entry.Sig, "UnityPlayer.dll");
+                    if (sigAddr == 0)
+                    {
+                        XMLogging.WriteLine($"[CameraManager]   [{idx}] MISS  — {entry.Desc}");
+                        continue;
+                    }
+
+                    string matchInfo = $"matched at UnityPlayer+0x{sigAddr - unityBase:X}";
+                    uint offset;
+
+                    if (entry.IsCallSite)
+                    {
+                        int callRel32 = Memory.ReadValue<int>(sigAddr + (ulong)entry.OffsetPos + 1, false);
+                        ulong callTarget = sigAddr + 5 + (ulong)(long)callRel32;
+                        matchInfo += $" → call target UnityPlayer+0x{callTarget - unityBase:X}";
+
+                        if (!callTarget.IsValidVirtualAddress())
+                        {
+                            XMLogging.WriteLine($"[CameraManager]   [{idx}] BAD CALL TARGET — {entry.Desc} ({matchInfo})");
+                            continue;
+                        }
+
+                        offset = entry.TargetBodyDispSize switch
+                        {
+                            1 => Memory.ReadValue<byte>(callTarget + (ulong)entry.TargetBodyDispOffset, false),
+                            4 => Memory.ReadValue<uint>(callTarget + (ulong)entry.TargetBodyDispOffset, false),
+                            _ => 0,
+                        };
+                    }
+                    else
+                    {
+                        offset = entry.DispSize switch
+                        {
+                            1 => Memory.ReadValue<byte>(sigAddr + (ulong)entry.OffsetPos, false),
+                            4 => Memory.ReadValue<uint>(sigAddr + (ulong)entry.OffsetPos, false),
+                            _ => 0,
+                        };
+                    }
+
+                    bool sane = offset > 0 && offset < 0x1000;
+                    bool matches = offset == currentValue;
+                    string status = (sane, matches) switch
+                    {
+                        (true, true) => $"OK 0x{offset:X} (matches current)",
+                        (true, false) => $"CHANGED 0x{offset:X} (current=0x{currentValue:X})",
+                        _ => $"BAD offset=0x{offset:X}",
+                    };
+
+                    XMLogging.WriteLine($"[CameraManager]   [{idx}] {status} — {entry.Desc} ({matchInfo})");
+                }
+                catch (Exception ex)
+                {
+                    XMLogging.WriteLine($"[CameraManager]   [{idx}] ERROR {ex.Message} — {entry.Desc}");
+                }
+            }
+        }
+
+        #region Camera Struct Offset Resolution
+
+        /// <summary>
+        /// Camera getter signature entry.
+        /// Two resolution strategies:
+        ///   Direct  — the sig matches the getter itself; read displacement at OffsetPos.
+        ///   Indirect — the sig matches a call-site (E8 rel32); resolve the call target first,
+        ///              then read the displacement from the target function body.
+        /// </summary>
+        private readonly record struct CameraOffsetSig(
+            string Sig,
+            int OffsetPos,
+            int DispSize,
+            bool IsCallSite,
+            int TargetBodyDispOffset,
+            int TargetBodyDispSize,
+            string Desc);
+
+        /// <summary>
+        /// Signatures for Camera::GetWorldToCameraMatrix in UnityPlayer.dll.
+        /// Returns a pointer to the ViewMatrix (lea rax,[rcx+disp32]).
+        /// </summary>
+        private static readonly CameraOffsetSig[] ViewMatrixSigs =
+        [
+            // IDA call-site at 0xC37468: call sub_1800A4690 → target is lea rax,[rcx+128h]; ret
+            // Sig matches the call + post-call context; E8 rel32 at offset 0, target body: 48 8D 81 XX XX XX XX C3
+            new("E8 ? ? ? ? 48 3B 58 ? 0F 83 ? ? ? ? ? ? ? 48 8D 0C 5D ? ? ? ? 48 03 CB ? ? ? ? E8 ? ? ? ? 4C 8B C7 49 FF C0 ? ? ? ? ? 75",
+                0, 4, IsCallSite: true, TargetBodyDispOffset: 3, TargetBodyDispSize: 4,
+                "ViewMatrix call-site@C37468: call GetWorldToCameraMatrix; cmp rbx,[rax+10h]"),
+        ];
+
+        private static readonly CameraOffsetSig[] FovSigs =
+        [
+            // IDA sub_1807D3670: cmp dword ptr [rcx+53Ch],2; jnz → movss xmm0,[rcx+928h]; ret / movss xmm0,[rcx+1A8h]; ret
+            // Full function: 83 B9 [3C050000] 02 75 ? F3 0F 10 81 [28090000] C3 F3 0F 10 81 [A8010000] C3
+            // We wildcard the cmp displacement, jnz offset, and alternate-path displacement; extract FOV disp at the final movss.
+            new("83 B9 ? ? ? ? 02 75 ? F3 0F 10 81 ? ? ? ? C3 F3 0F 10 81 ? ? ? ? C3", 22, 4, IsCallSite: false, 0, 0,
+                "GetFieldOfView@7D3670: cmp [rcx+?],2; jnz; movss ret; movss xmm0,[rcx+FOV]; ret"),
+        ];
+
+        private static readonly CameraOffsetSig[] AspectRatioSigs =
+        [
+            // IDA call-site at 0x2EBF21: call sub_18013EE70 → target is movss xmm0,[rcx+518h]; ret
+            // Post-call context: mulss xmm8,[rip+?]; mulss xmm0,xmm6
+            new("E8 ? ? ? ? F3 44 0F 59 05 ? ? ? ? F3 0F 59 C6",
+                0, 4, IsCallSite: true, TargetBodyDispOffset: 4, TargetBodyDispSize: 4,
+                "AspectRatio call-site@2EBF21: call get_aspect; mulss xmm8; mulss xmm0,xmm6"),
+        ];
+
+        /// <summary>
+        /// Resolves Camera struct field offsets (ViewMatrix, FOV, AspectRatio) via signature scan.
+        /// Falls back to hardcoded defaults in <see cref="UnityOffsets.Camera"/> if any scan fails.
+        /// </summary>
+        private static void ResolveCameraOffsets()
+        {
+            var unityBase = Memory.UnityBase;
+            if (!unityBase.IsValidVirtualAddress())
+                return;
+
+            // ViewMatrix
+            var vm = TryResolveCameraOffset(ViewMatrixSigs, "ViewMatrix", unityBase);
+            if (vm.HasValue && vm.Value != UnityOffsets.Camera.ViewMatrix)
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.ViewMatrix updated: 0x{UnityOffsets.Camera.ViewMatrix:X} → 0x{vm.Value:X}");
+                UnityOffsets.Camera.ViewMatrix = vm.Value;
+            }
+            else if (vm.HasValue)
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.ViewMatrix confirmed: 0x{vm.Value:X}");
+            }
+            else
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.ViewMatrix sig scan FAILED — using hardcoded default 0x{UnityOffsets.Camera.ViewMatrix:X}");
+            }
+
+            // FOV
+            var fov = TryResolveCameraOffset(FovSigs, "FOV", unityBase);
+            if (fov.HasValue && fov.Value != UnityOffsets.Camera.FOV)
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.FOV updated: 0x{UnityOffsets.Camera.FOV:X} → 0x{fov.Value:X}");
+                UnityOffsets.Camera.FOV = fov.Value;
+            }
+            else if (fov.HasValue)
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.FOV confirmed: 0x{fov.Value:X}");
+            }
+            else
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.FOV sig scan FAILED — using hardcoded default 0x{UnityOffsets.Camera.FOV:X}");
+            }
+
+            // AspectRatio
+            var aspect = TryResolveCameraOffset(AspectRatioSigs, "AspectRatio", unityBase);
+            if (aspect.HasValue && aspect.Value != UnityOffsets.Camera.AspectRatio)
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.AspectRatio updated: 0x{UnityOffsets.Camera.AspectRatio:X} → 0x{aspect.Value:X}");
+                UnityOffsets.Camera.AspectRatio = aspect.Value;
+            }
+            else if (aspect.HasValue)
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.AspectRatio confirmed: 0x{aspect.Value:X}");
+            }
+            else
+            {
+                XMLogging.WriteLine($"[CameraManager] Camera.AspectRatio sig scan FAILED — using hardcoded default 0x{UnityOffsets.Camera.AspectRatio:X}");
+            }
+        }
+
+        /// <summary>
+        /// Tries each signature to extract a Camera struct field offset from UnityPlayer.dll.
+        /// Supports two strategies:
+        ///   Direct  — displacement is read directly from the sig match.
+        ///   Indirect (call-site) — resolves E8 rel32 call target, then reads displacement from the target function body.
+        /// Returns the displacement value if found, or null if all signatures failed.
+        /// </summary>
+        private static uint? TryResolveCameraOffset(CameraOffsetSig[] sigs, string fieldName, ulong unityBase)
+        {
+            foreach (var entry in sigs)
+            {
+                try
+                {
+                    var sigAddr = Memory.FindSignature(entry.Sig, "UnityPlayer.dll");
+                    if (sigAddr == 0)
+                    {
+                        XMLogging.WriteLine($"[CameraManager] Camera.{fieldName} sig MISS — {entry.Desc}");
+                        continue;
+                    }
+
+                    uint offset;
+
+                    if (entry.IsCallSite)
+                    {
+                        // Resolve E8 rel32 call target
+                        int callRel32 = Memory.ReadValue<int>(sigAddr + (ulong)entry.OffsetPos + 1, false); // +1 to skip the E8 opcode
+                        ulong callTarget = sigAddr + 5 + (ulong)(long)callRel32; // E8 instruction is 5 bytes
+
+                        if (!callTarget.IsValidVirtualAddress())
+                        {
+                            XMLogging.WriteLine($"[CameraManager] Camera.{fieldName} BAD CALL TARGET 0x{callTarget:X} — {entry.Desc} (sig at UnityPlayer+0x{sigAddr - unityBase:X})");
+                            continue;
+                        }
+
+                        XMLogging.WriteLine($"[CameraManager] Camera.{fieldName} call-site at UnityPlayer+0x{sigAddr - unityBase:X} → target UnityPlayer+0x{callTarget - unityBase:X}");
+
+                        // Read displacement from the target function body
+                        offset = entry.TargetBodyDispSize switch
+                        {
+                            1 => Memory.ReadValue<byte>(callTarget + (ulong)entry.TargetBodyDispOffset, false),
+                            4 => Memory.ReadValue<uint>(callTarget + (ulong)entry.TargetBodyDispOffset, false),
+                            _ => 0,
+                        };
+                    }
+                    else
+                    {
+                        // Direct: read displacement from the sig match itself
+                        offset = entry.DispSize switch
+                        {
+                            1 => Memory.ReadValue<byte>(sigAddr + (ulong)entry.OffsetPos, false),
+                            4 => Memory.ReadValue<uint>(sigAddr + (ulong)entry.OffsetPos, false),
+                            _ => 0,
+                        };
+
+                        XMLogging.WriteLine($"[CameraManager] Camera.{fieldName} direct match at UnityPlayer+0x{sigAddr - unityBase:X} → disp=0x{offset:X}");
+                    }
+
+                    // Sanity: Camera struct offsets should be reasonable (< 0x1000)
+                    if (offset > 0 && offset < 0x1000)
+                    {
+                        return offset;
+                    }
+
+                    XMLogging.WriteLine($"[CameraManager] Camera.{fieldName} offset 0x{offset:X} out of range — {entry.Desc}");
+                }
+                catch (Exception ex)
+                {
+                    XMLogging.WriteLine($"[CameraManager] Camera.{fieldName} ERROR: {ex.Message} — {entry.Desc}");
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        /// <summary>
         /// Pattern scan to find EFT.CameraControl.CameraManager.Instance via GameAssembly.dll.
         /// </summary>
         private static ulong FindCameraManagerInstance()
@@ -395,22 +791,24 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         ulong classPtr = Memory.ReadPtr(classMetadataAddr, false);
                         if (classPtr.IsValidVirtualAddress())
                         {
-                            uint[] staticFieldsOffsets = { 0xB8, 0xC0, 0xC8, 0xD0, 0xA8, 0xB0 };
-                            foreach (var offset in staticFieldsOffsets)
+                            // Use the known Il2CppClass::static_fields offset first, then probe nearby offsets as fallback
+                            var knownOffset = Offsets.Il2CppClass.StaticFields;
+                            ReadOnlySpan<uint> fallbackOffsets = [knownOffset - 0x10, knownOffset - 0x08, knownOffset + 0x08, knownOffset + 0x10, knownOffset + 0x18];
+
+                            if (TryReadStaticInstance(classPtr, knownOffset, out var instance))
                             {
-                                ulong staticFieldsPtr = Memory.ReadPtr(classPtr + offset, false);
-                                if (staticFieldsPtr.IsValidVirtualAddress())
+                                XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 1 (StaticFields=0x{knownOffset:X}): 0x{instance:X}");
+                                return instance;
+                            }
+
+                            foreach (var offset in fallbackOffsets)
+                            {
+                                if (offset == knownOffset)
+                                    continue;
+                                if (TryReadStaticInstance(classPtr, offset, out instance))
                                 {
-                                    ulong instancePtr = Memory.ReadPtr(staticFieldsPtr, false);
-                                    if (instancePtr.IsValidVirtualAddress())
-                                    {
-                                        ulong testCamera = Memory.ReadPtr(instancePtr + Offsets.EFTCameraManager.Camera, false);
-                                        if (testCamera.IsValidVirtualAddress())
-                                        {
-                                            XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 1: 0x{instancePtr:X}");
-                                            return instancePtr;
-                                        }
-                                    }
+                                    XMLogging.WriteLine($"[CameraManager] OK Found Instance via pattern 1 (fallback offset=0x{offset:X}): 0x{instance:X}");
+                                    return instance;
                                 }
                             }
                         }
@@ -454,9 +852,40 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
         }
 
+        /// <summary>
+        /// Attempts to read the CameraManager singleton instance from an Il2CppClass pointer
+        /// using the given static_fields offset. Validates the result by checking the Camera field.
+        /// </summary>
+        private static bool TryReadStaticInstance(ulong classPtr, uint staticFieldsOffset, out ulong instance)
+        {
+            instance = 0;
+            try
+            {
+                var staticFieldsPtr = Memory.ReadPtr(classPtr + staticFieldsOffset, false);
+                if (!staticFieldsPtr.IsValidVirtualAddress())
+                    return false;
+
+                var instancePtr = Memory.ReadPtr(staticFieldsPtr, false);
+                if (!instancePtr.IsValidVirtualAddress())
+                    return false;
+
+                var testCamera = Memory.ReadPtr(instancePtr + Offsets.EFTCameraManager.Camera, false);
+                if (!testCamera.IsValidVirtualAddress())
+                    return false;
+
+                instance = instancePtr;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static void MemDMA_GameStopped(object sender, EventArgs e)
         {
             _eftCameraManagerInstance = default;
+            _allCamerasAddr = default;
             _resolveAttemptCount = 0;
         }
 
