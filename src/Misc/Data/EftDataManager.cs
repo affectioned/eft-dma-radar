@@ -211,7 +211,7 @@ namespace eft_dma_radar.Common.Misc.Data
             {
                 loading.UpdateStatus("Loading embedded default data...", loading.PercentComplete);
 
-                var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
                 var defaultDataPath = Path.Combine(assemblyDir, _defaultDataFileName);
 
                 if (File.Exists(defaultDataPath) && !IsDataFileOutdated(defaultDataPath, _defaultDataUpdateInterval))
@@ -284,7 +284,7 @@ namespace eft_dma_radar.Common.Misc.Data
         {
             try
             {
-                var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
                 var defaultDataPath = Path.Combine(assemblyDir, _defaultDataFileName);
 
                 if (IsDataFileOutdated(defaultDataPath, _defaultDataUpdateInterval))
@@ -443,7 +443,7 @@ namespace eft_dma_radar.Common.Misc.Data
                 if (string.IsNullOrEmpty(json))
                     throw new InvalidOperationException("Failed to retrieve updated market data.");
 
-                outputPath ??= Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), _defaultDataFileName);
+                outputPath ??= Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, _defaultDataFileName);
 
                 await File.WriteAllTextAsync(outputPath, json);
 

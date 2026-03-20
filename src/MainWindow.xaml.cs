@@ -54,11 +54,11 @@ namespace eft_dma_radar
     public partial class MainWindow
     {
         #region Fields / Properties
-        private DispatcherTimer _sizeChangeTimer;
+        private DispatcherTimer? _sizeChangeTimer;
         private readonly Stopwatch _fpsSw = new();
         private readonly PrecisionTimer _renderTimer;
 
-        private IMouseoverEntity _mouseOverItem;
+        private IMouseoverEntity? _mouseOverItem;
         private bool _mouseDown;
         private Point _lastMousePosition;
         private Vector2 _mapPanPosition;
@@ -73,7 +73,7 @@ namespace eft_dma_radar
 
         private const int ZOOM_STEP = 5; // How much zoom changes per scroll step (1-50 typical range)
 
-        private Dictionary<string, PanelInfo> _panels;
+        private Dictionary<string, PanelInfo>? _panels;
 
         private int _fps;
         private int _zoom = 100;
@@ -100,27 +100,27 @@ namespace eft_dma_radar
         private readonly object _renderLock = new object();
         private volatile bool _isRendering = false;
         private volatile bool _uiInteractionActive = false;
-        private DispatcherTimer _uiActivityTimer;
+        private DispatcherTimer _uiActivityTimer = null!;
         private bool _lastInRaidState = false;
         private bool _wasQuestPlannerOpenBeforeRaid = false;
 
         private readonly Stopwatch _statusSw = Stopwatch.StartNew();
         private int _statusOrder = 1;
 
-        private AimviewWidget _aimview;
-        public AimviewWidget AimView { get => _aimview; private set => _aimview = value; }
+        private AimviewWidget? _aimview;
+        public AimviewWidget? AimView { get => _aimview; private set => _aimview = value; }
 
-        private PlayerInfoWidget _playerInfo;
-        public PlayerInfoWidget PlayerInfo { get => _playerInfo; private set => _playerInfo = value; }
+        private PlayerInfoWidget? _playerInfo;
+        public PlayerInfoWidget? PlayerInfo { get => _playerInfo; private set => _playerInfo = value; }
 
-        private DebugInfoWidget _debugInfo;
-        public DebugInfoWidget DebugInfo { get => _debugInfo; private set => _debugInfo = value; }
+        private DebugInfoWidget? _debugInfo;
+        public DebugInfoWidget? DebugInfo { get => _debugInfo; private set => _debugInfo = value; }
 
-        private LootInfoWidget _lootInfo;
-        public LootInfoWidget LootInfo { get => _lootInfo; private set => _lootInfo = value; }
+        private LootInfoWidget? _lootInfo;
+        public LootInfoWidget? LootInfo { get => _lootInfo; private set => _lootInfo = value; }
 
-        private QuestInfoWidget _questInfo;
-        public QuestInfoWidget QuestInfo { get => _questInfo; private set => _questInfo = value; }
+        private QuestInfoWidget? _questInfo;
+        public QuestInfoWidget? QuestInfo { get => _questInfo; private set => _questInfo = value; }
 
 
         /// <summary>
@@ -135,13 +135,13 @@ namespace eft_dma_radar
         /// </summary>
         public static Config Config => Program.Config;
 
-        private static EntityTypeSettings MineEntitySettings = Config?.EntityTypeSettings?.GetSettings("Mine");
+        private static EntityTypeSettings? MineEntitySettings = Config?.EntityTypeSettings?.GetSettings("Mine");
 
         /// <summary>
         /// Singleton Instance of MainWindow.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        internal static MainWindow Window { get; private set; }
+        internal static MainWindow? Window { get; private set; }
 
         /// <summary>
         /// Current UI Scale Value for Primary Application Window.
@@ -199,22 +199,22 @@ namespace eft_dma_radar
         /// LocalPlayer (who is running Radar) 'Player' object.
         /// Returns the player the Current Window belongs to.
         /// </summary>
-        private static LocalPlayer LocalPlayer => Memory?.LocalPlayer ?? null;
+        private static LocalPlayer? LocalPlayer => Memory?.LocalPlayer ?? null;
 
         /// <summary>
         /// All Filtered Loot on the map.
         /// </summary>
-        private static IEnumerable<LootItem> Loot => Memory.Loot?.FilteredLoot;
+        private static IEnumerable<LootItem>? Loot => Memory.Loot?.FilteredLoot;
 
         /// <summary>
         /// All Unfiltered Loot on the map.
         /// </summary>
-        private static IEnumerable<LootItem> UnfilteredLoot => Memory.Loot?.UnfilteredLoot;
+        private static IEnumerable<LootItem>? UnfilteredLoot => Memory.Loot?.UnfilteredLoot;
 
         /// <summary>
         /// All Static Containers on the map.
         /// </summary>
-        private static IEnumerable<StaticLootContainer> Containers => Memory.Loot?.StaticLootContainers;
+        private static IEnumerable<StaticLootContainer>? Containers => Memory.Loot?.StaticLootContainers;
 
         /// <summary>
         /// All Players in Local Game World (including dead/exfil'd) 'Player' collection.
@@ -236,7 +236,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Contains all 'mouse-overable' items.
         /// </summary>
-        private IEnumerable<IMouseoverEntity> MouseOverItems
+        private IEnumerable<IMouseoverEntity>? MouseOverItems
         {
             get
             {
@@ -330,7 +330,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Main Render Event.
         /// </summary>
-        private void SkCanvas_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e)
+        private void SkCanvas_PaintSurface(object? sender, SKPaintGLSurfaceEventArgs e)
         {
             var isStarting  = Starting;
             var isReady     = Ready;
@@ -910,7 +910,7 @@ namespace eft_dma_radar
         private void CheckMouseoverItems(Point mousePosition)
         {
             var mousePos = new Vector2((float)mousePosition.X, (float)mousePosition.Y);
-            IMouseoverEntity closest = null;
+            IMouseoverEntity? closest = null;
             var closestDist = float.MaxValue;
             int? mouseoverGroup = null;
 
@@ -1012,7 +1012,7 @@ namespace eft_dma_radar
                 var memWritesEnabled = MemWrites.Enabled;
                 var aimEnabled = Aimbot.Config.Enabled;
                 var mode = Aimbot.Config.TargetingMode;
-                string label = null;
+                string? label = null;
                 
                 if (memWritesEnabled && Config.MemWrites.RageMode)
                     label = MemWriteFeature<Aimbot>.Instance.Enabled ? $"{mode.GetDescription()}: RAGE MODE" : "RAGE MODE";
@@ -1074,7 +1074,7 @@ namespace eft_dma_radar
             });
         }
 
-        private void RenderTimer_Elapsed(object sender, EventArgs e)
+        private void RenderTimer_Elapsed(object? sender, EventArgs e)
         {
             if (_isRendering) return;
 
@@ -1718,7 +1718,7 @@ namespace eft_dma_radar
         #endregion
 
         #region Window Events
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             try
             {
@@ -1732,16 +1732,16 @@ namespace eft_dma_radar
                 if (!Config.WindowMaximized)
                     Config.WindowSize = new Size(ActualWidth, ActualHeight);
 
-                Config.Widgets.AimviewLocation = _aimview.ClientRect;
-                Config.Widgets.AimviewMinimized = _aimview.Minimized;
-                Config.Widgets.PlayerInfoLocation = _playerInfo.ClientRect;
-                Config.Widgets.PlayerInfoMinimized = _playerInfo.Minimized;
-                Config.Widgets.DebugInfoLocation = _debugInfo.ClientRect;
-                Config.Widgets.DebugInfoMinimized = _debugInfo.Minimized;
-                Config.Widgets.LootInfoLocation = _lootInfo.ClientRect;
-                Config.Widgets.LootInfoMinimized = _lootInfo.Minimized;
-                Config.Widgets.QuestInfoLocation = _questInfo.ClientRect;
-                Config.Widgets.QuestInfoMinimized = _questInfo.Minimized;
+                Config.Widgets.AimviewLocation = _aimview!.ClientRect;
+                Config.Widgets.AimviewMinimized = _aimview!.Minimized;
+                Config.Widgets.PlayerInfoLocation = _playerInfo!.ClientRect;
+                Config.Widgets.PlayerInfoMinimized = _playerInfo!.Minimized;
+                Config.Widgets.DebugInfoLocation = _debugInfo!.ClientRect;
+                Config.Widgets.DebugInfoMinimized = _debugInfo!.Minimized;
+                Config.Widgets.LootInfoLocation = _lootInfo!.ClientRect;
+                Config.Widgets.LootInfoMinimized = _lootInfo!.Minimized;
+                Config.Widgets.QuestInfoLocation = _questInfo!.ClientRect;
+                Config.Widgets.QuestInfoMinimized = _questInfo!.Minimized;
 
                 Config.Zoom = _zoom;
 
@@ -1885,7 +1885,7 @@ namespace eft_dma_radar
             coordinator.AllPanelsReady += OnAllPanelsReady;
         }
 
-        private void OnAllPanelsReady(object sender, EventArgs e)
+        private void OnAllPanelsReady(object? sender, EventArgs e)
         {
             Dispatcher.Invoke(() => {
                 InitializeToolbar();
@@ -1921,9 +1921,12 @@ namespace eft_dma_radar
                 if (!IsLoaded || ActualWidth <= 0 || ActualHeight <= 0)
                     return;
 
-                foreach (var panel in _panels.Values)
+                if (_panels != null)
                 {
-                    EnsurePanelInBounds(panel.Panel, mainContentGrid);
+                    foreach (var panel in _panels.Values)
+                    {
+                        EnsurePanelInBounds(panel.Panel, mainContentGrid);
+                    }
                 }
 
                 if (customToolbar != null)
@@ -1955,6 +1958,7 @@ namespace eft_dma_radar
 
                 bool needsSave = false;
 
+                if (_panels != null)
                 foreach (var panelKey in _panels.Keys)
                 {
                     var propInfo = typeof(PanelPositionsConfig).GetProperty(panelKey);
@@ -1965,8 +1969,8 @@ namespace eft_dma_radar
                         var originalWidth = posConfig.Width;
                         var originalHeight = posConfig.Height;
 
-                        var minWidth = GetMinimumPanelWidth(_panels[panelKey].Panel);
-                        var minHeight = GetMinimumPanelHeight(_panels[panelKey].Panel);
+                        var minWidth = GetMinimumPanelWidth(_panels![panelKey].Panel);
+                        var minHeight = GetMinimumPanelHeight(_panels![panelKey].Panel);
 
                         if (posConfig.Width < minWidth)
                         {
@@ -2218,7 +2222,7 @@ namespace eft_dma_radar
 
         private void TogglePanelVisibility(string panelKey)
         {
-            if (_panels.TryGetValue(panelKey, out var panelInfo))
+            if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
             {
                 if (panelInfo.Panel.Visibility == Visibility.Visible)
                 {
@@ -2253,7 +2257,7 @@ namespace eft_dma_radar
 
         private void SetPanelVisibility(string panelKey, bool visible)
         {
-            if (_panels.TryGetValue(panelKey, out var panelInfo))
+            if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
             {
                 panelInfo.Panel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
                 SaveSinglePanelPosition(panelKey);
@@ -2269,7 +2273,7 @@ namespace eft_dma_radar
                 if (controlName != null && controlName.EndsWith("Control") && controlName.Length > "Control".Length)
                 {
                     string panelKey = controlName.Substring(0, controlName.Length - "Control".Length);
-                    if (_panels.TryGetValue(panelKey, out var panelInfo))
+                    if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                     {
                         var left = Canvas.GetLeft(panelInfo.Panel) + e.OffsetX;
                         var top = Canvas.GetTop(panelInfo.Panel) + e.OffsetY;
@@ -2290,7 +2294,7 @@ namespace eft_dma_radar
                 if (controlName != null && controlName.EndsWith("Control") && controlName.Length > "Control".Length)
                 {
                     string panelKey = controlName.Substring(0, controlName.Length - "Control".Length);
-                    if (_panels.TryGetValue(panelKey, out var panelInfo))
+                    if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                     {
                         var width = panelInfo.Panel.Width + e.DeltaWidth;
                         var height = panelInfo.Panel.Height + e.DeltaHeight;
@@ -2324,7 +2328,7 @@ namespace eft_dma_radar
                 if (controlName != null && controlName.EndsWith("Control") && controlName.Length > "Control".Length)
                 {
                     string panelKey = controlName.Substring(0, controlName.Length - "Control".Length);
-                    if (_panels.TryGetValue(panelKey, out var panelInfo))
+                    if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                     {
                         panelInfo.Panel.Visibility = Visibility.Collapsed;
                         SaveSinglePanelPosition(panelKey);
@@ -2383,7 +2387,7 @@ namespace eft_dma_radar
         {
             try
             {
-                foreach (var panel in _panels)
+                foreach (var panel in _panels ?? [])
                 {
                     var propInfo = typeof(PanelPositionsConfig).GetProperty(panel.Key);
                     if (propInfo != null)
@@ -2406,7 +2410,7 @@ namespace eft_dma_radar
         {
             try
             {
-                if (_panels.TryGetValue(panelKey, out var panelInfo))
+                if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                 {
                     var propInfo = typeof(PanelPositionsConfig).GetProperty(panelKey);
                     if (propInfo != null)
@@ -2426,7 +2430,7 @@ namespace eft_dma_radar
         {
             try
             {
-                foreach (var panel in _panels)
+                foreach (var panel in _panels ?? [])
                 {
                     var propInfo = typeof(PanelPositionsConfig).GetProperty(panel.Key);
 

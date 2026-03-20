@@ -241,13 +241,13 @@ namespace eft_dma_radar.Common.Misc
 
             var relativeOffsetResult = process.MemReadAs<int>(gSessionPtr + 3);
 
-            if (relativeOffsetResult.Value == 0)
+            if (relativeOffsetResult.GetValueOrDefault() == 0)
             {
                 XMLogging.WriteLine("Failed to read relative offset");
                 return false;
             }
 
-            sessionPtr = gSessionPtr + 7 + (ulong)relativeOffsetResult.Value;
+            sessionPtr = gSessionPtr + 7 + (ulong)relativeOffsetResult.GetValueOrDefault();
 
             return true;
         }
@@ -259,18 +259,18 @@ namespace eft_dma_radar.Common.Misc
             for (int i = 0; i < 8; i++)
             {
                 var t1 = process.MemReadAs<ulong>(sessionPtr);
-                if (t1.Value == 0)
+                if (t1.GetValueOrDefault() == 0)
                     continue;
 
-                var t2 = process.MemReadAs<ulong>(t1.Value + (ulong)(8 * i));
-                if (t2.Value == 0)
+                var t2 = process.MemReadAs<ulong>(t1.GetValueOrDefault() + (ulong)(8 * i));
+                if (t2.GetValueOrDefault() == 0)
                     continue;
 
-                var t3 = process.MemReadAs<ulong>(t2.Value);
-                if (t3.Value == 0)
+                var t3 = process.MemReadAs<ulong>(t2.GetValueOrDefault());
+                if (t3.GetValueOrDefault() == 0)
                     continue;
 
-                sessionState = t3.Value;
+                sessionState = t3.GetValueOrDefault();
 
                 if (sessionState > 0x7FFFFFFFFFFF)
                     return true;
@@ -314,13 +314,13 @@ namespace eft_dma_radar.Common.Misc
 
             var offsetResult = process.MemReadAs<uint>(ptr + 3);
 
-            if (offsetResult.Value == 0)
+            if (offsetResult.GetValueOrDefault() == 0)
             {
                 XMLogging.WriteLine("Failed to read session offset");
                 return false;
             }
 
-            keyStateAddr = sessionState + offsetResult.Value;
+            keyStateAddr = sessionState + offsetResult.GetValueOrDefault();
 
             return keyStateAddr > 0x7FFFFFFFFFFF;
         }

@@ -557,7 +557,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// <summary>
         /// Counts "OK" results from the already-collected audit lines, avoiding re-scanning.
         /// </summary>
-        private static int CountValidFromAudit(List<string> bodyLines, int sigCount, string sectionHeader = null)
+        private static int CountValidFromAudit(List<string> bodyLines, int sigCount, string? sectionHeader = null)
         {
             int count = 0;
             bool inSection = false;
@@ -1019,7 +1019,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
         }
 
-        private static void MemDMA_GameStopped(object sender, EventArgs e)
+        private static void MemDMA_GameStopped(object? sender, EventArgs e)
         {
             _eftCameraManagerInstance = default;
             _eftCameraManagerClassPtr = default;
@@ -1079,7 +1079,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
         public void OnRealtimeLoop(ScatterReadIndex index, /* Can Be Null */ LocalPlayer localPlayer)
         {
             IsADS = localPlayer?.CheckIfADS() ?? false;
-            IsScoped = IsADS && CheckIfScoped(localPlayer);
+            IsScoped = IsADS && CheckIfScoped(localPlayer!);
 
             // Choose camera: scoped → optic, otherwise → FPS
             ulong camera = (IsADS && IsScoped && OpticCamera.IsValidVirtualAddress())

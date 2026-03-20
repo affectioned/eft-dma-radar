@@ -1516,12 +1516,12 @@ namespace eft_dma_radar.UI.Pages
                     .ToList()
             };
 
-            MainWindow.Window.LootFilterControl._groupList.Add(dynamicGroup);
+            MainWindow.Window!.LootFilterControl._groupList.Add(dynamicGroup);
             LootFilterManager.CurrentGroups.Groups.Add(dynamicGroup);
 
             LootFilterManager.Save();
 
-            var lootFilterSettings = MainWindow.Window.LootFilterControl;
+            var lootFilterSettings = MainWindow.Window!.LootFilterControl;
             lootFilterSettings.RefreshGroupsListView(dynamicGroup);
 
             XMLogging.WriteLine($"[Filters] Created dynamic group: {groupName} with {dynamicGroup.Items.Count} items.");
@@ -1530,7 +1530,7 @@ namespace eft_dma_radar.UI.Pages
 
         public static void RemoveNonStaticGroups()
         {
-            var lootFilterSettings = MainWindow.Window.LootFilterControl;
+            var lootFilterSettings = MainWindow.Window!.LootFilterControl;
             var nonStaticGroups = LootFilterManager.CurrentGroups.Groups
                 .Where(g => g.IsStatic == false)
                 .ToList();

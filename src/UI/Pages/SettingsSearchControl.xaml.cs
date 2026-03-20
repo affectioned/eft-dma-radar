@@ -24,10 +24,10 @@ namespace eft_dma_radar.UI.Pages
         #region Fields and Properties
         private const int INTERVAL = 100; // 0.1 second
         private Point _dragStartPoint;
-        public event EventHandler CloseRequested;
-        public event EventHandler BringToFrontRequested;
-        public event EventHandler<PanelDragEventArgs> DragRequested;
-        public event EventHandler<PanelResizeEventArgs> ResizeRequested;
+        public event EventHandler? CloseRequested;
+        public event EventHandler? BringToFrontRequested;
+        public event EventHandler<PanelDragEventArgs>? DragRequested;
+        public event EventHandler<PanelResizeEventArgs>? ResizeRequested;
 
         private static Config Config => Program.Config;
 

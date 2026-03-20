@@ -854,9 +854,9 @@ namespace eft_dma_radar.UI.Pages
 
             foreach (CheckComboBoxItem item in ccbWidgets.Items)
             {
-                var content = item.Content.ToString();
+                var content = item.Content?.ToString();
 
-                if (optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
+                if (content is not null && optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
                     item.IsSelected = shouldBeSelected;
             }
         }
@@ -872,9 +872,9 @@ namespace eft_dma_radar.UI.Pages
 
             foreach (CheckComboBoxItem item in ccbGeneralOptions.Items)
             {
-                var content = item.Content.ToString();
+                var content = item.Content?.ToString();
 
-                if (optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
+                if (content is not null && optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
                     item.IsSelected = shouldBeSelected;
             }
         }
@@ -1222,9 +1222,9 @@ namespace eft_dma_radar.UI.Pages
         {
             var cbo = chkMapSetup;
             var value = cbo.IsChecked == true;
-            var panel = MainWindow.Window.MapSetupPanel;
+            var panel = MainWindow.Window!.MapSetupPanel;
             var config = XMMapManager.Map.Config;
-            var mapControl = MainWindow.Window.MapSetupControl;
+            var mapControl = MainWindow.Window!.MapSetupControl;
 
             if (value && Memory.InRaid && Memory.LocalPlayer != null)
                 mapControl.UpdateMapConfiguration(config.X, config.Y, config.Scale);
@@ -1667,7 +1667,7 @@ namespace eft_dma_radar.UI.Pages
                     case "FPSLimit":
                         Config.RadarTargetFPS = intValue;
                         Config.Save();
-                        MainWindow.Window.UpdateRenderTimerInterval(intValue);
+                        MainWindow.Window!.UpdateRenderTimerInterval(intValue);
                         break;
                 }
 
@@ -3281,7 +3281,7 @@ namespace eft_dma_radar.UI.Pages
                     {
                         for (int i = 0; i < cboConfigs.Items.Count; i++)
                         {
-                            if (cboConfigs.Items[i].ToString().Equals(newConfigName, StringComparison.OrdinalIgnoreCase))
+                            if (cboConfigs.Items[i].ToString()?.Equals(newConfigName, StringComparison.OrdinalIgnoreCase) == true)
                             {
                                 cboConfigs.SelectedIndex = i;
                                 break;
@@ -3313,7 +3313,7 @@ namespace eft_dma_radar.UI.Pages
             if (cboConfigs.SelectedIndex <= 0)
                 return;
 
-            var configToDelete = cboConfigs.SelectedItem.ToString();
+            var configToDelete = cboConfigs.SelectedItem?.ToString() ?? string.Empty;
 
             if (cboConfigs.SelectedIndex > 0 && !configToDelete.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 configToDelete += ".json";
@@ -3362,6 +3362,7 @@ namespace eft_dma_radar.UI.Pages
                 }
 
                 var configForExport = JsonSerializer.Deserialize<Config>(JsonSerializer.Serialize(Config));
+                if (configForExport is null) return;
                 configForExport.Cache = null;
                 configForExport.WebRadar = null;
 
