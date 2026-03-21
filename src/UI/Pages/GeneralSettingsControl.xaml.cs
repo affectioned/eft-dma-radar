@@ -5,6 +5,7 @@ using eft_dma_radar.Common.Misc.Data.EFT;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.ESP;
@@ -2598,6 +2599,9 @@ namespace eft_dma_radar.UI.Pages
                 #region Memory Writes
                 // Global
                 // Aimbot
+                case nameof(HotkeyConfig.EngageAimbot):
+                    Aimbot.Engaged = isActive;
+                    break;
                 case nameof(HotkeyConfig.EngageTeammate):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;

@@ -1,6 +1,8 @@
 ﻿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Misc.Makcu;
+using eft_dma_radar.UI.Misc;
 
 namespace eft_dma_radar.Tarkov.Features
 {
@@ -11,11 +13,36 @@ namespace eft_dma_radar.Tarkov.Features
     {
         internal static void ModuleInit()
         {
+            // Force-initialize all features (triggers static constructors / registration)
+            _ = Aimbot.Instance;
+
+            // Connect Makcu device if aimbot is configured
+            TryConnectMakcu();
+
             new Thread(Worker)
             {
                 IsBackground = true,
                 Name = "FeatureManager"
             }.Start();
+        }
+
+        /// <summary>
+        /// Attempts to connect to the Makcu device using the current config.
+        /// Silently swallows errors (device may not be plugged in yet).
+        /// </summary>
+        public static void TryConnectMakcu()
+        {
+            try
+            {
+                if (SharedProgram.Config is Config cfg && cfg.Aimbot.AutoConnect)
+                {
+                    MakcuManager.Connect(cfg.Aimbot.MakcuPort);
+                }
+            }
+            catch (Exception ex)
+            {
+                XMLogging.WriteLine($"[FeatureManager] Makcu connect failed: {ex.Message}");
+            }
         }
 
         static FeatureManager()

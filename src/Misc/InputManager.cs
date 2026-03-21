@@ -142,25 +142,36 @@ namespace eft_dma_radar.Common.Misc
 
             XMLogging.WriteLine("Windows version > 22000, attempting signature-based approach");
 
+            XMLogging.WriteLine("[InputManager] Enumerating csrss processes...");
             var csrssProcesses = _hVMM.Processes.Where(p => p.Name.Equals("csrss.exe", StringComparison.OrdinalIgnoreCase)).ToList();
+            XMLogging.WriteLine($"[InputManager] Found {csrssProcesses.Count} csrss process(es)");
 
             foreach (var csrss in csrssProcesses)
             {
                 try
                 {
+                    XMLogging.WriteLine($"[InputManager] Trying csrss PID={csrss.PID}");
+
                     // Get win32k module info
+                    XMLogging.WriteLine($"[InputManager] TryGetWin32kInfo...");
                     if (!TryGetWin32kInfo(csrss, out ulong win32kBase, out ulong win32kSize))
                         continue;
+                    XMLogging.WriteLine($"[InputManager] win32k base=0x{win32kBase:X} size=0x{win32kSize:X}");
 
                     // Find session globals pointer
+                    XMLogging.WriteLine($"[InputManager] TryFindSessionPointer...");
                     if (!TryFindSessionPointer(csrss, win32kBase, win32kSize, out ulong gSessionGlobalSlots))
                         continue;
+                    XMLogging.WriteLine($"[InputManager] gSessionGlobalSlots=0x{gSessionGlobalSlots:X}");
 
                     // Resolve user session state
+                    XMLogging.WriteLine($"[InputManager] TryResolveUserSessionState...");
                     if (!TryResolveUserSessionState(csrss, gSessionGlobalSlots, out ulong userSessionState))
                         continue;
+                    XMLogging.WriteLine($"[InputManager] userSessionState=0x{userSessionState:X}");
 
                     // Get async key state offset
+                    XMLogging.WriteLine($"[InputManager] TryGetAsyncKeyStateOffset...");
                     if (!TryGetAsyncKeyStateOffset(csrss, userSessionState, out ulong keyStateAddress))
                         continue;
 

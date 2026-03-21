@@ -584,6 +584,13 @@ namespace eft_dma_radar.UI.Misc
         public HotkeyConfig HotKeys { get; private set; } = new();
 
         /// <summary>
+        /// Aimbot Configuration.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("aimbot")]
+        public AimbotConfig Aimbot { get; private set; } = new();
+
+        /// <summary>
         /// Containers configuration.
         /// </summary>
         [JsonPropertyName("containers")]
@@ -758,6 +765,9 @@ namespace eft_dma_radar.UI.Misc
 
             if (config.Containers == null)
                 config.Containers = new ContainersConfig();
+
+            if (config.Aimbot == null)
+                config.Aimbot = new AimbotConfig();
 
             if (config.Cache == null)
                 config.Cache = new PersistentCache();
@@ -991,6 +1001,12 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("mapSetup")]
         public PanelPositionConfig MapSetup { get; set; } = new PanelPositionConfig();
+
+        /// <summary>
+        /// Aimbot panel position
+        /// </summary>
+        [JsonPropertyName("aimbot")]
+        public PanelPositionConfig Aimbot { get; set; } = new PanelPositionConfig();
     }
 
     /// <summary>
@@ -2141,6 +2157,72 @@ namespace eft_dma_radar.UI.Misc
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Aimbot Configuration (Makcu physical mouse movement).
+    /// </summary>
+    public sealed class AimbotConfig
+    {
+        /// <summary>
+        /// Enable the aimbot.
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// COM port for the Makcu device (e.g. "COM3").
+        /// </summary>
+        [JsonPropertyName("makcuPort")]
+        public string MakcuPort { get; set; } = "COM3";
+
+        /// <summary>
+        /// Automatically connect to the Makcu device on application startup.
+        /// </summary>
+        [JsonPropertyName("autoConnect")]
+        public bool AutoConnect { get; set; } = false;
+
+        /// <summary>
+        /// Maximum FOV radius (degrees from crosshair) to consider a target.
+        /// </summary>
+        [JsonPropertyName("fovDegrees")]
+        public float FovDegrees { get; set; } = 10f;
+
+        /// <summary>
+        /// Which bone to aim at.
+        /// </summary>
+        [JsonPropertyName("aimBone")]
+        public eft_dma_radar.Common.Unity.Bones AimBone { get; set; } = eft_dma_radar.Common.Unity.Bones.HumanHead;
+
+        /// <summary>
+        /// Horizontal lerp alpha [0.01–1.0]. moveX = lerp(0, delta.x, alpha). Lower = smoother.
+        /// </summary>
+        [JsonPropertyName("alphaX")]
+        public float AlphaX { get; set; } = 0.1f;
+
+        /// <summary>
+        /// Vertical lerp alpha [0.01–1.0]. moveY = lerp(0, delta.y, alpha). Lower = smoother.
+        /// </summary>
+        [JsonPropertyName("alphaY")]
+        public float AlphaY { get; set; } = 0.1f;
+
+        /// <summary>
+        /// Deadzone radius (pixels). Movement is skipped when the target is this close to center.
+        /// </summary>
+        [JsonPropertyName("deadzone")]
+        public float Deadzone { get; set; } = 3f;
+
+        /// <summary>
+        /// Standard deviation of Gaussian noise added to each mouse move. 0 = no noise.
+        /// </summary>
+        [JsonPropertyName("gaussianNoise")]
+        public float GaussianNoise { get; set; } = 0f;
+
+        /// <summary>
+        /// When true, AI-controlled enemies are also targeted.
+        /// </summary>
+        [JsonPropertyName("aimAI")]
+        public bool AimAI { get; set; } = true;
     }
 
     /// <summary>

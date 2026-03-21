@@ -78,6 +78,8 @@ namespace eft_dma_radar
         private const int MIN_SETTINGS_PANEL_HEIGHT = 200;
         private const int MIN_SEARCH_SETTINGS_PANEL_WIDTH = 200;
         private const int MIN_SEARCH_SETTINGS_PANEL_HEIGHT = 200;
+        private const int MIN_AIMBOT_PANEL_WIDTH = 200;
+        private const int MIN_AIMBOT_PANEL_HEIGHT = 200;
 
         private readonly object _renderLock = new object();
         private volatile bool _isRendering = false;
@@ -1616,6 +1618,12 @@ namespace eft_dma_radar
             }
         }
 
+        private void btnAimbot_Click(object sender, RoutedEventArgs e)
+        {
+            NotifyUIActivity();
+            TogglePanelVisibility("Aimbot");
+        }
+
         private void btnRestart_Click(object sender, RoutedEventArgs e)
         {
             Memory.RestartRadar = true;
@@ -1849,6 +1857,7 @@ namespace eft_dma_radar
                 PlayerHistoryControl.BringToFrontRequested += (s, args) => BringPanelToFront(PlayerHistoryCanvas);
                 MapSetupControl.BringToFrontRequested += (s, args) => BringPanelToFront(MapSetupCanvas);
                 SettingsSearchControl.BringToFrontRequested += (s, e) => BringPanelToFront(SettingsSearchCanvas);
+                AimbotControl.BringToFrontRequested += (s, args) => BringPanelToFront(AimbotCanvas);
 
                 AttachPanelClickHandlers();
                 RestorePanelPositions();
@@ -2303,6 +2312,10 @@ namespace eft_dma_radar
             MapSetupControl.DragRequested += sharedDragHandler;
             MapSetupControl.CloseRequested += sharedCloseHandler;
 
+            AimbotControl.DragRequested += sharedDragHandler;
+            AimbotControl.ResizeRequested += sharedResizeHandler;
+            AimbotControl.CloseRequested += sharedCloseHandler;
+
             SettingsSearchControl.DragRequested += sharedDragHandler;
             SettingsSearchControl.ResizeRequested += sharedResizeHandler;
             SettingsSearchControl.CloseRequested += sharedCloseHandler;
@@ -2319,7 +2332,8 @@ namespace eft_dma_radar
                 ["PlayerHistory"] = new PanelInfo(PlayerHistoryPanel, PlayerHistoryCanvas, "PlayerHistory", MIN_PLAYERHISTORY_PANEL_WIDTH, MIN_PLAYERHISTORY_PANEL_HEIGHT),
                 ["LootFilter"] = new PanelInfo(LootFilterPanel, LootFilterCanvas, "LootFilter", MIN_LOOT_FILTER_PANEL_WIDTH, MIN_LOOT_FILTER_PANEL_HEIGHT),
                 ["MapSetup"] = new PanelInfo(MapSetupPanel, MapSetupCanvas, "MapSetup", 300, 300),
-                ["SettingsSearch"] = new PanelInfo(SettingsSearchPanel, SettingsSearchCanvas, "SettingsSearch", MIN_SEARCH_SETTINGS_PANEL_WIDTH, MIN_SEARCH_SETTINGS_PANEL_HEIGHT)
+                ["SettingsSearch"] = new PanelInfo(SettingsSearchPanel, SettingsSearchCanvas, "SettingsSearch", MIN_SEARCH_SETTINGS_PANEL_WIDTH, MIN_SEARCH_SETTINGS_PANEL_HEIGHT),
+                ["Aimbot"] = new PanelInfo(AimbotPanel, AimbotCanvas, "Aimbot", MIN_AIMBOT_PANEL_WIDTH, MIN_AIMBOT_PANEL_HEIGHT)
             };
         }
 

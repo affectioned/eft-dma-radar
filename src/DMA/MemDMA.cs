@@ -202,7 +202,9 @@ namespace eft_dma_radar.Tarkov
                     IL2CPP.Il2CppDumper.Dump();
 
                     InputManager.Initialize();
+                    XMLogging.WriteLine("[Startup] InputManager done, starting CameraManager.Initialize...");
                     CameraManager.Initialize(); // IL2CPP ported - signature scan
+                    XMLogging.WriteLine("[Startup] CameraManager.Initialize done");
                     _ready = true;
 
                     XMLogging.WriteLine("Game Startup [OK]");

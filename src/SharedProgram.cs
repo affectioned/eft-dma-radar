@@ -77,17 +77,19 @@ namespace eft_dma_radar
             CheckDep("vcruntime140.dll");
             // SkiaSharp
             CheckDep("libSkiaSharp.dll");
-            CheckDep("libHarfBuzzSharp.dll");
+            // Makcu
+            CheckDep("makcu-cpp.dll");
         }
 
         private static void CheckDep(string fileName)
         {
-            if (!File.Exists(fileName))
+            var exeDir = AppContext.BaseDirectory;
+            var fullPath = Path.Combine(exeDir, fileName);
+            if (!File.Exists(fullPath) && !File.Exists(fileName))
                 throw new FileNotFoundException($"Missing Dependency '{fileName}'\n\n" +
                                                 $"==Troubleshooting==\n" +
                                                 $"1. Make sure that you unzipped the Client Files, and that all files are present in the same folder as the Radar Client (EXE).\n" +
-                                                $"2. If using a shortcut, make sure the Current Working Directory (CWD) is set to the " +
-                                                $"same folder that the Radar Client (EXE) is located in.");
+                                                $"2. Expected location: {fullPath}");
         }
 
         /// <summary>

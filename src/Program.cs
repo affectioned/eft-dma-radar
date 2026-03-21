@@ -105,6 +105,14 @@ namespace eft_dma_radar
         [STAThread]
         static public void Main()
         {
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                var msg = e.ExceptionObject?.ToString() ?? "Unknown error";
+                var logPath = Path.Combine(AppContext.BaseDirectory, "crash.log");
+                try { File.WriteAllText(logPath, msg); } catch { }
+                System.Windows.Forms.MessageBox.Show(msg, "Fatal Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+            };
+
             InitializeDpiAwareness();
 
             var app = new App();
@@ -253,8 +261,10 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to initialize configuration: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                var logPath = Path.Combine(AppContext.BaseDirectory, "crash.log");
+                try { File.WriteAllText(logPath, ex.ToString()); } catch { }
+                System.Windows.Forms.MessageBox.Show(ex.ToString(), "Startup Error",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 throw;
             }
         }

@@ -111,9 +111,10 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
             if (player == null)
                 return false;
 
-            var isEligiblePlayer = (player.IsPmc && PmcEntries.Contains(player.EntryPoint ?? "NULL")) ||
-                                    (player.IsScav && ScavIds.Contains(player.ProfileId)) ||
-                                    IsSecret;
+            // If entry sets are empty (not yet loaded), assume eligible rather than hiding all exits.
+            var pmcEligible = player.IsPmc && (PmcEntries.Count == 0 || PmcEntries.Contains(player.EntryPoint ?? "NULL"));
+            var scavEligible = player.IsScav && (ScavIds.Count == 0 || ScavIds.Contains(player.ProfileId));
+            var isEligiblePlayer = pmcEligible || scavEligible || IsSecret;
 
             if (!isEligiblePlayer)
                 return false;
@@ -263,9 +264,14 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
 
             if (!isRelevantSecret)
             {
-                if ((Status is EStatus.Closed) ||
-                    (localPlayer.IsPmc && !PmcEntries.Contains(localPlayer.EntryPoint)) ||
-                    (localPlayer.IsScav && !ScavIds.Contains(localPlayer.ProfileId)))
+                if (Status is EStatus.Closed)
+                    return;
+
+                // Only filter by eligible entry points once they've been loaded from memory.
+                // When the set is empty (Update() hasn't run yet), show exits based on status alone.
+                if (localPlayer.IsPmc && PmcEntries.Count > 0 && !PmcEntries.Contains(localPlayer.EntryPoint))
+                    return;
+                if (localPlayer.IsScav && ScavIds.Count > 0 && !ScavIds.Contains(localPlayer.ProfileId))
                     return;
             }
 

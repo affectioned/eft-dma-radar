@@ -354,7 +354,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 try
                 {
                     const string sig = "48 83 EC ? 80 3D ? ? ? ? 00 75 ? 48 8D 0D ? ? ? ? E8 ? ? ? ? C6 05 ? ? ? ? ? 48 8B 0D ? ? ? ? 83 B9 ? ? ? ? 00 75 ? E8 ? ? ? ? 48 8B 0D ? ? ? ? 48 8B 81 ? ? ? ? ? ? ? 48 85 C0";
+                    XMLogging.WriteLine("[CameraManager] Starting GameAssembly.dll signature scan...");
                     ulong addr = Memory.FindSignature(sig, "GameAssembly.dll");
+                    XMLogging.WriteLine($"[CameraManager] Signature scan done, result=0x{addr:X}");
                     if (addr.IsValidVirtualAddress())
                     {
                         int rva = Memory.ReadValue<int>(addr + 3);
@@ -541,7 +543,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 ref Matrix4x4 vm = ref x1.GetRef<Matrix4x4>(0);
                 if (!Unsafe.IsNullRef(ref vm))
                 {
-                    _viewMatrix.Update(ref vm);
+                    lock (_matrixLock)
+                    {
+                        _viewMatrix.Update(ref vm);
+                    }
                 }
             };
 
@@ -560,13 +565,17 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     if (x2.TryGetResult<float>(1, out var fov))
                     {
                         if (fov > 1f && fov < 180f)
-                            _fov = fov;
+                        {
+                            lock (_matrixLock) { _fov = fov; }
+                        }
                     }
 
                     if (x2.TryGetResult<float>(2, out var aspect))
                     {
                         if (aspect > 0.1f && aspect < 5f)
-                            _aspect = aspect;
+                        {
+                            lock (_matrixLock) { _aspect = aspect; }
+                        }
                     }
                 };
             }

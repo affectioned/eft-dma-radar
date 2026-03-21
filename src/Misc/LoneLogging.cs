@@ -106,7 +106,7 @@ namespace eft_dma_radar.Common.Misc
                     Console.WriteLine(formattedMessage);
                     Console.ResetColor();
                 }
-                else if (message.Contains("[GOM]") || message.Contains("[Signature]"))
+                else if (message.Contains("WARN") || message.Contains("[GOM]") || message.Contains("[Signature]"))
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine(formattedMessage);

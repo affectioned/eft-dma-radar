@@ -3,6 +3,7 @@ using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
@@ -712,6 +713,12 @@ namespace eft_dma_radar.UI.ESP
 
                 if (ESPConfig.ShowAimFOV)
                 {
+                    var aimCfg = (SharedProgram.Config as Config)?.Aimbot;
+                    if (aimCfg != null)
+                    {
+                        float halfWidth = CameraManagerBase.Viewport.Width / 2f;
+                        AimFOV = halfWidth * MathF.Tan(aimCfg.FovDegrees * (MathF.PI / 180f));
+                    }
                     DrawAimFOV(canvas);
                 }
 
@@ -1119,12 +1126,16 @@ namespace eft_dma_radar.UI.ESP
         }
 
         /// <summary>
-        /// Draw the Aim FOV Circle.
+        /// Draw the Aim FOV Circle. Green when aimbot is actively engaged.
         /// </summary>
         private static float AimFOV;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawAimFOV(SKCanvas canvas) =>
-            canvas.DrawCircle(CameraManagerBase.ViewportCenter, AimFOV, SKPaints.PaintAimbotFOVESP);
+        private static void DrawAimFOV(SKCanvas canvas)
+        {
+            var paint = SKPaints.PaintAimbotFOVESP;
+            paint.Color = Aimbot.Engaged ? SKColors.LimeGreen : SKColors.White;
+            canvas.DrawCircle(CameraManagerBase.ViewportCenter, AimFOV, paint);
+        }
 
         /// <summary>
         /// Draw all filtered Loot Items within range.

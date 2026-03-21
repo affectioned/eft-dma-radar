@@ -43,6 +43,10 @@
 
 	<!-- Native DLLs and Resources -->
 	<ItemGroup Condition="'$(Configuration)' != 'Commercial'">
+		<Content Include="..\Maps\**\*">
+			<Link>Maps\%(RecursiveDir)%(Filename)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 		<Content Include="..\resources\DEFAULT_DATA.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
@@ -96,17 +100,15 @@
 			<CopyToOutputDirectory></CopyToOutputDirectory>
 		</Page>
 	</ItemGroup>	
-	<Target Name="CopyNativeDLLs" AfterTargets="Build">
+	<Target Name="CopyNativeDLLs" AfterTargets="Build;Publish" Condition="'$(Configuration)' == 'Release'">
+		<PropertyGroup>
+			<_NativeOutputDir Condition="'$(PublishDir)' != ''">$(PublishDir)</_NativeOutputDir>
+			<_NativeOutputDir Condition="'$(PublishDir)' == ''">$(OutputPath)</_NativeOutputDir>
+		</PropertyGroup>
 		<ItemGroup>
-			<NativeLibs Include="$(OutputPath)runtimes\win-x64\native\*.dll" />
+			<NativeLibs Include="$(_NativeOutputDir)runtimes\win-x64\native\*.dll" />
 		</ItemGroup>
-		<Copy SourceFiles="@(NativeLibs)" DestinationFolder="$(OutputPath)" />
-
-		<!-- Copy System.Management DLL to the runtime-specific location -->
-		<ItemGroup>
-			<SystemManagementDll Include="$(NuGetPackageRoot)system.management\9.0.0\runtimes\win\lib\net9.0\System.Management.dll" />
-		</ItemGroup>
-		<Copy SourceFiles="@(SystemManagementDll)" DestinationFolder="$(OutputPath)runtimes\win\lib\net9.0\" Condition="Exists('$(NuGetPackageRoot)system.management\9.0.0\runtimes\win\lib\net9.0\System.Management.dll')" />
+		<Copy SourceFiles="@(NativeLibs)" DestinationFolder="$(_NativeOutputDir)" SkipUnchangedFiles="true" />
 	</Target>
 
 </Project>

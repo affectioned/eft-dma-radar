@@ -11,8 +11,11 @@
 
 This fork makes the following changes on top of the upstream project:
 
-### Memory Writes Removed — ESP Only
-All memory writing features have been completely removed. This includes aimbot, no-recoil, speed hacks, chams, and every other feature that wrote to game memory. **This fork is read-only / ESP only.** The only remaining memory interaction is reading game state for the radar overlay.
+### Hardware Aimbot (Makcu)
+A hardware-based aimbot has been added using [makcu-cpp](https://github.com/K4HVH/makcu-cpp). Mouse movement is delivered physically through the Makcu USB HID device — no software mouse injection, no kernel drivers. Requires `makcu-cpp.dll` — see **Required DLLs** below.
+
+### Memory Writes Removed — ESP Only (non-hardware)
+All in-process memory writing features have been completely removed. This includes no-recoil, speed hacks, chams, and every other feature that wrote to game memory. The only remaining memory interaction is reading game state for the radar overlay, plus the hardware aimbot above which operates entirely through the Makcu device.
 
 ### Privacy Improvements
 - **eft-api.tech removed** — All calls to `eft-api.tech` have been eliminated. This endpoint was used by the upstream project for various lookups and telemetry.
@@ -41,6 +44,13 @@ Download the latest release from [MemProcFS Releases](https://github.com/ufrisk/
 
 All of the above are included in the MemProcFS release archive.
 
+### Makcu (hardware aimbot)
+If you intend to use the hardware aimbot, download `makcu-cpp.dll` from the [makcu-cpp releases page](https://github.com/K4HVH/makcu-cpp/releases) and place it next to the exe. Without this file the aimbot tab will report "not connected" and the feature is fully disabled — the rest of the radar works normally.
+
+| File | Description |
+|------|-------------|
+| `makcu-cpp.dll` | Makcu C API — physical HID mouse control |
+
 ### Visual C++ Runtime
 Download **Visual C++ Redistributable 2015–2022 (x64)** from [Microsoft](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 Installing it system-wide is sufficient; copying `vcruntime140.dll` manually is only needed for a fully portable setup.
@@ -52,8 +62,7 @@ Installing it system-wide is sufficient; copying `vcruntime140.dll` manually is 
 2. Open solution with visual studio
 3. Publish the `eft-dma-radar` or `arena-dma-radar` project
 4. Place all required DLLs listed above next to the published `.exe`
-5. If required, locate & move the `libSkiaSharp.dll` & `libHarfBuzzSharp.dll` from the `publish/runtimes` folder into `publish` folder
-6. Run `eft-dma-radar.exe` or `arena-dma-radar.exe` depending on what you've published
+5. Run `eft-dma-radar.exe` or `arena-dma-radar.exe` depending on what you've published
 
 ## Arena
 - Arena is supported and will be maintained going forward.

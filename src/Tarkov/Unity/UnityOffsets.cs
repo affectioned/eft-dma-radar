@@ -13,9 +13,9 @@ namespace eft_dma_radar.Common.Unity
         /// </summary>
         public readonly struct ObjectClass
         {
-            public const uint MonoBehaviourOffset = 0x10;  // ObjectClass â†? MonoBehaviour
+            public const uint MonoBehaviourOffset = 0x10;  // ObjectClass ï¿½? MonoBehaviour
 
-            /// <summary>Chain to read class name from ObjectClass: [0x0, 0x10] â†? string pointer</summary>
+            /// <summary>Chain to read class name from ObjectClass: [0x0, 0x10] ï¿½? string pointer</summary>
             public static readonly uint[] ToNamePtr = [0x0, 0x10];
         }
         #endregion
@@ -27,8 +27,8 @@ namespace eft_dma_radar.Common.Unity
             public static readonly uint[] To_NativeClassName = new uint[] { 0x0, 0x10 }; // String
 
             // IL2CPP Component offsets (from XM Dec 2025)
-            public const uint ObjectClassOffset = 0x20; // IL2CPP: 0x30 - Component â†? ObjectClass (InteractiveClass)
-            public const uint GameObject = 0x58;        // IL2CPP: 0x58 - Component â†? GameObject (Mono was: 0x30)
+            public const uint ObjectClassOffset = 0x20; // IL2CPP: 0x30 - Component ï¿½? ObjectClass (InteractiveClass)
+            public const uint GameObject = 0x58;        // IL2CPP: 0x58 - Component ï¿½? GameObject (Mono was: 0x30)
         }
         #endregion
 
@@ -37,8 +37,8 @@ namespace eft_dma_radar.Common.Unity
         {
             // IL2CPP GameObject structure offsets (Dec 2025)
             public const uint ObjectClassOffset = 0x80;
-            public const uint ComponentsOffset = 0x58;   // GameObject â†? ComponentArray
-            public const uint NameOffset = 0x88;         // GameObject â†? Name string pointer
+            public const uint ComponentsOffset = 0x58;   // GameObject ï¿½? ComponentArray
+            public const uint NameOffset = 0x88;         // GameObject ï¿½? Name string pointer
         }
         #endregion
 
@@ -52,8 +52,8 @@ namespace eft_dma_radar.Common.Unity
         #region Transform
         public readonly struct Transform
         {
-            public const uint ObjectClassOffset = 0x20;  // Transform component â†? ObjectClass
-            public const uint InternalOffset = 0x10;     // Final dereference â†? TransformInternal
+            public const uint ObjectClassOffset = 0x20;  // Transform component ï¿½? ObjectClass
+            public const uint InternalOffset = 0x10;     // Final dereference ï¿½? TransformInternal
         }
         #endregion
 
@@ -66,7 +66,7 @@ namespace eft_dma_radar.Common.Unity
             public const uint GameObjectManager = 0x1A233A0; // IL2CPP GOM (XM Dec 2025)
 
             // Camera offsets (less frequently changed)
-            public const uint AllCameras = 0x19F3080; // IL2CPP AllCameras (XM Dec 2025)
+            public const uint AllCameras = 0x1BF8BC0; // updated 2026-03-13 (was 0x19F3080)
 
             // Legacy/unused in IL2CPP mode
             public const uint GfxDevice = 0x1CF9F48; // g_MainGfxDevice , Type GfxDeviceClient
@@ -132,21 +132,21 @@ namespace eft_dma_radar.Common.Unity
         /// Usage: Memory.ReadPtrChain(objectBase, TransformChain)
         /// 
         /// Chain path:
-        ///   objectBase + 0x10 â†? MonoBehaviour
-        ///            + 0x58 â†? GameObject
-        ///            + 0x58 â†? ComponentArray
-        ///            + 0x08 â†? First component (Transform)
-        ///            + 0x30 â†? Transform.ObjectClass
-        ///            + 0x10 â†? TransformInternal
+        ///   objectBase + 0x10 ï¿½? MonoBehaviour
+        ///            + 0x58 ï¿½? GameObject
+        ///            + 0x58 ï¿½? ComponentArray
+        ///            + 0x08 ï¿½? First component (Transform)
+        ///            + 0x30 ï¿½? Transform.ObjectClass
+        ///            + 0x10 ï¿½? TransformInternal
         /// </summary>
         public static readonly uint[] TransformChain =
         [
-            ObjectClass.MonoBehaviourOffset,  // 0x10 - ObjectClass â†? MonoBehaviour
-            Component.GameObject,              // 0x58 - Component â†? GameObject
-            GameObject.ComponentsOffset,       // 0x58 - GameObject â†? ComponentArray
+            ObjectClass.MonoBehaviourOffset,  // 0x10 - ObjectClass ï¿½? MonoBehaviour
+            Component.GameObject,              // 0x58 - Component ï¿½? GameObject
+            GameObject.ComponentsOffset,       // 0x58 - GameObject ï¿½? ComponentArray
             ComponentArray.Items,              // 0x08 - First transform component
-            Transform.ObjectClassOffset,       // 0x30 - Transform â†? ObjectClass
-            Transform.InternalOffset           // 0x10 - Final â†? TransformInternal
+            Transform.ObjectClassOffset,       // 0x30 - Transform ï¿½? ObjectClass
+            Transform.InternalOffset           // 0x10 - Final ï¿½? TransformInternal
         ];
 
         /// <summary>

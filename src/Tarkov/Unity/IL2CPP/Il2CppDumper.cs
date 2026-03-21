@@ -285,8 +285,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 F("Id"), F("AccountId"), F("Info"), F("Inventory"), F("QuestsData"), F("WishlistManager"),
             ]),
 
-            // WishlistManager
-            C("WishlistManager", [F("_userItems", "Items")]),
+            // WishlistManager (renamed to EFT_WishlistManager in game)
+            C("EFT_WishlistManager", [F("_userItems", "Items")]),
 
             // ProfileInfo → PlayerInfo
             C("ProfileInfo", [
@@ -330,8 +330,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // Stash
             C("Stash", [F("_grid", "Grids")]),
 
-            // CompoundItem → Equipment
-            C("CompoundItem", [F("Grids"), F("Slots")], cs: "Equipment"),
+            // CompoundItem → Equipment (class renamed to EFT_InventoryLogic_CompoundItem)
+            C("EFT_InventoryLogic_CompoundItem", [F("Grids"), F("Slots")], cs: "Equipment"),
 
             // BarterOther → BarterOtherOffsets
             C("BarterOther", [F("Dogtag")], cs: "BarterOtherOffsets"),
@@ -376,8 +376,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 F("StackObjectsCount"), F("Version"), F("Components"), F("<Template>k__BackingField", "Template"), F("<SpawnedInSession>k__BackingField", "SpawnedInSession"),
             ], cs: "LootItem"),
 
-            // CompoundItem → LootItemMod
-            C("CompoundItem", [F("Grids"), F("Slots")], cs: "LootItemMod"),
+            // CompoundItem → LootItemMod (class renamed to EFT_InventoryLogic_CompoundItem)
+            C("EFT_InventoryLogic_CompoundItem", [F("Grids"), F("Slots")], cs: "LootItemMod"),
 
             // Grid → Grid
             C("Grid", [F("<ItemCollection>k__BackingField", "ItemCollection")], cs: "Grid"),

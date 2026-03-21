@@ -37,13 +37,13 @@
             BorderBrush="{DynamicResource BorderBrush}"
             Canvas.Left="900" Canvas.Top="5"
             Padding="5,2" CornerRadius="4"
-            Height="30">
+            Height="54">
                 <Border.Effect>
                     <DropShadowEffect ShadowDepth="2" Opacity="0.3" BlurRadius="5"/>
                 </Border.Effect>
 
                 <hc:SimpleStackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="10" Height="36" Cursor="SizeAll" VerticalAlignment="Center">
+                    <Border Width="10" Height="44" Cursor="SizeAll" VerticalAlignment="Center">
                         <Border.Background>
                             <SolidColorBrush Color="Transparent"/>
                         </Border.Background>
@@ -54,127 +54,158 @@
                         </hc:SimpleStackPanel>
                     </Border>
 
-                    <!--Debug button-->
+                    <!-- Debug button (hidden) -->
                     <Button x:Name="btnDebug" Visibility="Collapsed"
-                            Style="{StaticResource ButtonIcon}" 
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Debug/test functionality button"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="20"
-                            hc:IconElement.Geometry="{StaticResource StarGeometry}" Click="btnDebug_Click"/>
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnDebug_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource StarGeometry}" Width="18" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Debug" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnFreeMode" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnFreeMode"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Toggle Follow/Free Mode"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="20"
-                            hc:IconElement.Geometry="{StaticResource ArrowsToCirceGeometry}" Click="btnFreeMode_Click"/>
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnFreeMode_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource MapPinGeometry}" Width="14" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Map" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnLootSettings" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnLootSettings"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Opens the loot settings"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Height="20"
-                            hc:IconElement.Geometry="{StaticResource DollarSignGeometry}"
-                            Click="btnLootSettings_Click"/>
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnLootSettings_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource DollarSignGeometry}" Width="14" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Loot" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnLootFilter" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnLootFilter"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Opens the loot filter panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource FilterGeometry}" Click="btnLootFilter_Click"/>
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnLootFilter_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource FilterGeometry}" Width="16" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Filter" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnESPSettings" 
-                            Style="{StaticResource ButtonIcon}" 
-                            ToolTip="Opens the fuser esp configuration panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource GlassesGeometry}" Click="btnESPSettings_Click"/>
+                    <Button x:Name="btnESPSettings"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
+                            ToolTip="Opens the ESP configuration panel"
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnESPSettings_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource GlassesGeometry}" Width="20" Height="13" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="ESP" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
-                    <Button x:Name="btnWatchlist" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+
+                    <Button x:Name="btnAimbot"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
+                            ToolTip="Opens the aimbot configuration panel"
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnAimbot_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource CrosshairsGeometry}" Width="16" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Aimbot" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+
+                    <Button x:Name="btnWatchlist"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Opens the watchlist panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource UsersGeometry}" Click="btnWatchlist_Click"/>
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnWatchlist_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource UsersGeometry}" Width="18" Height="14" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Watch" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnPlayerHistory" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnPlayerHistory"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Opens the player history panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource ClockRotatedGeometry}" Click="btnPlayerHistory_Click"/>
+                            Width="42" Height="48" Padding="4,2"
+                            Click="btnPlayerHistory_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource ClockRotatedGeometry}" Width="16" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="History" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnGeneralSettings" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnGeneralSettings"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Opens the general settings panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource GearGeometry}"
-                            Click="btnGeneralSettings_Click"/>
+                            Width="48" Height="48" Padding="4,2"
+                            Click="btnGeneralSettings_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource GearGeometry}" Width="16" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Settings" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0" />
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
                     <Button x:Name="btnSearchSettings"
-                            Style="{StaticResource ButtonIcon}"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Search settings (Ctrl+F)"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource SearchGeometry}"
-                            Click="btnSettingsSearch_Click"/>
+                            Width="46" Height="48" Padding="4,2"
+                            Click="btnSettingsSearch_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource SearchGeometry}" Width="16" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Search" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
 
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+                    <Rectangle Width="1" Height="36" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnRestart" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnRestart"
+                            Style="{StaticResource ToolbarLabelButtonStyle}"
                             ToolTip="Restarts the Radar for the current raid instance"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource ArrowsRotateGeometry}"
-                            Click="btnRestart_Click"/>
+                            Width="46" Height="48" Padding="4,2"
+                            Click="btnRestart_Click">
+                        <StackPanel VerticalAlignment="Center">
+                            <Path Data="{StaticResource ArrowsRotateGeometry}" Width="16" Height="16" Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="Restart" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
                 </hc:SimpleStackPanel>
             </Border>
         </Canvas>
@@ -302,6 +333,24 @@
             <local:SettingsSearchControl x:Name="SettingsSearchControl"/>
           </Border>
         </Canvas>       
+        <!-- aimbot panel -->
+        <Canvas Name="AimbotCanvas" Panel.ZIndex="1000">
+            <Canvas.Resources>
+                <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
+            </Canvas.Resources>
+
+            <Border x:Name="AimbotPanel"
+                    Width="340" Height="420"
+                    Canvas.Left="600" Canvas.Top="80"
+                    CornerRadius="8"
+                    Visibility="Collapsed"
+                    Effect="{StaticResource PanelShadow}"
+                    Background="Transparent"
+                    BorderThickness="0">
+                <local:AimbotControl x:Name="AimbotControl"/>
+            </Border>
+        </Canvas>
+
         <!-- map setup panel -->
         <Canvas Name="MapSetupCanvas" Panel.ZIndex="1000">
             <Canvas.Resources>

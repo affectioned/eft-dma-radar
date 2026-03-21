@@ -25,7 +25,7 @@ namespace eft_dma_radar.Common.Maps
         {
             try
             {
-                _mapsDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Maps");
+                _mapsDirectory = Path.Combine(AppContext.BaseDirectory, "Maps");
 
                 if (!Directory.Exists(_mapsDirectory))
                     throw new DirectoryNotFoundException($"Maps directory not found: {_mapsDirectory}");

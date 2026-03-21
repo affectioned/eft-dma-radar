@@ -54,6 +54,8 @@ namespace eft_dma_radar.Common.Unity
         protected static float _fov;
         protected static float _aspect;
         protected static readonly ViewMatrix _viewMatrix = new();
+        /// <summary>Protects _viewMatrix reads/writes across threads (aimbot vs scatter callback).</summary>
+        protected static readonly Lock _matrixLock = new();
 
         /// <summary>
         /// Update the Viewport Dimensions for Camera Calculations.
@@ -111,24 +113,28 @@ namespace eft_dma_radar.Common.Unity
                 return false;
             }
 
-            float w = Vector3.Dot(_viewMatrix.Translation, worldPos) + _viewMatrix.M44; // Transposed
-
-            if (w < 0.098f)
+            float w, x, y;
+            lock (_matrixLock)
             {
-                scrPos = default;
-                return false;
-            }
+                w = Vector3.Dot(_viewMatrix.Translation, worldPos) + _viewMatrix.M44; // Transposed
 
-            float x = Vector3.Dot(_viewMatrix.Right, worldPos) + _viewMatrix.M14; // Transposed
-            float y = Vector3.Dot(_viewMatrix.Up, worldPos) + _viewMatrix.M24; // Transposed
+                if (w < 0.098f)
+                {
+                    scrPos = default;
+                    return false;
+                }
 
-            if (IsScoped)
-            {
-                float angleRadHalf = (MathF.PI / 180f) * _fov * 0.5f;
-                float angleCtg = MathF.Cos(angleRadHalf) / MathF.Sin(angleRadHalf);
+                x = Vector3.Dot(_viewMatrix.Right, worldPos) + _viewMatrix.M14; // Transposed
+                y = Vector3.Dot(_viewMatrix.Up, worldPos) + _viewMatrix.M24; // Transposed
 
-                x /= angleCtg * _aspect * 0.5f;
-                y /= angleCtg * 0.5f;
+                if (IsScoped)
+                {
+                    float angleRadHalf = (MathF.PI / 180f) * _fov * 0.5f;
+                    float angleCtg = MathF.Cos(angleRadHalf) / MathF.Sin(angleRadHalf);
+
+                    x /= angleCtg * _aspect * 0.5f;
+                    y /= angleCtg * 0.5f;
+                }
             }
 
             var center = ViewportCenter;

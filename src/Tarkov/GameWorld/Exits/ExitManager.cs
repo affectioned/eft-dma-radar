@@ -67,10 +67,11 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                         XMLogging.WriteLine($"[ExitManager] {(_isPMC ? "PMC" : "Scav")} exfil array is null");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ex.Message.Contains("0x0"))
                 {
                     XMLogging.WriteLine($"[ExitManager] Exfil array read failed: {ex.Message}");
                 }
+                catch { /* 0x0 — not yet populated, will retry */ }
 
                 // Secret Extracts
                 try
@@ -100,10 +101,11 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                         XMLogging.WriteLine($"[ExitManager] SecretExfiltrationPointArray is null (offset 0x{Offsets.ExfilController.SecretExfiltrationPointArray:X})");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ex.Message.Contains("0x0"))
                 {
                     XMLogging.WriteLine($"[ExitManager] Secret exfil array read failed: {ex.Message}");
                 }
+                catch { /* 0x0 — not yet populated, will retry */ }
 
                 // Transits - Using hardcoded IL2CPP dictionary offsets (different from Mono)
                 // IL2CPP Dictionary<K,V> structure:

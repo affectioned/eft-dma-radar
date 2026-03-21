@@ -460,7 +460,7 @@ namespace SDK
         //
         public readonly partial struct Special
         {
-            public static ulong TypeInfoTableRva = 0x00000;
+            public static ulong TypeInfoTableRva = 0x69D8998; // updated 2026-03-13
         }
         public readonly partial struct Il2CppClass
         {

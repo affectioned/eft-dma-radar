@@ -73,6 +73,7 @@ namespace eft_dma_radar.UI.ESP
         public override void Draw(SKCanvas canvas)
         {
             base.Draw(canvas);
+            canvas.DrawRect(Rectangle, _blackBgPaint);
 
             if (Minimized)
                 return;
@@ -552,6 +553,12 @@ namespace eft_dma_radar.UI.ESP
         }
 
         #region Static Paint Objects
+        private static readonly SKPaint _blackBgPaint = new()
+        {
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Fill,
+        };
+
         private static readonly SKPaint _questTextPaint = new()
         {
             SubpixelText = true,
