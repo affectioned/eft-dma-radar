@@ -55,7 +55,7 @@ jobs:
           body: |
             Automated build from [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
 
-            > **Required DLLs not included.** Place `vmm.dll`, `leechcore.dll`, and the other MemProcFS DLLs next to the exe before running. `makcu-cpp.dll` is also required if you want to use the hardware aimbot. See the [README](https://github.com/${{ github.repository }}/blob/main/README.md#required-dlls) for details.
+            > **Required DLLs not included.** Place `vmm.dll`, `leechcore.dll`, and the other MemProcFS DLLs next to the exe before running. `makcu-cpp.dll` is also required — the application will not start without it. See the [README](https://github.com/${{ github.repository }}/blob/main/README.md#required-dlls) for details.
           files: ${{ steps.version.outputs.ZIP }}
           draft: false
           prerelease: false

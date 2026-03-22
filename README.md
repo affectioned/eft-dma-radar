@@ -45,7 +45,7 @@ Download the latest release from [MemProcFS Releases](https://github.com/ufrisk/
 All of the above are included in the MemProcFS release archive.
 
 ### Makcu (hardware aimbot)
-If you intend to use the hardware aimbot, download `makcu-cpp.dll` from the [makcu-cpp releases page](https://github.com/K4HVH/makcu-cpp/releases) and place it next to the exe. Without this file the aimbot tab will report "not connected" and the feature is fully disabled — the rest of the radar works normally.
+Download `makcu-cpp.dll` from the [makcu-cpp releases page](https://github.com/K4HVH/makcu-cpp/releases) and place it next to the exe. **This DLL is always required** — the application will not start without it.
 
 | File | Description |
 |------|-------------|
