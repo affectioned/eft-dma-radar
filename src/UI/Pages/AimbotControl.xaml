@@ -41,19 +41,15 @@
                     <ScrollViewer Style="{StaticResource PanelScrollViewer}">
                         <hc:SimpleStackPanel>
 
+                            <!-- Master toggle -->
+                            <CheckBox x:Name="chkEnabled" Content="Enable Aimbot"
+                                      Style="{StaticResource DynamicCheckBoxStyle}"
+                                      Margin="8,8,8,4"
+                                      Checked="chkEnabled_Changed" Unchecked="chkEnabled_Changed"/>
+
                             <!-- Device -->
                             <Expander x:Name="expDevice" Header="Makcu Device" Style="{StaticResource PanelExpander}" IsExpanded="True">
                                 <hc:SimpleStackPanel Style="{StaticResource ExpanderContent}" Margin="2,8,2,0">
-
-                                    <CheckBox x:Name="chkAutoConnect" Content="Auto-connect on startup"
-                                              Style="{StaticResource DynamicCheckBoxStyle}"
-                                              Margin="0,0,0,8"
-                                              Checked="chkAutoConnect_Changed" Unchecked="chkAutoConnect_Changed"/>
-
-                                    <CheckBox x:Name="chkEnabled" Content="Enable Aimbot"
-                                              Style="{StaticResource DynamicCheckBoxStyle}"
-                                              Margin="0,0,0,8"
-                                              Checked="chkEnabled_Changed" Unchecked="chkEnabled_Changed"/>
 
                                     <Grid Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
@@ -66,21 +62,26 @@
                                                     TextChanged="txtMakcuPort_TextChanged"/>
                                     </Grid>
 
-                                    <Button x:Name="btnConnect" Content="Connect"
-                                            HorizontalAlignment="Left" Margin="0,0,0,8"
-                                            Style="{StaticResource ButtonPrimary}"
-                                            Click="btnConnect_Click"/>
-
                                     <Grid Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Status" Style="{StaticResource LabelText}" VerticalAlignment="Center"/>
-                                        <TextBlock x:Name="txtStatus" Grid.Column="1"
+                                        <Button x:Name="btnConnect" Content="Connect"
+                                                Grid.Column="0"
+                                                Style="{StaticResource ButtonPrimary}"
+                                                Click="btnConnect_Click"/>
+                                        <TextBlock x:Name="txtStatus"
+                                                   Grid.Column="2"
                                                    Text="Disconnected" Foreground="Red"
                                                    Style="{StaticResource LabelText}" VerticalAlignment="Center"/>
                                     </Grid>
+
+                                    <CheckBox x:Name="chkAutoConnect" Content="Auto-connect on startup"
+                                              Style="{StaticResource DynamicCheckBoxStyle}"
+                                              Margin="0,0,0,8"
+                                              Checked="chkAutoConnect_Changed" Unchecked="chkAutoConnect_Changed"/>
 
                                 </hc:SimpleStackPanel>
                             </Expander>
@@ -94,11 +95,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="FOV (degrees)" Style="{StaticResource LabelText}" VerticalAlignment="Center"/>
-                                        <hc:NumericUpDown x:Name="nudFov" Grid.Column="1"
-                                                          Value="10" Minimum="1" Maximum="180"
-                                                          DecimalPlaces="1" Increment="0.5"
-                                                          ValueChanged="Setting_Changed"/>
+                                        <TextBlock Text="Aim Bone" Style="{StaticResource LabelText}" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="cboAimBone" Grid.Column="1"
+                                                  SelectionChanged="cboAimBone_SelectionChanged"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,8">
@@ -106,20 +105,22 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Aim Bone" Style="{StaticResource LabelText}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="cboAimBone" Grid.Column="1"
-                                                  SelectionChanged="cboAimBone_SelectionChanged"/>
+                                        <TextBlock Text="FOV (degrees)" Style="{StaticResource LabelText}" VerticalAlignment="Center"/>
+                                        <hc:NumericUpDown x:Name="nudFov" Grid.Column="1"
+                                                          Value="10" Minimum="1" Maximum="180"
+                                                          DecimalPlaces="1" Increment="0.5"
+                                                          ValueChanged="Setting_Changed"/>
                                     </Grid>
-
-                                    <CheckBox x:Name="chkShowFovCircle" Content="Show FOV circle on fuser"
-                                              Style="{StaticResource DynamicCheckBoxStyle}"
-                                              Margin="0,0,0,8"
-                                              Checked="chkShowFovCircle_Changed" Unchecked="chkShowFovCircle_Changed"/>
 
                                     <CheckBox x:Name="chkAimAI" Content="Target AI enemies"
                                               Style="{StaticResource DynamicCheckBoxStyle}"
                                               Margin="0,0,0,8"
                                               Checked="chkAimAI_Changed" Unchecked="chkAimAI_Changed"/>
+
+                                    <CheckBox x:Name="chkShowFovCircle" Content="Show FOV circle on fuser"
+                                              Style="{StaticResource DynamicCheckBoxStyle}"
+                                              Margin="0,0,0,8"
+                                              Checked="chkShowFovCircle_Changed" Unchecked="chkShowFovCircle_Changed"/>
 
                                 </hc:SimpleStackPanel>
                             </Expander>
