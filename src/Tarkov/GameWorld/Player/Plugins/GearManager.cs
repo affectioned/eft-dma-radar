@@ -246,7 +246,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 var profileId = Memory.ReadUnityString(profileIdPtr, 32);
                 if (string.IsNullOrWhiteSpace(profileId))
                     return;
-        
+
                 // ✅ SET PROFILE ID ONCE
                 player.ProfileID = profileId;
         

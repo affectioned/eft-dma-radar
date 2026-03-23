@@ -311,6 +311,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         XMLogging.WriteLine($"[IL2CPP] MatchingProgress assigned @ 0x{mp:X}");
                     }
 
+                    // Matching phase is over — stop the stage poller and freeze the timer
+                    MatchingProgressResolver.NotifyRaidStarted();
+
                     // Phase 2: Wait for raid to be ready, then initialize game data
                     instance.WaitForRaidReady(ct);
 
@@ -323,7 +326,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"ERROR Instantiating Game Instance: Probably not in Raid, waiting... {ex}");
+                    XMLogging.WriteLine($"ERROR Instantiating Game Instance: {ex.InnerException?.Message ?? ex.Message}");
                 }
                 finally
                 {
@@ -521,26 +524,23 @@ namespace eft_dma_radar.Tarkov.GameWorld
             {
                 try
                 {
-                    if (!IsRaidActive())
-                    {
-                        LevelSettings = 0;
-                        MatchingProgress = 0;
-                        LevelSettingsResolver.Reset();
-                        MatchingProgressResolver.Reset();
-                        Il2CppClass.ForceReset();
-                        GuardManager.ClearCache();
-                        LootFilterControl.RemoveNonStaticGroups();
-                        LootItem.ClearNotificationHistory();
-                        throw new Exception("Not in raid!");
-                    }
-                    return;
+                    if (IsRaidActive())
+                        return;
                 }
-                catch
-                {
-                    Thread.Sleep(10); // short delay between read attempts
-                }
+                catch { }
+                Thread.Sleep(10); // short delay between attempts
             }
-            throw new RaidEnded(); // Still not valid? Raid must have ended.
+
+            // Definitively over — clean up once then signal
+            LevelSettings = 0;
+            MatchingProgress = 0;
+            LevelSettingsResolver.Reset();
+            MatchingProgressResolver.Reset();
+            Il2CppClass.ForceReset();
+            GuardManager.ClearCache();
+            LootFilterControl.RemoveNonStaticGroups();
+            LootItem.ClearNotificationHistory();
+            throw new RaidEnded();
         }
 
         /// <summary>

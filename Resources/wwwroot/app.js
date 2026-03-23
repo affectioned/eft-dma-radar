@@ -1696,22 +1696,28 @@ function getBaseLayer(map){
   return base || layers[0];
 }
 
-function getHeightLayer(map, localWorldY){
+// Returns all in-range non-base floor layers sorted lowest→highest minHeight.
+// Mirrors the desktop Draw pass-1 logic (draws every layer in range, not just the topmost).
+function getHeightLayers(map, localWorldY){
   const layers = getMapLayers(map);
-  if(!layers.length) return null;
-  if(localWorldY == null) return null;
+  if(!layers.length) return [];
+  if(localWorldY == null) return [];
 
   const candidates = layers.filter(l => {
     if(!l) return false;
-    if(hmin(l) == null && hmax(l) == null) return false;
+    if(hmin(l) == null && hmax(l) == null) return false; // skip base layer
     const minOk = (hmin(l) == null) || (localWorldY >= hmin(l));
     const maxOk = (hmax(l) == null) || (localWorldY <  hmax(l));
     return minOk && maxOk;
   });
 
-  if(!candidates.length) return null;
   candidates.sort((a,b) => (hmin(a) ?? -999999) - (hmin(b) ?? -999999));
-  return candidates[candidates.length - 1];
+  return candidates;
+}
+
+function getHeightLayer(map, localWorldY){
+  const all = getHeightLayers(map, localWorldY);
+  return all.length ? all[all.length - 1] : null;
 }
 
 function toRadMaybe(v){
@@ -1841,12 +1847,16 @@ function drawMap(map, localWorldY, cx, cy, zoom, rotateRad, anchorMap){
   if(!base) return false;
 
   const disableDimming = !!(map.disableDimming ?? map.DisableDimming);
-  const overlay = (!disableDimming) ? getHeightLayer(map, localWorldY) : null;
 
+  // Collect ALL in-range floor overlays (lowest→highest), matching desktop pass-1/pass-2 logic.
+  const overlays = (!disableDimming) ? getHeightLayers(map, localWorldY) : [];
+  const topOverlay = overlays.length ? overlays[overlays.length - 1] : null;
+
+  // Dim the base layer when the topmost overlay requests it (matches desktop PaintBitmapAlpha on base).
   let baseAlpha = 1;
-  if(!disableDimming && overlay){
-    if(overlay.dimBaseLayer === true || overlay.DimBaseLayer === true){
-      baseAlpha = 0.55;
+  if(!disableDimming && topOverlay){
+    if(topOverlay.dimBaseLayer === true || topOverlay.DimBaseLayer === true){
+      baseAlpha = 0.5; // ~127/255, matches desktop SharedPaints.PaintBitmapAlpha
     }
   }
 
@@ -1854,9 +1864,13 @@ function drawMap(map, localWorldY, cx, cy, zoom, rotateRad, anchorMap){
   const ok = drawSvgLayerAnchored(bFile, map, cx, cy, zoom, rotateRad, anchorMap, baseAlpha);
   if(!ok) return false;
 
-  if(overlay){
+  // Draw each floor overlay in order: intermediate layers at 0.5 alpha, topmost at full opacity.
+  for(let i = 0; i < overlays.length; i++){
+    const overlay = overlays[i];
     const oFile = overlay.filename || overlay.Filename;
-    if(oFile && oFile !== bFile) drawSvgLayerAnchored(oFile, map, cx, cy, zoom, rotateRad, anchorMap, 1);
+    if(!oFile || oFile === bFile) continue;
+    const alpha = (i === overlays.length - 1) ? 1 : 0.5;
+    drawSvgLayerAnchored(oFile, map, cx, cy, zoom, rotateRad, anchorMap, alpha);
   }
   return true;
 }
@@ -2089,13 +2103,9 @@ function drawAimview(players){
   // Compute focal length from configured FOV, then apply player zoom if enabled
   const fovRad = (state.aimviewFov || 90) * Math.PI / 180;
   let focalLen = halfW / Math.tan(fovRad / 2);
-  let skelZoom = 1;
-  if(state.aimviewZoomWithPlayer){
-    const zl = Number(centered.zoomLevel ?? centered.ZoomLevel ?? 1);
-    if(zl > 1){
-      if(centeredIsLocal) skelZoom = zl;   // scale pre-projected skel coords around center
-      else focalLen *= zl;                  // zoom synthetic projection via focal length
-    }
+  if(state.aimviewZoomWithPlayer && !centeredIsLocal){
+    const zl = Number(centered.zoomLevel ?? centered.ZoomLevel ?? 1) || 1;
+    if(zl > 1) focalLen *= zl;  // zoom synthetic projection via focal length
   }
 
   const maxDist = Number(state.aimviewMaxDist) || 0;
@@ -2120,7 +2130,7 @@ function drawAimview(players){
       // Local player: use pre-projected SkeletonScreen (exact game camera, no recomputation needed)
       const skel = p?.skeletonScreen ?? p?.SkeletonScreen;
       if(!Array.isArray(skel) || skel.length !== 52) continue;
-      drawAimviewSkel52(skel, W, H, col, fullDist, p, skelZoom);
+      drawAimviewSkel52(skel, W, H, col, fullDist, p);
     } else {
       // Non-local centered: project SkeletonWorld through synthetic view matrix
       const world = p?.skeletonWorld ?? p?.SkeletonWorld;

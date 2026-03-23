@@ -1,13 +1,16 @@
-﻿using eft_dma_radar.Tarkov.API;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
-using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Common.DMA.ScatterAPI;
+﻿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.Features;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Common.Unity.Collections;
+using eft_dma_radar.Tarkov.API;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
+using eft_dma_radar.UI.Misc;
 using static SDK.Enums;
+using static SDK.Offsets;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer
 {
@@ -507,14 +510,55 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// </summary>
         private void UpdateAimingStatus()
         {
+            ulong handsController = 0;
+            ulong bundleAnimBones = 0;
+            ulong pwa = 0;
             try
             {
-                var ptr = Memory.ReadPtr(HandsControllerAddr);
-                IsAiming = Memory.ReadValue<bool>(Memory.ReadPtrChain(ptr, new uint[] { Offsets.ObservedHandsController.BundleAnimationBones, Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs }) + Offsets.ProceduralWeaponAnimationObs._isAimingObs);
+                handsController = Memory.ReadPtr(HandsControllerAddr);
+                bundleAnimBones = Memory.ReadPtr(handsController + Offsets.ObservedHandsController.BundleAnimationBones);
+                pwa = Memory.ReadPtr(bundleAnimBones + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
+                IsAiming = Memory.ReadValue<bool>(pwa + Offsets.ProceduralWeaponAnimationObs._isAimingObs);
+                //if (!IsAI)
+                //{
+                //    ZoomLevel = GetObservedScopeZoom(pwa);
+                //    //XMLogging.WriteLine($"Player '{Name}' Aiming Status: {IsAiming}, ZoomLevel: {ZoomLevel:F2}x");
+                //}
+                
+            }
+            catch //(Exception ex)
+            {
+                //XMLogging.WriteLine($"ERROR updating Aiming Status for '{Name}': {ex}" +
+                //    $"\n  HandsControllerAddr : 0x{HandsControllerAddr:X}" +
+                //    $"\n  HandsController     : 0x{handsController:X}" +
+                //    $"\n  BundleAnimBones     : 0x{bundleAnimBones:X}" +
+                //    $"\n  PWA                 : 0x{pwa:X}");
+            }
+        }
+
+        private static float GetObservedScopeZoom(ulong pwa)
+        {
+            try
+            {
+                if (!pwa.IsValidVirtualAddress())
+                    return 1f;
+                var opticsPtr = Memory.ReadPtr(pwa + 0xF0);
+                if (!opticsPtr.IsValidVirtualAddress())
+                    return 1f;
+                using var optics = MemList<MemPointer>.Get(opticsPtr);
+                if (optics.Count <= 0)
+                    return 1f;
+                var pSightComponent = Memory.ReadPtr(optics[0] + Offsets.SightNBone.Mod);
+                if (!pSightComponent.IsValidVirtualAddress())
+                    return 1f;
+                var sightComponent = Memory.ReadValue<SightComponent>(pSightComponent);
+                var zoom = sightComponent.GetZoomLevel();
+                return zoom > 1f ? zoom : 1f;
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"ERROR updating Aiming Status for '{Name}': {ex}");
+                XMLogging.WriteLine($"GetObservedScopeZoom ERROR: {ex}");
+                return 1f;
             }
         }
 
@@ -524,5 +568,58 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// <param name="bone">Bone to lookup.</param>
         /// <returns>Array of offsets for transform internal chain.</returns>
         public override uint[] GetTransformInternalChain(Bones bone) => Offsets.ObservedPlayerView.GetTransformChain(bone);
+
+        #region SightComponent structures
+
+        [StructLayout(LayoutKind.Explicit, Pack = 1)]
+        private readonly ref struct SightComponent // EFT.InventoryLogic.SightComponent
+        {
+            [FieldOffset((int)Offsets.SightComponent._template)]
+            private readonly ulong pSightInterface;
+
+            [FieldOffset((int)Offsets.SightComponent.ScopesSelectedModes)]
+            private readonly ulong pScopeSelectedModes;
+
+            [FieldOffset((int)Offsets.SightComponent.SelectedScope)]
+            private readonly int SelectedScope;
+
+            [FieldOffset((int)Offsets.SightComponent.ScopeZoomValue)]
+            public readonly float ScopeZoomValue;
+
+            public readonly float GetZoomLevel()
+            {
+                using var zoomArray = SightInterface.Zooms;
+
+                if (SelectedScope >= zoomArray.Count || SelectedScope is < 0 or > 10)
+                    return -1.0f;
+
+                using var selectedScopeModes = MemArray<int>.Get(pScopeSelectedModes, false);
+                int selectedScopeMode = SelectedScope >= selectedScopeModes.Count ? 0 : selectedScopeModes[SelectedScope];
+                ulong zoomAddr = zoomArray[SelectedScope] + MemArray<float>.ArrBaseOffset + (uint)selectedScopeMode * 0x4;
+
+                float zoomLevel = Memory.ReadValue<float>(zoomAddr, false);
+
+                if (zoomLevel.IsNormalOrZero() && zoomLevel is >= 0f and < 100f)
+                    return zoomLevel;
+
+                return -1.0f;
+            }
+
+            public readonly SightInterface SightInterface =>
+                Memory.ReadValue<SightInterface>(pSightInterface);
+        }
+
+        [StructLayout(LayoutKind.Explicit, Pack = 1)]
+        private readonly ref struct SightInterface // -.GInterfaceBB26
+        {
+            [FieldOffset((int)Offsets.SightInterface.Zooms)]
+            private readonly ulong pZooms;
+
+            public readonly MemArray<ulong> Zooms =>
+                MemArray<ulong>.Get(pZooms);
+        }
+
+        #endregion
+
     }
 }
