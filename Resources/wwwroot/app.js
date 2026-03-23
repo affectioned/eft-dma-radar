@@ -2272,6 +2272,8 @@ function buildPlayerTooltip(p){
   const dist = lastCenteredPlayer ? distanceMeters(p, lastCenteredPlayer) : null;
 
   const gearValue = pick(p, ["gearValue","GearValue","value","Value","gearPrice","GearPrice","totalValue","TotalValue"]);
+  const currentWeapon = pick(p, ["currentWeapon","CurrentWeapon"]);
+  const currentAmmo   = pick(p, ["currentAmmo","CurrentAmmo"]);
   const weapon = pick(p, ["weapon","Weapon","weaponName","WeaponName","primary","Primary"]);
   const armor  = pick(p, ["armor","Armor","armorName","ArmorName","armorClass","ArmorClass"]);
   const helmet = pick(p, ["helmet","Helmet","helmetName","HelmetName"]);
@@ -2290,6 +2292,7 @@ function buildPlayerTooltip(p){
       ${kvRow("HP", hp, true)}
       ${kvRow("Distance", dist != null ? `${dist.toFixed(1)} m` : null, true)}
       ${kvRow("Gear", gearValue != null ? `$${fmtMoney(gearValue)}` : null, true)}
+      ${(()=>{ const cw = currentWeapon && currentWeapon !== "--" ? currentWeapon : null; const ca = currentAmmo || null; return kvRow("In Hands", cw ? (ca ? `${cw} / ${ca}` : cw) : null); })()}
       ${kvRow("Weapon", weapon)}
       ${kvRow("Armor", armor)}
       ${kvRow("Helmet", helmet)}
@@ -2511,16 +2514,15 @@ function drawGroupConnectors(players, map, cx, cy, rotRad, mapRect){
   for(const g of groups.values()){
     if(g.length < 2) continue;
 
-    const leader = g[0];
-    const lm = readPlayerMapXY(leader, map);
-    const ls = mapXYToScreen(lm.x, lm.y, mapRect, cx, cy, rotRad);
+    const positions = g.map(p => {
+      const pm = readPlayerMapXY(p, map);
+      return mapXYToScreen(pm.x, pm.y, mapRect, cx, cy, rotRad);
+    });
 
-    for(let i=1;i<g.length;i++){
-      const pm = readPlayerMapXY(g[i], map);
-      const ps = mapXYToScreen(pm.x, pm.y, mapRect, cx, cy, rotRad);
+    for(let i=0;i<positions.length-1;i++){
       ctx.beginPath();
-      ctx.moveTo(ls.px, ls.py);
-      ctx.lineTo(ps.px, ps.py);
+      ctx.moveTo(positions[i].px, positions[i].py);
+      ctx.lineTo(positions[i+1].px, positions[i+1].py);
       ctx.stroke();
     }
   }
@@ -3095,6 +3097,9 @@ function refreshPlayersWidget(){
   if(playersWidgetSub) playersWidgetSub.textContent = out.length ? `${out.length} shown` : "empty";
 
   const html = out.map(it => {
+    const cw = normStr(it.p?.currentWeapon ?? it.p?.CurrentWeapon);
+    const ca = normStr(it.p?.currentAmmo ?? it.p?.CurrentAmmo);
+    const weaponStr = cw && cw !== "--" ? (ca ? `${cw} / ${ca}` : cw) : null;
     return `
       <div class="w-row"
            data-kind="player"
@@ -3105,7 +3110,7 @@ function refreshPlayersWidget(){
         <div class="w-dot" style="background:${escapeHtml(it.col)}"></div>
         <div class="w-main">
           <div class="w-name">${escapeHtml(it.name)}</div>
-          <div class="w-sub mono">${escapeHtml(isPMC(it.p) ? "PMC" : "AI")}</div>
+          <div class="w-sub mono">${escapeHtml(isPMC(it.p) ? "PMC" : "AI")}${weaponStr ? ` | ${escapeHtml(weaponStr)}` : ""}</div>
         </div>
       </div>
     `;

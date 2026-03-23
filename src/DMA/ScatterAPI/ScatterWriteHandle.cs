@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
-using Vmmsharp;
+using VmmSharpEx.Options;
+using VmmSharpEx.Scatter;
 
 namespace eft_dma_radar.Common.DMA.ScatterAPI
 {
@@ -9,7 +10,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
     /// </summary>
     public sealed class ScatterWriteHandle : IDisposable
     {
-        private readonly VmmScatterMemory _handle;
+        private readonly VmmScatter _handle;
         private int _count = 0;
         /// <summary>
         /// Callbacks executed on completion.
@@ -19,7 +20,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
 
         public ScatterWriteHandle()
         {
-            _handle = Memory.GetScatter(Vmm.FLAG_NOCACHE);
+            _handle = Memory.GetScatter(VmmFlags.NOCACHE);
         }
 
         /// <summary>
@@ -38,7 +39,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
             Span<byte> byteSpan = MemoryMarshal.AsBytes(buffer);
             byteSpan.CopyTo(byteArray);
 
-            if (!_handle.PrepareWrite(va, byteArray))
+            if (!_handle.PrepareWriteSpan<byte>(va, byteArray.AsSpan()))
                 throw new Exception("Failed to prepare write entry.");
 
             Interlocked.Increment(ref _count);
@@ -54,7 +55,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
         public void AddValueEntry<T>(ulong va, T value)
             where T : unmanaged
         {
-            if (!_handle.PrepareWriteStruct(va, value))
+            if (!_handle.PrepareWriteValue<T>(va, ref value))
                 throw new Exception("Failed to prepare write entry.");
             Interlocked.Increment(ref _count);
         }
@@ -69,7 +70,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
         public void AddValueEntry<T>(ulong va, ref T value)
             where T : unmanaged
         {
-            if (!_handle.PrepareWriteStruct(va, value))
+            if (!_handle.PrepareWriteValue<T>(va, ref value))
                 throw new Exception("Failed to prepare write entry.");
             Interlocked.Increment(ref _count);
         }
@@ -86,8 +87,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
             {
                 if (!validation())
                     throw new Exception("Validation Callback Returned False (DO NOT WRITE).");
-                if (!_handle.Execute())
-                    throw new Exception("Memory Write Failed!");
+                _handle.Execute();
                 Callbacks?.Invoke();
             }
         }
@@ -100,8 +100,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
         {
             _count = default;
             Callbacks = default;
-            if (!_handle.Clear(Vmm.FLAG_NOCACHE))
-                throw new Exception("Failed to clear handle!");
+            _handle.Clear(VmmFlags.NOCACHE);
         }
 
         #region IDisposable

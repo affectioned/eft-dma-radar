@@ -63,6 +63,8 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
         [Key(28)] public float[]? SkeletonScreen { get; init; }
         [Key(29)] public float[]? SkeletonWorld  { get; init; }
         [Key(30)] public float    Pitch          { get; init; }
+        [Key(32)] public string? CurrentWeapon  { get; init; }
+        [Key(33)] public string? CurrentAmmo    { get; init; }
 
         // ============================================================
         // FACTORY
@@ -147,14 +149,17 @@ namespace eft_dma_radar.Tarkov.WebRadar.Data
                 IsAiming = isAiming,
                 ZoomLevel = player.ZoomLevel,
                 Loot = player.Gear?.Loot?.Select(WebRadarLoot.CreateFromLoot),
-                GroupId = player.NetworkGroupID,
+                GroupId = player.SpawnGroupID,
 
                 PrimaryWeapon = player.Gear?.Equipment?.TryGetValue("FirstPrimaryWeapon", out var p) == true ? p.Long : "None",
                 SecondaryWeapon = player.Gear?.Equipment?.TryGetValue("SecondPrimaryWeapon", out var s) == true ? s.Long : "None",
                 Armor = player.Gear?.Equipment?.TryGetValue("ArmorVest", out var a) == true ? a.Long : "None",
                 Helmet = player.Gear?.Equipment?.TryGetValue("Headwear", out var h) == true ? h.Long : "None",
                 Backpack = player.Gear?.Equipment?.TryGetValue("Backpack", out var b) == true ? b.Long : "None",
-                Rig = player.Gear?.Equipment?.TryGetValue("TacticalVest", out var r) == true ? r.Long : "None"
+                Rig = player.Gear?.Equipment?.TryGetValue("TacticalVest", out var r) == true ? r.Long : "None",
+
+                CurrentWeapon = player.Hands?.CurrentItem,
+                CurrentAmmo   = player.Hands?.CurrentAmmo
             };
         }
             // Bone order matches GetWebRadarScreenBuffer segment layout:
