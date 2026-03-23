@@ -26,36 +26,12 @@
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
-	<!-- Native DLLs and Resources -->
+	<!-- Native DLLs and Resources (vmm.dll, leechcore.dll etc. are now bundled by VmmSharpEx NuGet) -->
 	<ItemGroup Condition="'$(Configuration)' != 'Commercial'">
-		<Content Include="..\leechcore_driver.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\dbghelp.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\FTD3XX.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\leechcore.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
 		<Content Include="..\resources\DEFAULT_DATA.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="..\resources\EXAMPLE_FILTERS.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\symsrv.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\vcruntime140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\vmm.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\tinylz4.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="..\LICENSE">
@@ -88,9 +64,9 @@
 		<PackageReference Include="HandyControls" Version="3.6.0" />
 		<PackageReference Include="HelixToolkit.Wpf" Version="2.27.0" />
 		<PackageReference Include="Open.Nat.imerzan" Version="2.2.0" />
-		<PackageReference Include="SkiaSharp" Version="3.119.0" />
-		<PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.119.0" />
-		<PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.0" />
+		<PackageReference Include="SkiaSharp" Version="3.119.2" />
+		<PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.119.2" />
+		<PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.2" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.6" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="9.0.6" />
 		<PackageReference Include="Reloaded.Assembler" Version="1.0.16" />
@@ -123,9 +99,7 @@
 	</Target>
 
 	<ItemGroup>
-		<Reference Include="VmmSharp">
-			<HintPath>..\VmmSharp.dll</HintPath>
-		</Reference>
+		<PackageReference Include="VmmSharpEx" Version="3.200.12" />
 	</ItemGroup>
 
 	<ItemGroup>
