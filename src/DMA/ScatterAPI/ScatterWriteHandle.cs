@@ -5,7 +5,7 @@ using VmmSharpEx.Scatter;
 namespace eft_dma_radar.Common.DMA.ScatterAPI
 {
     /// <summary>
-    /// Wraps Memory Writing functionality via Vmmsharp Scatter API.
+    /// Wraps Memory Writing functionality via VmmSharpEx Scatter API.
     /// No-op on zero entries.
     /// </summary>
     public sealed class ScatterWriteHandle : IDisposable
@@ -33,13 +33,9 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
         public void AddBufferEntry<T>(ulong va, Span<T> buffer)
             where T : unmanaged
         {
-            int sizeInBytes = buffer.Length * Marshal.SizeOf<T>();
-            byte[] byteArray = new byte[sizeInBytes];
-
             Span<byte> byteSpan = MemoryMarshal.AsBytes(buffer);
-            byteSpan.CopyTo(byteArray);
 
-            if (!_handle.PrepareWriteSpan<byte>(va, byteArray.AsSpan()))
+            if (!_handle.PrepareWriteSpan<byte>(va, byteSpan))
                 throw new Exception("Failed to prepare write entry.");
 
             Interlocked.Increment(ref _count);

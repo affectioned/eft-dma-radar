@@ -1,8 +1,6 @@
-// Global using removed - use eft_dma_radar.Tarkov.MemoryInterface instead
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -262,7 +260,9 @@ namespace eft_dma_radar.Common.DMA
                 return;
 
             var vmmFlags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
-            var scatterRaw = _hVMM.MemReadScatter(ProcessPID, vmmFlags, pagesToRead.ToArray().AsSpan());
+            var pageArray = new ulong[pagesToRead.Count];
+            pagesToRead.CopyTo(pageArray);
+            var scatterRaw = _hVMM.MemReadScatter(ProcessPID, vmmFlags, pageArray.AsSpan());
             var scatterResults = new Dictionary<ulong, byte[]>(scatterRaw.Length);
             foreach (var s in scatterRaw)
             {
@@ -303,22 +303,13 @@ namespace eft_dma_radar.Common.DMA
             where T : unmanaged
         {
             ThrowIfVmmDisposed();
-            uint cb = (uint)(SizeChecker<T>.Size * buffer.Length);
-            try
-            {
-                var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
+            var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
 
-                if (!_hVMM.MemReadSpan(ProcessPID, addr, buffer, flags))
-                    throw new VmmException("Memory Read Failed!");
+            if (!_hVMM.MemReadSpan(ProcessPID, addr, buffer, flags))
+                throw new VmmException("Memory Read Failed!");
 
-                if (!allowPartialRead && cb == 0)
-                    throw new VmmException("Memory Read Failed!");
-            }
-            catch (VmmException)
-            {
-                
-                throw;
-            }
+            if (!allowPartialRead && buffer.Length == 0)
+                throw new VmmException("Memory Read Failed!");
         }
          /// <summary>
         /// Read an array of type <typeparamref name="T"/> from memory.
@@ -387,14 +378,13 @@ namespace eft_dma_radar.Common.DMA
 
                 if (!_hVMM.MemReadSpan(ProcessPID, addr, buffer1, VmmFlags.NOCACHE))
                     throw new VmmException("Memory Read Failed!");
-                if (!buffer1.SequenceEqual(buffer2) || !buffer1.SequenceEqual(buffer3) || !buffer2.SequenceEqual(buffer3))
+                if (!buffer1.SequenceEqual(buffer2) || !buffer1.SequenceEqual(buffer3))
                 {
                     throw new VmmException("Memory Read Failed!");
                 }
             }
             catch (VmmException)
             {
-                
                 throw;
             }
         }
@@ -502,15 +492,8 @@ namespace eft_dma_radar.Common.DMA
             where T : unmanaged, allows ref struct
         {
             ThrowIfVmmDisposed();
-            try
-            {
-                var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
-                return _hVMM.MemReadValue<T>(ProcessPID, addr, flags);
-            }
-            catch (VmmException)
-            {
-                throw;
-            }
+            var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
+            return _hVMM.MemReadValue<T>(ProcessPID, addr, flags);
         }
         
         public ulong FindDataXref(
@@ -569,15 +552,8 @@ namespace eft_dma_radar.Common.DMA
         public unsafe void ReadValue<T>(ulong addr, out T result, bool useCache = true)
             where T : unmanaged, allows ref struct
         {
-            try
-            {
-                var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
-                result = _hVMM.MemReadValue<T>(ProcessPID, addr, flags);
-            }
-            catch (VmmException)
-            {
-                throw;
-            }
+            var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
+            result = _hVMM.MemReadValue<T>(ProcessPID, addr, flags);
         }
 
         /// <summary>
@@ -589,30 +565,24 @@ namespace eft_dma_radar.Common.DMA
             where T : unmanaged, allows ref struct
         {
             int cb = sizeof(T);
-            try
-            {
-                T r1 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                Thread.SpinWait(5);
+            T r1 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                T r2 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
+            Thread.SpinWait(5);
 
-                Thread.SpinWait(5);
+            T r2 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                T r3 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
+            Thread.SpinWait(5);
 
-                var b1 = new ReadOnlySpan<byte>(&r1, cb);
-                var b2 = new ReadOnlySpan<byte>(&r2, cb);
-                var b3 = new ReadOnlySpan<byte>(&r3, cb);
-                if (!b1.SequenceEqual(b2) || !b1.SequenceEqual(b3) || !b2.SequenceEqual(b3))
-                    throw new VmmException("Memory Read Failed!");
+            T r3 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                return r1;
-            }
-            catch (VmmException)
-            {
-                throw;
-            }
+            var b1 = new ReadOnlySpan<byte>(&r1, cb);
+            var b2 = new ReadOnlySpan<byte>(&r2, cb);
+            var b3 = new ReadOnlySpan<byte>(&r3, cb);
+            if (!b1.SequenceEqual(b2) || !b1.SequenceEqual(b3))
+                throw new VmmException("Memory Read Failed!");
+
+            return r1;
         }
 
         /// <summary>
@@ -624,31 +594,25 @@ namespace eft_dma_radar.Common.DMA
             where T : unmanaged, allows ref struct
         {
             int cb = sizeof(T);
-            try
-            {
-                T r1 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                Thread.SpinWait(5);
+            T r1 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                T r2 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
+            Thread.SpinWait(5);
 
-                Thread.SpinWait(5);
+            T r2 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                T r3 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
+            Thread.SpinWait(5);
 
-                var b1 = new ReadOnlySpan<byte>(&r1, cb);
-                var b2 = new ReadOnlySpan<byte>(&r2, cb);
-                var b3 = new ReadOnlySpan<byte>(&r3, cb);
+            T r3 = _hVMM.MemReadValue<T>(ProcessPID, addr, VmmFlags.NOCACHE);
 
-                if (!b1.SequenceEqual(b2) || !b1.SequenceEqual(b3) || !b2.SequenceEqual(b3))
-                    throw new VmmException("Memory Read Failed!");
+            var b1 = new ReadOnlySpan<byte>(&r1, cb);
+            var b2 = new ReadOnlySpan<byte>(&r2, cb);
+            var b3 = new ReadOnlySpan<byte>(&r3, cb);
 
-                result = r1;
-            }
-            catch (VmmException)
-            {
-                throw;
-            }
+            if (!b1.SequenceEqual(b2) || !b1.SequenceEqual(b3))
+                throw new VmmException("Memory Read Failed!");
+
+            result = r1;
         }
         public bool TryReadValueEnsure<T>(ulong addr, out T result) where T : unmanaged
         {
@@ -761,33 +725,29 @@ namespace eft_dma_radar.Common.DMA
                 if (buffer is null || buffer.Length == 0)
                     return 0;
 
-                string pat = signature;
                 ulong firstMatch = 0;
 
+                var patSpan = signature.AsSpan();
                 for (ulong i = 0; i < (ulong)buffer.Length; i++)
                 {
-                    if (pat[0] == '?' || buffer[i] == GetByte(pat.Substring(0, 2)))
+                    if (patSpan[0] == '?' || buffer[i] == GetByte(patSpan[..2]))
                     {
                         if (firstMatch == 0)
                             firstMatch = rangeStart + i;
 
-                        if (pat.Length <= 2)
+                        if (patSpan.Length <= 2)
                             break;
 
-                        pat = pat.Substring(pat[0] == '?' ? 2 : 3);
+                        patSpan = patSpan[(patSpan[0] == '?' ? 2 : 3)..];
                     }
                     else
                     {
-                        pat = signature;
+                        patSpan = signature.AsSpan();
                         firstMatch = 0;
                     }
                 }
 
                 return firstMatch;
-            }
-            catch (VmmException ex)
-            {
-                XMLogging.WriteLine($"[DMA] Error in FindSignature: {ex.Message}");
             }
             catch (Exception ex)
             {
@@ -800,13 +760,12 @@ namespace eft_dma_radar.Common.DMA
         /// <summary>
         /// Converts a hex string to a byte value.
         /// </summary>
-        private byte GetByte(string hex)
+        private static byte GetByte(ReadOnlySpan<char> hex)
         {
             if (hex.Length < 2)
                 return 0;
 
-            byte value = 0;
-            byte.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out value);
+            byte.TryParse(hex[..2], System.Globalization.NumberStyles.HexNumber, null, out byte value);
             return value;
         }
         #endregion
@@ -933,19 +892,10 @@ namespace eft_dma_radar.Common.DMA
                 throw new Exception("Memory Writing is Disabled!");
             ThrowIfVmmDisposed();
 
-            try
-            {
-                int size = sizeof(T);
-                byte[] buffer = new byte[size];
-                fixed (byte* bufferPtr = buffer)
-                    *(T*)bufferPtr = value;
-
-                _hVMM.MemWriteArray(ProcessPID, addr, buffer);
-            }
-            catch (VmmException)
-            {
-                throw;
-            }
+            int size = sizeof(T);
+            Span<byte> buffer = stackalloc byte[size];
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(buffer), value);
+            _hVMM.MemWriteSpan(ProcessPID, addr, buffer);
         }
 
         /// <summary>
@@ -961,19 +911,10 @@ namespace eft_dma_radar.Common.DMA
                 throw new Exception("Memory Writing is Disabled!");
             ThrowIfVmmDisposed();
 
-            try
-            {
-                int size = sizeof(T);
-                byte[] buffer = new byte[size];
-                fixed (byte* bufferPtr = buffer)
-                    *(T*)bufferPtr = value;
-
-                _hVMM.MemWriteArray(ProcessPID, addr, buffer);
-            }
-            catch (VmmException)
-            {
-                throw;
-            }
+            int size = sizeof(T);
+            Span<byte> buffer = stackalloc byte[size];
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(buffer), value);
+            _hVMM.MemWriteSpan(ProcessPID, addr, buffer);
         }
 
         /// <summary>
@@ -987,14 +928,7 @@ namespace eft_dma_radar.Common.DMA
             if (!SharedProgram.Config?.MemWritesEnabled ?? false)
                 throw new Exception("Memory Writing is Disabled!");
             ThrowIfVmmDisposed();
-            try
-            {
-                _hVMM.MemWriteSpan(ProcessPID, addr, buffer);
-            }
-            catch (VmmException)
-            {
-                throw;
-            }
+            _hVMM.MemWriteSpan(ProcessPID, addr, buffer);
         }
 
         /// <summary>
