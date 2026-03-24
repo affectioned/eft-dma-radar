@@ -1,4 +1,3 @@
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -12,18 +11,10 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
     {
         // ── IL2CPP struct field offsets ──────────────────────────────────────────
         private const uint K_Name        = 0x10;   // char*    Il2CppClass::name
-        private const uint K_Namespace   = 0x18;   // char*    Il2CppClass::namespaze
         private const uint K_Fields      = 0x80;   // FieldInfo*  (direct array)
         private const uint K_Methods     = 0x98;   // MethodInfo** (array of pointers)
         private const uint K_MethodCount = 0x120;  // uint16
         private const uint K_FieldCount  = 0x124;  // uint16
-
-        private const uint FI_Name       = 0x00;   // char*    FieldInfo::name
-        private const uint FI_Offset     = 0x18;   // int32    FieldInfo::offset  (signed!)
-        private const uint FI_Stride     = 0x20;   // sizeof(FieldInfo)
-
-        private const uint MI_Pointer    = 0x00;   // void*    MethodInfo::methodPointer
-        private const uint MI_Name       = 0x18;   // char*    MethodInfo::name
 
         private const int  MaxClasses    = 80_000;
         private const int  MaxNameLen    = 256;
@@ -369,41 +360,6 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             }
         }
 
-        // ── Verbose dump logging ─────────────────────────────────────────────────
-
-        /// <summary>
-        /// Logs every resolved field and method for a single class.
-        /// </summary>
-        private static void LogClassDump(
-            SchemaClass sc,
-            string resolvedVia,
-            Dictionary<string, int> fieldMap,
-            Dictionary<string, ulong> methodMap)
-        {
-            XMLogging.WriteLine($"[Dump] ── {sc.CsName} ({resolvedVia}) ──");
-
-            if (fieldMap.Count > 0)
-            {
-                foreach (var (name, offset) in fieldMap)
-                {
-                    if (offset >= 0)
-                        XMLogging.WriteLine($"[Dump]   field  {name} = 0x{(uint)offset:X}");
-                    else
-                        XMLogging.WriteLine($"[Dump]   field  {name} = {offset}");
-                }
-            }
-            else
-            {
-                XMLogging.WriteLine($"[Dump]   (no fields)");
-            }
-
-            if (methodMap is not null && methodMap.Count > 0)
-            {
-                foreach (var (name, rva) in methodMap)
-                    XMLogging.WriteLine($"[Dump]   method {name} = 0x{rva:X}");
-            }
-        }
-
         // ── Memory helpers ───────────────────────────────────────────────────────
 
         /// <summary>
@@ -691,86 +647,5 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             return new string(sb);
         }
 
-        // ── Full class/field/method diagnostic dump ──────────────────────────────
-
-        /// <summary>
-        /// Writes a human-readable dump of every IL2CPP class in the TypeInfoTable to
-        /// <c>il2cpp_classes_dump.txt</c> next to the executable.
-        /// Each class header shows: TypeIndex | KlassPtr | Namespace.ClassName
-        /// Each field line shows:   field  &lt;name&gt;  offset=0xXX
-        /// Each method line shows:  method &lt;name&gt;  rva=0xXX
-        /// Call this on demand for offset discovery — it is independent of Dump().
-        /// </summary>
-        public static void DumpAllClassesToFile()
-        {
-            XMLogging.WriteLine("[Il2CppDumper] DumpAllClassesToFile starting...");
-
-            var gaBase = Memory.GameAssemblyBase;
-            if (gaBase == 0)
-            {
-                XMLogging.WriteLine("[Il2CppDumper] DumpAllClassesToFile ERROR: GameAssemblyBase is 0.");
-                return;
             }
-
-            if (!ResolveTypeInfoTableRva(gaBase))
-            {
-                XMLogging.WriteLine("[Il2CppDumper] DumpAllClassesToFile ERROR: TypeInfoTable resolution failed.");
-                return;
-            }
-
-            ulong tablePtr;
-            try { tablePtr = Memory.ReadPtr(gaBase + Offsets.Special.TypeInfoTableRva, false); }
-            catch (Exception ex)
-            {
-                XMLogging.WriteLine($"[Il2CppDumper] DumpAllClassesToFile ReadPtr failed: {ex.Message}");
-                return;
-            }
-
-            if (!tablePtr.IsValidVirtualAddress())
-            {
-                XMLogging.WriteLine("[Il2CppDumper] DumpAllClassesToFile: TypeInfoTable pointer is invalid.");
-                return;
-            }
-
-            var classes = ReadAllClassesFromTable(tablePtr);
-            XMLogging.WriteLine($"[Il2CppDumper] DumpAllClassesToFile: {classes.Count} classes found, reading fields/methods...");
-
-            var outputPath = Path.Combine(AppContext.BaseDirectory, "il2cpp_classes_dump.txt");
-
-            using var sw = new StreamWriter(outputPath, append: false, encoding: System.Text.Encoding.UTF8);
-            sw.WriteLine($"# IL2CPP class dump — {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
-            sw.WriteLine($"# GameAssembly base : 0x{gaBase:X}");
-            sw.WriteLine($"# TypeInfoTableRva  : 0x{Offsets.Special.TypeInfoTableRva:X}");
-            sw.WriteLine($"# Total classes     : {classes.Count}");
-            sw.WriteLine();
-
-            int written = 0;
-            foreach (var (name, ns, klassPtr, index) in classes)
-            {
-                var fullName = string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
-                var rva      = klassPtr - gaBase;
-                sw.WriteLine($"[{index,6}] rva=0x{rva:X16}  ptr=0x{klassPtr:X16}  {fullName}");
-
-                var fieldMap = ReadClassFields(klassPtr);
-                foreach (var (fieldName, offset) in fieldMap)
-                {
-                    if (offset >= 0)
-                        sw.WriteLine($"         field   {fieldName,-48} offset=0x{(uint)offset:X}");
-                    else
-                        sw.WriteLine($"         field   {fieldName,-48} offset={offset}");
-                }
-
-                var methodMap = ReadClassMethods(klassPtr, gaBase);
-                foreach (var (methodName, methodRva) in methodMap)
-                    sw.WriteLine($"         method  {methodName,-48} rva=0x{methodRva:X}");
-
-                if (fieldMap.Count > 0 || methodMap.Count > 0)
-                    sw.WriteLine();
-
-                written++;
-            }
-
-            XMLogging.WriteLine($"[Il2CppDumper] DumpAllClassesToFile complete — {written} classes written to: {outputPath}");
         }
-    }
-}
