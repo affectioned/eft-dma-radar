@@ -732,9 +732,17 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             try
             {
-                var players = _rgtPlayers.Where(x => x.IsActive && x.IsAlive);
                 var localPlayer = LocalPlayer;
-                if (!players.Any()) // No players - Throttle
+                int playerCount = 0;
+
+                // Count active+alive players first (single pass)
+                foreach (var p in _rgtPlayers)
+                {
+                    if (p.IsActive && p.IsAlive)
+                        playerCount++;
+                }
+
+                if (playerCount == 0)
                 {
                     Thread.Sleep(1);
                     return;
@@ -748,9 +756,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 }
 
                 int i = 0;
-                foreach (var player in players)
+                foreach (var player in _rgtPlayers)
                 {
-                    player.OnRealtimeLoop(round1[i++]);
+                    if (player.IsActive && player.IsAlive)
+                        player.OnRealtimeLoop(round1[i++]);
                 }
 
                 scatterMap.Execute(); // Execute scatter read
@@ -851,11 +860,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             try
             {
-                var players = _rgtPlayers
-                    .Where(x => x.IsHostileActive);
-                if (players is not null && players.Any())
+                foreach (var player in _rgtPlayers)
                 {
-                    foreach (var player in players)
+                    if (player.IsHostileActive)
                         player.RefreshGear();
                 }
             }
@@ -868,18 +875,26 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             try
             {
-                var players = _rgtPlayers
-                    .Where(x => x.IsActive && x.IsAlive && x is not BtrOperator);
-                if (players.Any()) // at least 1 player
+                int playerCount = 0;
+                foreach (var p in _rgtPlayers)
+                {
+                    if (p.IsActive && p.IsAlive && p is not BtrOperator)
+                        playerCount++;
+                }
+
+                if (playerCount > 0)
                 {
                     using var scatterMap = ScatterReadMap.Get();
                     var round1 = scatterMap.AddRound();
                     var round2 = scatterMap.AddRound();
                     int i = 0;
-                    foreach (var player in players)
+                    foreach (var player in _rgtPlayers)
                     {
-                        player.OnValidateTransforms(round1[i], round2[i]);
-                        i++;
+                        if (player.IsActive && player.IsAlive && player is not BtrOperator)
+                        {
+                            player.OnValidateTransforms(round1[i], round2[i]);
+                            i++;
+                        }
                     }
                     scatterMap.Execute(); // execute scatter read
                 }
@@ -1016,16 +1031,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             try
             {
-                var players = _rgtPlayers
-                    .Where(x => x.IsActive && x.IsAlive);
-                if (players is not null && players.Any())
+                foreach (var player in _rgtPlayers)
                 {
-                    foreach (var player in players)
-                    {
-                        player.RefreshHands();
-                        if (player is LocalPlayer localPlayer)
-                            localPlayer.Firearm.Update();
-                    }
+                    if (!player.IsActive || !player.IsAlive)
+                        continue;
+
+                    player.RefreshHands();
+                    if (player is LocalPlayer localPlayer)
+                        localPlayer.Firearm.Update();
                 }
             }
             catch

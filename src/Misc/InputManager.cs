@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using eft_dma_radar.Common.DMA;
+﻿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Misc;
 using eft_dma_radar.Tarkov;
@@ -10,12 +9,12 @@ namespace eft_dma_radar.Common.Misc
 {
     public static class InputManager
     {
-        private static bool _initialized = false;
+        private static volatile bool _initialized = false;
         private static bool _safeMode = false;
 
         private static byte[] _currentStateBitmap = new byte[64];
         private static byte[] _previousStateBitmap = new byte[64];
-        private static readonly ConcurrentDictionary<int, byte> _pressedKeys = new ConcurrentDictionary<int, byte>();
+        private static readonly HashSet<int> _pressedKeys = new();
 
         private static Vmm _hVMM;
         private static VmmInputManager _vmmInput;
@@ -117,32 +116,32 @@ namespace eft_dma_radar.Common.Misc
 
             for (int vk = 0; vk < 256; ++vk)
             {
-                if (_vmmInput.IsKeyDown((uint)vk))
-                    _pressedKeys.AddOrUpdate(vk, 1, (oldkey, oldvalue) => 1);
-            }
-
-            for (int vk = 0; vk < 256; ++vk)
-            {
-                var wasDown = (_previousStateBitmap[(vk * 2 / 8)] & (1 << (vk % 4 * 2))) != 0;
                 var isDown = _vmmInput.IsKeyDown((uint)vk);
+
+                if (isDown)
+                    _pressedKeys.Add(vk);
+
+                var wasDown = (_previousStateBitmap[(vk * 2 / 8)] & (1 << (vk % 4 * 2))) != 0;
 
                 if (wasDown != isDown)
                 {
+                    KeyActionHandler[] snapshot;
                     lock (_eventLock)
                     {
-                        if (_keyActionHandlers.TryGetValue(vk, out var handlers))
+                        if (!_keyActionHandlers.TryGetValue(vk, out var handlers))
+                            continue;
+                        snapshot = handlers.ToArray();
+                    }
+
+                    foreach (var handler in snapshot)
+                    {
+                        try
                         {
-                            foreach (var handler in handlers.ToList())
-                            {
-                                try
-                                {
-                                    handler.Handler?.Invoke(null, new KeyEventArgs(vk, isDown));
-                                }
-                                catch (Exception ex)
-                                {
-                                    XMLogging.WriteLine($"Error executing key handler for action '{handler.ActionName}': {ex.Message}");
-                                }
-                            }
+                            handler.Handler?.Invoke(null, new KeyEventArgs(vk, isDown));
+                        }
+                        catch (Exception ex)
+                        {
+                            XMLogging.WriteLine($"Error executing key handler for action '{handler.ActionName}': {ex.Message}");
                         }
                     }
                 }
@@ -296,8 +295,7 @@ namespace eft_dma_radar.Common.Misc
             if (!_initialized || _safeMode || _vmmInput == null)
                 return false;
 
-            var virtualKeyCode = (int)key;
-            return _pressedKeys.ContainsKey(virtualKeyCode);
+            return _pressedKeys.Contains(key);
         }
 
         public static bool IsKeyPressed(int key)
@@ -305,9 +303,8 @@ namespace eft_dma_radar.Common.Misc
             if (!_initialized || _safeMode || _vmmInput == null)
                 return false;
 
-            var virtualKeyCode = (int)key;
-            return _pressedKeys.ContainsKey(virtualKeyCode) &&
-                   (_previousStateBitmap[(virtualKeyCode * 2 / 8)] & (1 << (virtualKeyCode % 4 * 2))) == 0;
+            return _pressedKeys.Contains(key) &&
+                   (_previousStateBitmap[(key * 2 / 8)] & (1 << (key % 4 * 2))) == 0;
         }
 
         public static bool IsKeyHeldToggle(int key)
@@ -354,8 +351,15 @@ namespace eft_dma_radar.Common.Misc
             {
                 try
                 {
+                    if (MemoryInterface.Memory is { IsDisposed: true })
+                        break;
+
                     if (!_safeMode && MemDMABase.WaitForProcess())
                         UpdateKeys();
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -366,6 +370,8 @@ namespace eft_dma_radar.Common.Misc
                     Thread.Sleep(KEY_CHECK_DELAY);
                 }
             }
+
+            XMLogging.WriteLine("[InputManager] Worker thread exiting.");
         }
 
         private class KeyActionHandler
