@@ -104,6 +104,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Misc\MessagePack\ESPServerMessagePack\" />
+	  <Folder Include="Tarkov\Unity\LowLevel\Hooks\" />
 	</ItemGroup>
 
 </Project>
