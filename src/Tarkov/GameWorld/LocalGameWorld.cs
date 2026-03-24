@@ -538,8 +538,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
             MatchingProgressResolver.Reset();
             Il2CppClass.ForceReset();
             GuardManager.ClearCache();
-            LootFilterControl.RemoveNonStaticGroups();
-            LootItem.ClearNotificationHistory();
             throw new RaidEnded();
         }
 
@@ -579,8 +577,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch
             {
-                LootFilterControl.RemoveNonStaticGroups();
-                LootItem.ClearNotificationHistory();
                 return false;
             }
         }

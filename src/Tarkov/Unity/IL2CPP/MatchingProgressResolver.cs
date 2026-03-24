@@ -48,6 +48,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         private const int MaxGomFailures = 3;
         private static int _consecutiveGomFailures;
 
+        // ── Tracks whether NotifyRaidStarted() already printed the session summary ──
+        private static bool _sessionSummaryLogged;
+
         // ─────────────────────────────────────────────────────────────────────────
         // Public API
         // ─────────────────────────────────────────────────────────────────────────
@@ -62,6 +65,15 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         {
             _totalSw.Stop();
             StopStagePoller();
+
+            if (_highWaterStage != Enums.EMatchingStage.None)
+            {
+                XMLogging.WriteLine(
+                    $"{Tag} ──── Matching session ended ────\n" +
+                    $"{Tag}   Furthest stage reached : {_highWaterStage} ({(int)_highWaterStage}/17)\n" +
+                    $"{Tag}   Total matching elapsed  : {_totalSw.Elapsed.TotalSeconds:F1}s");
+                _sessionSummaryLogged = true;
+            }
         }
 
         /// <summary>
@@ -69,11 +81,11 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         /// </summary>
         public static void Reset()
         {
-            // Log summary before clearing state
-            if (_totalSw.IsRunning || _highWaterStage != Enums.EMatchingStage.None)
+            // Log summary only if matching was aborted before NotifyRaidStarted() fired
+            if (!_sessionSummaryLogged && (_totalSw.IsRunning || _highWaterStage != Enums.EMatchingStage.None))
             {
                 XMLogging.WriteLine(
-                    $"{Tag} ──── Matching session ended ────\n" +
+                    $"{Tag} ──── Matching session ended (aborted) ────\n" +
                     $"{Tag}   Furthest stage reached : {_highWaterStage} ({(int)_highWaterStage}/17)\n" +
                     $"{Tag}   Total matching elapsed  : {_totalSw.Elapsed.TotalSeconds:F1}s");
             }
@@ -93,6 +105,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             _totalSw.Reset();
             _stageSw.Reset();
             _resolvingAsync = false;
+            _sessionSummaryLogged = false;
             XMLogging.WriteLine($"{Tag} Cache invalidated via Reset().");
         }
 
