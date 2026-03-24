@@ -571,6 +571,7 @@ namespace eft_dma_radar.Tarkov
         public ulong      GOM       => _actualMemory?.GOM ?? 0;
         public uint                         ProcessPID       => _actualMemory?.ProcessPID ?? 0;
         public Vmm                          VmmHandle        => _actualMemory?.VmmHandle;
+        public bool                         IsDisposed       => _actualMemory?.IsDisposed ?? true;
 
         public bool RestartRadar
         {
