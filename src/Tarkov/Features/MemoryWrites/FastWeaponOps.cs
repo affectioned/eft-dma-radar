@@ -7,7 +7,6 @@ using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_shared.Common.Unity;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {

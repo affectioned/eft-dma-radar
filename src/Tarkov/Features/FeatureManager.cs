@@ -177,25 +177,6 @@ namespace eft_dma_radar.Tarkov.Features
             }
         }
 
-        /// <summary>
-        /// Executes MemPatch Features.
-        /// </summary>
-        private static void ExecuteMemPatches(IEnumerable<IMemPatchFeature> patches)
-        {
-            try
-            {
-                foreach (var feature in patches)
-                {
-                    feature.TryApply();
-                    feature.OnApply();
-                }
-            }
-            catch (Exception ex)
-            {
-                XMLogging.WriteLine($"MemPatches [FAIL] {ex}");
-            }
-        }
-
         private static void Memory_GameStarted(object sender, EventArgs e)
         {
             foreach (var feature in IFeature.AllFeatures)

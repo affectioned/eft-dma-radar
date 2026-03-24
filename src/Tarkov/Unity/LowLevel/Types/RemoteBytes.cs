@@ -2,7 +2,6 @@
 using System.Text;
 using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
-using eft_dma_shared.Common.Unity.LowLevel.Hooks;
 
 namespace eft_dma_radar.Common.Unity.LowLevel.Types
 {
