@@ -1539,41 +1539,61 @@ namespace eft_dma_radar.UI.Pages
 
         public static void RemoveNonStaticGroups()
         {
-            var lootFilterSettings = MainWindow.Window!.LootFilterControl;
-            var nonStaticGroups = LootFilterManager.CurrentGroups.Groups
-                .Where(g => g.IsStatic == false)
-                .ToList();
-
-            var needsRefresh = false;
-            var selectedWillBeRemoved = lootFilterSettings._selectedGroup != null &&
-                                        !lootFilterSettings._selectedGroup.IsStatic;
-
-            foreach (var group in nonStaticGroups)
-            {
-                lootFilterSettings._groupList.Remove(group);
-                LootFilterManager.CurrentGroups.Groups.Remove(group);
-                XMLogging.WriteLine($"[Filters] Removed non-static group: {group.Name}");
-                needsRefresh = true;
-            }
-
-            XMLogging.WriteLine($"[Filters] Removed {nonStaticGroups.Count} non-static groups.");
             firstRemove = true;
 
-            if (needsRefresh)
+            var window = MainWindow.Window;
+            if (window == null)
+                return;
+
+            var lootFilterSettings = window.LootFilterControl;
+            if (lootFilterSettings == null)
+                return;
+
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted)
+                return;
+
+            Action action = () =>
             {
-                if (lootFilterSettings._groupList.Count == 0)
+                var nonStaticGroups = LootFilterManager.CurrentGroups.Groups
+                    .Where(g => g.IsStatic == false)
+                    .ToList();
+
+                var needsRefresh = false;
+                var selectedWillBeRemoved = lootFilterSettings._selectedGroup != null &&
+                                            !lootFilterSettings._selectedGroup.IsStatic;
+
+                foreach (var group in nonStaticGroups)
                 {
-                    lootFilterSettings.EnsureDefaultLootFilter();
-                }
-                else if (selectedWillBeRemoved)
-                {
-                    lootFilterSettings.lstFilterGroups.SelectedIndex = 0;
+                    lootFilterSettings._groupList.Remove(group);
+                    LootFilterManager.CurrentGroups.Groups.Remove(group);
+                    XMLogging.WriteLine($"[Filters] Removed non-static group: {group.Name}");
+                    needsRefresh = true;
                 }
 
-                lootFilterSettings.RenumberGroupIndices();
-                LootFilterManager.Save();
-                lootFilterSettings.RefreshGroupsListView();
-            }
+                XMLogging.WriteLine($"[Filters] Removed {nonStaticGroups.Count} non-static groups.");
+
+                if (needsRefresh)
+                {
+                    if (lootFilterSettings._groupList.Count == 0)
+                    {
+                        lootFilterSettings.EnsureDefaultLootFilter();
+                    }
+                    else if (selectedWillBeRemoved)
+                    {
+                        lootFilterSettings.lstFilterGroups.SelectedIndex = 0;
+                    }
+
+                    lootFilterSettings.RenumberGroupIndices();
+                    LootFilterManager.Save();
+                    lootFilterSettings.RefreshGroupsListView();
+                }
+            };
+
+            if (dispatcher.CheckAccess())
+                action();
+            else
+                dispatcher.Invoke(action);
         }
 
         public static Predicate<LootItem> Create()
