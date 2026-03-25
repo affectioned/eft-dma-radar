@@ -254,10 +254,6 @@ namespace eft_dma_radar.Tarkov
             {
                 LocalGameWorld.RaidCooldown.WaitIfActive(_radarCts.Token);
 
-                // Pre-raid: try to find the hideout game object while in menu/hideout.
-                if (!Hideout.IsValid)
-                    Hideout.TryFind();
-
                 try
                 {
                     var ct = _radarCts.Token;
