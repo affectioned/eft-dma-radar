@@ -30,6 +30,12 @@
         [JsonPropertyName("price")]
         public long TraderPrice { get; init; } = 0;
         /// <summary>
+        /// Name of the trader offering the highest vendor price.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("traderName")]
+        public string BestTraderName { get; init; } = string.Empty;
+        /// <summary>
         /// Optimal Flea Market Price.
         /// </summary>
         [JsonInclude]

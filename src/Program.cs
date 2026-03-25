@@ -521,8 +521,6 @@ namespace eft_dma_radar
                 FeatureManager.ModuleInit();
                 QuestPlannerWorker.ModuleInit(); // Quest Planner background service
 
-                Hideout.InitAsync(); // background stash scan — non-blocking
-
                 ResourceJanitor.ModuleInit(new Action(CleanupWindowResources));
 
                 loading.UpdateStatus("Loading Completed!", 100);

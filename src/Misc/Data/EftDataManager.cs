@@ -2,6 +2,10 @@
 using eft_dma_radar.Common.UI;
 using System.Collections.Frozen;
 using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace eft_dma_radar.Common.Misc.Data
 {
@@ -33,6 +37,11 @@ namespace eft_dma_radar.Common.Misc.Data
         /// </summary>
         public static FrozenDictionary<string, MapElement> MapData { get; private set; }
 
+        /// <summary>
+        /// Trader lookup — BSG trader id mapped to display name.
+        /// </summary>
+        public static FrozenDictionary<string, string> AllTraders { get; private set; }
+        
         public static bool IsInitialized { get; set; } = false;
 
         #region Startup
@@ -79,8 +88,14 @@ namespace eft_dma_radar.Common.Misc.Data
                 MapData = data.Maps?
                     .Where(x => !string.IsNullOrEmpty(x.NameId))
                     .ToDictionary(k => k.NameId, v => v, StringComparer.OrdinalIgnoreCase)
-                    .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
+                    .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase) 
                     ?? new Dictionary<string, MapElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+
+                AllTraders = (data.Traders ?? [])
+                    .Where(t => !string.IsNullOrEmpty(t.Id) && !string.IsNullOrEmpty(t.Name))
+                    .DistinctBy(t => t.Id, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(t => t.Id, t => t.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
                 IsInitialized = true;
                 loading.UpdateStatus("Data initialization complete", loading.PercentComplete);
@@ -90,10 +105,11 @@ namespace eft_dma_radar.Common.Misc.Data
                 XMLogging.WriteLine($"Error processing data: {ex}");
                 loading.UpdateStatus("Error processing data. Using empty data structures.", loading.PercentComplete);
 
-                AllItems = new Dictionary<string, TarkovMarketItem>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                AllItems      = new Dictionary<string, TarkovMarketItem>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
                 AllContainers = new Dictionary<string, TarkovMarketItem>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
-                TaskData = new Dictionary<string, TaskElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
-                MapData = new Dictionary<string, MapElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                TaskData      = new Dictionary<string, TaskElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                MapData       = new Dictionary<string, MapElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                AllTraders    = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
                 IsInitialized = true;
             }
         }
@@ -373,6 +389,12 @@ namespace eft_dma_radar.Common.Misc.Data
                             .ToDictionary(k => k.Id, v => v, StringComparer.OrdinalIgnoreCase)
                             .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
+                        AllTraders = (data.Traders ?? [])
+                            .Where(t => !string.IsNullOrEmpty(t.Id) && !string.IsNullOrEmpty(t.Name))
+                            .DistinctBy(t => t.Id, StringComparer.OrdinalIgnoreCase)
+                            .ToDictionary(t => t.Id, t => t.Name, StringComparer.OrdinalIgnoreCase)
+                            .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+
                         XMLogging.WriteLine("Background data update successful");
                         return true;
                     }
@@ -468,6 +490,17 @@ namespace eft_dma_radar.Common.Misc.Data
 
             [JsonPropertyName("maps")]
             public List<MapElement> Maps { get; set; } = new List<MapElement>();
+
+            [JsonPropertyName("traders")]
+            public List<TraderDataElement> Traders { get; set; } = new List<TraderDataElement>();
+        }
+
+        public sealed class TraderDataElement
+        {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+            [JsonPropertyName("name")]
+            public string Name { get; set; }
         }
 
         /// <summary>
@@ -523,128 +556,6 @@ namespace eft_dma_radar.Common.Misc.Data
             public System.Numerics.Vector3 ToVector3() => new(X, Y, Z);
         }
 
-        public partial class TaskElement
-        {
-            [JsonPropertyName("id")]
-            public string Id { get; set; }
-
-            [JsonPropertyName("name")]
-            public string Name { get; set; }
-
-            [JsonPropertyName("kappaRequired")]
-            public bool KappaRequired { get; set; }
-
-            [JsonPropertyName("objectives")]
-            public List<ObjectiveElement> Objectives { get; set; } = new List<ObjectiveElement>();
-
-            public partial class ObjectiveElement
-            {
-                [JsonPropertyName("id")]
-                public string Id { get; set; }
-
-                [JsonPropertyName("type")]
-                public string Type { get; set; }
-
-                [JsonPropertyName("optional")]
-                public bool Optional { get; set; }
-
-                [JsonPropertyName("description")]
-                public string Description { get; set; }
-
-                [JsonPropertyName("requiredKeys")]
-                public List<List<MarkerItemClass>> RequiredKeys { get; set; }
-
-                [JsonPropertyName("maps")]
-                public List<BasicDataElement> Maps { get; set; }
-
-                [JsonPropertyName("zones")]
-                public List<ZoneElement> Zones { get; set; }
-
-                [JsonPropertyName("count")]
-                public int Count { get; set; }
-
-                [JsonPropertyName("foundInRaid")]
-                public bool FoundInRaid { get; set; }
-
-                [JsonPropertyName("item")]
-                public MarkerItemClass Item { get; set; }
-
-                [JsonPropertyName("questItem")]
-                public ObjectiveQuestItem QuestItem { get; set; }
-
-                [JsonPropertyName("markerItem")]
-                public MarkerItemClass MarkerItem { get; set; }
-
-                public partial class MarkerItemClass
-                {
-                    [JsonPropertyName("id")]
-                    public string Id { get; set; }
-
-                    [JsonPropertyName("name")]
-                    public string Name { get; set; }
-
-                    [JsonPropertyName("shortName")]
-                    public string ShortName { get; set; }
-                }
-
-                public partial class ObjectiveQuestItem
-                {
-                    [JsonPropertyName("id")]
-                    public string Id { get; set; }
-
-                    [JsonPropertyName("name")]
-                    public string Name { get; set; }
-
-                    [JsonPropertyName("shortName")]
-                    public string ShortName { get; set; }
-
-                    [JsonPropertyName("normalizedName")]
-                    public string NormalizedName { get; set; }
-
-                    [JsonPropertyName("description")]
-                    public string Description { get; set; }
-                }
-
-                public partial class ZoneElement
-                {
-                    [JsonPropertyName("id")]
-                    public string Id { get; set; }
-
-                    [JsonPropertyName("outline")]
-                    public List<PositionElement> Outline { get; set; }
-
-                    [JsonPropertyName("position")]
-                    public PositionElement Position { get; set; }
-
-                    [JsonPropertyName("map")]
-                    public BasicDataElement Map { get; set; }
-                }
-
-                public partial class BasicDataElement
-                {
-                    [JsonPropertyName("id")]
-                    public string Id { get; set; }
-
-                    [JsonPropertyName("normalizedName")]
-                    public string NormalizedName { get; set; }
-
-                    [JsonPropertyName("name")]
-                    public string Name { get; set; }
-                }
-
-                public partial class PositionElement
-                {
-                    [JsonPropertyName("y")]
-                    public float Y { get; set; }
-
-                    [JsonPropertyName("x")]
-                    public float X { get; set; }
-
-                    [JsonPropertyName("z")]
-                    public float Z { get; set; }
-                }
-            }
-        }
         #endregion
     }
 }
