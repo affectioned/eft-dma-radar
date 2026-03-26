@@ -73,6 +73,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         protected static readonly GroupManager _groups = new();
         protected static int _playerScavNumber = 0;
         public virtual int VoipId { get; }
+        /// <summary>
+        /// Tracks which player (Base address) owns each VerticesAddr.
+        /// Prevents two players sharing the same transform hierarchy.
+        /// Key = VerticesAddr, Value = Player.Base that claimed it.
+        /// </summary>
+        private static readonly ConcurrentDictionary<ulong, ulong> _verticesOwner = new();
 
         /// <summary>
         /// Resets/Updates 'static' assets in preparation for a new game/raid instance.
@@ -82,6 +88,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             _groups.Clear();
             _rateLimit.Clear();
             _playerScavNumber = 0;
+            _verticesOwner.Clear();
         }
 
         #endregion
@@ -169,7 +176,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             // Skeleton
             try
             {
+                ReleaseSkeletonClaim();
                 Skeleton?.ResetESPCacheAndTransforms();
+                Skeleton = null;
             }
             catch (Exception ex)
             {
@@ -726,14 +735,44 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (Body == 0 || !Body.IsValidVirtualAddress())
                     return false;
 
-                Skeleton = new Skeleton(this, GetTransformInternalChain);
+                var skeleton = new Skeleton(this, GetTransformInternalChain);
+
+                // Guard against two players sharing the same transform hierarchy.
+                // This happens when EFT reuses a pooled PlayerBody whose pointer
+                // hasn't been fully updated yet, causing the new player's skeleton
+                // to point at an already-alive player's vertices array.
+                var rootVerts = skeleton.Root.VerticesAddr;
+                if (!_verticesOwner.TryAdd(rootVerts, this))
+                {
+                    // Already owned by someone else — stale Body pointer, retry later.
+                    if (_verticesOwner.TryGetValue(rootVerts, out var owner) && owner != this)
+                        throw new InvalidOperationException(
+                            $"VerticesAddr 0x{rootVerts:X} already owned by player 0x{owner:X}");
+                }
+
+                Skeleton = skeleton;
                 return true;
             }
             catch
             {
+                // Release any claim we might have registered before failing.
+                if (Skeleton == null && Body != 0)
+                {
+                    // Nothing was assigned yet — no claim to release.
+                }
                 Skeleton = null;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Releases this player's VerticesAddr ownership claim so another player can claim it.
+        /// Call whenever the skeleton is being discarded (re-alloc, soft-reset, dispose).
+        /// </summary>
+        protected void ReleaseSkeletonClaim()
+        {
+            if (Skeleton?.Root is UnityTransform root)
+                _verticesOwner.TryRemove(new KeyValuePair<ulong, ulong>(root.VerticesAddr, this));
         }
         /// <summary>
         /// Executed on each Transform Validation Loop.
@@ -1442,7 +1481,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             try
             {
-                if (!Skeleton.HasValidPosition)
+                if (Skeleton is null || !Skeleton.HasValidPosition)
                     return;
 
                 // PERF: cache once

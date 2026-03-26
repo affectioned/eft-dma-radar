@@ -96,8 +96,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         private static int _bearCounter = 0;
 
         // Key: Player.Base (ulong) → assigned index
-        private static readonly Dictionary<ulong, int> _pmcIndex = new();
-        private static readonly object _pmcLock = new(); 
+        private static readonly Dictionary<ulong, int> _pmcIndex = [];
+        private static readonly Lock _pmcLock = new();
         private int GetOrAssignPmcIndex(bool isUsec)
         {
             lock (_pmcLock)
@@ -474,6 +474,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     }
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"ERROR updating Member Category for '{Name}': {ex}");
@@ -498,6 +502,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 else
                     HealthStatus = Enums.ETagStatus.Healthy;
             }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"ERROR updating Health Status for '{Name}': {ex}");
@@ -510,14 +518,11 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// </summary>
         private void UpdateAimingStatus()
         {
-            ulong handsController = 0;
-            ulong bundleAnimBones = 0;
-            ulong pwa = 0;
             try
             {
-                handsController = Memory.ReadPtr(HandsControllerAddr);
-                bundleAnimBones = Memory.ReadPtr(handsController + Offsets.ObservedHandsController.BundleAnimationBones);
-                pwa = Memory.ReadPtr(bundleAnimBones + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
+                var handsController = Memory.ReadPtr(HandsControllerAddr);
+                var bundleAnimBones = Memory.ReadPtr(handsController + Offsets.ObservedHandsController.BundleAnimationBones);
+                var pwa = Memory.ReadPtr(bundleAnimBones + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
                 IsAiming = Memory.ReadValue<bool>(pwa + Offsets.ProceduralWeaponAnimationObs._isAimingObs);
                 //if (!IsAI)
                 //{

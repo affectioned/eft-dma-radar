@@ -4,17 +4,12 @@ using eft_dma_radar.Common.Unity.Collections;
 
 namespace eft_dma_radar.Tarkov.GameWorld.Explosives
 {
-    public sealed class ExplosivesManager : IReadOnlyCollection<IExplosiveItem>
+    public sealed class ExplosivesManager(ulong localGameWorld) : IReadOnlyCollection<IExplosiveItem>
     {
-        private static readonly uint[] _toSyncObjects = new[] { Offsets.GameWorld.SynchronizableObjectLogicProcessor, Offsets.SynchronizableObjectLogicProcessor._activeSynchronizableObjects };
-        private readonly ulong _localGameWorld;
+        private static readonly uint[] _toSyncObjects = [Offsets.GameWorld.SynchronizableObjectLogicProcessor, Offsets.SynchronizableObjectLogicProcessor._activeSynchronizableObjects];
+        private readonly ulong _localGameWorld = localGameWorld;
         private readonly ConcurrentDictionary<ulong, IExplosiveItem> _explosives = new();
         private ulong _grenadesBase;
-
-        public ExplosivesManager(ulong localGameWorld)
-        {
-            _localGameWorld = localGameWorld;
-        }
 
         private void Init()
         {
@@ -108,6 +103,10 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
 
                 // XMLogging.WriteLine($"[EXP-RTL] Refresh end. Count={_explosives.Count}");
             }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"[EXP-RTL] Refresh error: {ex}");
@@ -149,6 +148,11 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                     }
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                _grenadesBase = 0x0;
+                throw;
+            }
             catch (Exception ex)
             {
                 _grenadesBase = 0x0;
@@ -181,9 +185,13 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                     }
                     catch (Exception ex)
                     {
-                        XMLogging.WriteLine($"Error Processing SyncObject @ 0x{syncObject.ToString("X")}: {ex}");
+                        XMLogging.WriteLine($"Error Processing SyncObject @ 0x{syncObject:X}: {ex}");
                     }
                 }
+            }
+            catch (ObjectDisposedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -231,6 +239,10 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                         XMLogging.WriteLine($"Error Processing Mortar Projectile @ 0x{activeProjectile.Value:X}: {ex}");
                     }
                 }
+            }
+            catch (ObjectDisposedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
