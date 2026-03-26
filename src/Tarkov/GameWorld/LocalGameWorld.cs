@@ -217,7 +217,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             var rgtPlayersAddr = Memory.ReadPtr(Base + Offsets.ClientLocalGameWorld.RegisteredPlayers, false);
             _rgtPlayers = new RegisteredPlayers(rgtPlayersAddr, this);
             if (_rgtPlayers.GetPlayerCount() < 1)
-                throw new ArgumentOutOfRangeException(nameof(_rgtPlayers));
+                throw new InvalidOperationException("RegisteredPlayers count is less than 1.");
 
             _lootManager = new LootManager(Base, ct);
             _exfilManager = new ExitManager(Base, _rgtPlayers.LocalPlayer.IsPmc);
@@ -239,7 +239,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     {
                         XMLogging.WriteLine($"[Raid] Ballistics diagnostic failed: {ex.Message}");
                     }
-                });
+                }, ct);
             }
         }
 
@@ -698,6 +698,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 XMLogging.WriteLine("Realtime thread starting...");
                 while (InRaid)
                 {
+                    if (Memory.IsDisposed) { Dispose(); break; }
                     if (Config.RatelimitRealtimeReads ||!CameraManagerBase.EspRunning || (MemWriteFeature<Aimbot>.Instance.Enabled && Aimbot.Engaged))
                     {
                         _refreshWait.AutoWait(TimeSpan.FromMilliseconds(1), 1000);
@@ -709,6 +710,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (OperationCanceledException)
             {
+            }
+            catch (ObjectDisposedException)
+            {
+                Dispose();
             }
             catch (Exception ex)
             {
@@ -760,6 +765,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
                 scatterMap.Execute(); // Execute scatter read
             }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"CRITICAL ERROR - UpdatePlayers Loop FAILED: {ex}");
@@ -781,6 +790,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 XMLogging.WriteLine("Misc thread starting...");
                 while (InRaid)
                 {
+                    if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
                     UpdateMisc();
                     Thread.Sleep(50);
@@ -788,6 +798,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (OperationCanceledException)
             {
+            }
+            catch (ObjectDisposedException)
+            {
+                Dispose();
             }
             catch (Exception ex)
             {
@@ -895,6 +909,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     scatterMap.Execute(); // execute scatter read
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"CRITICAL ERROR - ValidatePlayerTransforms Loop FAILED: {ex}");
@@ -916,6 +934,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 XMLogging.WriteLine("Grenades thread starting...");
                 while (InRaid)
                 {
+                    if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
                     _grenadeManager.Refresh();
                     Thread.Sleep(10);
@@ -923,6 +942,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (OperationCanceledException)
             {
+            }
+            catch (ObjectDisposedException)
+            {
+                Dispose();
             }
             catch (Exception ex)
             {
@@ -951,6 +974,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 XMLogging.WriteLine("FastWorker thread starting...");
                 while (InRaid)
                 {
+                    if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
                     RefreshCameraManager();
                     RefreshFast();
@@ -959,6 +983,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (OperationCanceledException)
             {
+            }
+            catch (ObjectDisposedException)
+            {
+                Dispose();
             }
             catch (Exception ex)
             {
@@ -979,6 +1007,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 XMLogging.WriteLine("Interactables thread starting...");
                 while (InRaid)
                 {
+                    if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
                     RefreshWorldInteractables();
                     Thread.Sleep(750);
@@ -986,6 +1015,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (OperationCanceledException)
             {
+            }
+            catch (ObjectDisposedException)
+            {
+                Dispose();
             }
             catch (Exception ex)
             {

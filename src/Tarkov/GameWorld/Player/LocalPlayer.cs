@@ -203,6 +203,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 return Memory.ReadValue<bool>(this.PWA + Offsets.ProceduralWeaponAnimation._isAiming, false);
             }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"CheckIfADS() ERROR: {ex}");
