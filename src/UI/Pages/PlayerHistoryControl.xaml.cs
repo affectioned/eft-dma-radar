@@ -1,17 +1,31 @@
-﻿using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Tarkov.EFTPlayer;
-using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
+﻿﻿using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Unity.LowLevel;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using DataGrid = System.Windows.Controls.DataGrid;
-using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
+using UserControl = System.Windows.Controls.UserControl;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
-using UserControl = System.Windows.Controls.UserControl;
+using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
+using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
+using DataGridCell = System.Windows.Controls.DataGridCell;
+using DataGrid = System.Windows.Controls.DataGrid;
 
 namespace eft_dma_radar.UI.Pages
 {
@@ -160,6 +174,10 @@ namespace eft_dma_radar.UI.Pages
         #region Functions/Methods
         private void RegisterSettingsEvents()
         {
+            playerHistoryDataGrid.MouseDoubleClick += PlayerHistoryDataGrid_MouseDoubleClick;
+            mnuRemoveEntry.Click += MnuRemoveEntry_Click;
+            mnuClearAll.Click += MnuClearAll_Click;
+
             RegisterDeselectionEvents();
         }
 
@@ -242,6 +260,12 @@ namespace eft_dma_radar.UI.Pages
             {
                 try
                 {
+                    if (string.IsNullOrEmpty(selectedEntry.ID))
+                    {
+                        NotificationsShared.Warning($"Cannot add '{selectedEntry.Name}' — Account ID not yet resolved. Try again after a dogtag has been read.");
+                        return;
+                    }
+
                     if (MessageBox.Show(
                         $"Add player '{selectedEntry.Name}' to the watchlist?",
                         "Confirm",
@@ -304,14 +328,30 @@ namespace eft_dma_radar.UI.Pages
                 XMLogging.WriteLine($"[PlayerHistory] Error opening player profile: {ex}");
             }
         }
+
+        private (DataGridCell cell, int columnIndex) GetCellInfo(MouseButtonEventArgs e)
+        {
+            DependencyObject dep = (DependencyObject)e.OriginalSource;
+
+            while (dep != null && !(dep is DataGridCell))
+            {
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            if (dep is DataGridCell cell)
+            {
+                return (cell, cell.Column.DisplayIndex);
+            }
+
+            return (null, -1);
+        }
         #endregion
         #region Events
         private void PlayerHistory_EntriesChanged(object sender, EventArgs e)
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.Invoke(() =>
-                {
+                Dispatcher.Invoke(() => {
                     RefreshDataGrid();
                     RefreshSorting();
                 });
@@ -343,6 +383,61 @@ namespace eft_dma_radar.UI.Pages
                 _timeUpdateTimer.Stop();
                 _timeUpdateTimer.Tick -= TimeUpdateTimer_Tick;
                 _timeUpdateTimer = null;
+            }
+        }
+
+        private void PlayerHistoryDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var (cell, columnIndex) = GetCellInfo(e);
+
+            if (cell == null || !(cell.DataContext is PlayerHistoryEntry entry))
+                return;
+
+            if (columnIndex == 1)
+            {
+                OpenPlayerProfile(entry.ID);
+
+                e.Handled = true;
+            }
+            else
+            {
+                AddToWatchlist();
+            }
+        }
+
+        private void MnuRemoveEntry_Click(object sender, RoutedEventArgs e)
+        {
+            if (playerHistoryDataGrid.SelectedItem is PlayerHistoryEntry selectedEntry)
+            {
+                try
+                {
+                    _playerHistory?.Remove(selectedEntry);
+                }
+                catch (Exception ex)
+                {
+                    NotificationsShared.Error($"Error removing entry: {ex.Message}");
+                    XMLogging.WriteLine($"[PlayerHistory] Error removing entry: {ex}");
+                }
+            }
+        }
+
+        private void MnuClearAll_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (MessageBox.Show(
+                    "Clear all player history? This cannot be undone.",
+                    "Confirm",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                {
+                    _playerHistory?.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationsShared.Error($"Error clearing history: {ex.Message}");
+                XMLogging.WriteLine($"[PlayerHistory] Error clearing history: {ex}");
             }
         }
         #endregion
