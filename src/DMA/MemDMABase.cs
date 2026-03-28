@@ -670,37 +670,67 @@ namespace eft_dma_radar.Common.DMA
         /// <returns>Address where the pattern was found, or 0 if not found.</returns>
         public ulong FindSignature(string signature, string moduleName)
         {
+            var matches = FindSignatures(signature, moduleName, 1);
+            return matches.Length != 0 ? matches[0] : 0;
+        }
+
+        /// <summary>
+        /// Searches for all matches of a pattern signature within a specific module.
+        /// </summary>
+        /// <param name="signature">Pattern signature in the format "AA BB ?? DD" where ?? represents a wildcard.</param>
+        /// <param name="moduleName">Name of the module to search (e.g., "UnityPlayer.dll")</param>
+        /// <param name="maxMatches">Maximum number of matches to return.</param>
+        /// <returns>All matching addresses, or an empty array when no match was found.</returns>
+        public ulong[] FindSignatures(string signature, string moduleName, int maxMatches = int.MaxValue)
+        {
+            if (string.IsNullOrWhiteSpace(signature) || maxMatches <= 0)
+                return Array.Empty<ulong>();
+
+            if (!TryParseSignature(signature, out var pattern))
+                return Array.Empty<ulong>();
+
             try
             {
                 var moduleBase = _hVMM.ProcessGetModuleBase(ProcessPID, moduleName);
                 if (moduleBase == 0 || moduleBase == ulong.MaxValue)
                 {
                     XMLogging.WriteLine($"[Signature] Module {moduleName} not found");
-                    return 0;
+                    return Array.Empty<ulong>();
                 }
 
                 // IL2CPP GameAssembly.dll can be 150-200+ MB, search in chunks
                 // Search up to 200MB to cover most IL2CPP builds
                 const ulong MAX_SEARCH_SIZE = 0xC800000; // 200MB
                 const ulong CHUNK_SIZE = 0x1000000; // 16MB chunks for DMA reads
-                
+
                 ulong rangeEnd = moduleBase + MAX_SEARCH_SIZE;
-                
+                int overlap = Math.Max(0x100, pattern.Length - 1);
+                ulong step = CHUNK_SIZE > (ulong)overlap ? CHUNK_SIZE - (ulong)overlap : CHUNK_SIZE;
+
+                var results = new List<ulong>(Math.Min(maxMatches, 64));
+
                 // Search in chunks to avoid DMA read limits
-                for (ulong chunkStart = moduleBase; chunkStart < rangeEnd; chunkStart += CHUNK_SIZE - 0x100)
+                for (ulong chunkStart = moduleBase; chunkStart < rangeEnd && results.Count < maxMatches; chunkStart += step)
                 {
                     ulong chunkEnd = Math.Min(chunkStart + CHUNK_SIZE, rangeEnd);
-                    var result = FindSignature(signature, chunkStart, chunkEnd, ProcessPID);
-                    if (result != 0)
-                        return result;
+                    var chunkMatches = FindSignatures(pattern, chunkStart, chunkEnd, ProcessPID, maxMatches - results.Count);
+
+                    foreach (var match in chunkMatches)
+                    {
+                        if (results.Count == 0 || results[^1] != match)
+                            results.Add(match);
+
+                        if (results.Count >= maxMatches)
+                            break;
+                    }
                 }
-                
-                return 0;
+
+                return results.ToArray();
             }
             catch (Exception ex)
             {
                 XMLogging.WriteLine($"[Signature] Error searching module {moduleName}: {ex.Message}");
-                return 0;
+                return Array.Empty<ulong>();
             }
         }
 
@@ -714,47 +744,103 @@ namespace eft_dma_radar.Common.DMA
         /// <returns>Address where the pattern was found, or 0 if not found.</returns>
         public ulong FindSignature(string signature, ulong rangeStart, ulong rangeEnd, uint pid)
         {
-            if (string.IsNullOrEmpty(signature) || rangeStart >= rangeEnd)
-                return 0;
+            var matches = FindSignatures(signature, rangeStart, rangeEnd, pid, 1);
+            return matches.Length != 0 ? matches[0] : 0;
+        }
+
+        /// <summary>
+        /// Searches for all matches of a pattern signature in memory within the specified address range.
+        /// </summary>
+        /// <param name="signature">Pattern signature in the format "AA BB ?? DD" where ?? represents a wildcard.</param>
+        /// <param name="rangeStart">Start address of the search range.</param>
+        /// <param name="rangeEnd">End address of the search range.</param>
+        /// <param name="pid">The process to read memory of.</param>
+        /// <param name="maxMatches">Maximum number of matches to return.</param>
+        /// <returns>All matching addresses, or an empty array when no match was found.</returns>
+        public ulong[] FindSignatures(string signature, ulong rangeStart, ulong rangeEnd, uint pid, int maxMatches = int.MaxValue)
+        {
+            if (string.IsNullOrWhiteSpace(signature) || rangeStart >= rangeEnd || maxMatches <= 0)
+                return Array.Empty<ulong>();
+
+            if (!TryParseSignature(signature, out var pattern))
+                return Array.Empty<ulong>();
+
+            return FindSignatures(pattern, rangeStart, rangeEnd, pid, maxMatches);
+        }
+
+        private ulong[] FindSignatures(byte?[] pattern, ulong rangeStart, ulong rangeEnd, uint pid, int maxMatches)
+        {
+            if (pattern.Length == 0 || rangeStart >= rangeEnd || maxMatches <= 0)
+                return Array.Empty<ulong>();
 
             try
             {
-                // Read the memory block to search within
                 byte[] buffer = _hVMM.MemRead(pid, rangeStart, (uint)(rangeEnd - rangeStart), out _, VmmFlags.NOCACHE);
+                if (buffer is null || buffer.Length < pattern.Length)
+                    return Array.Empty<ulong>();
 
-                if (buffer is null || buffer.Length == 0)
-                    return 0;
+                var matches = new List<ulong>(Math.Min(maxMatches, 32));
+                int lastStart = buffer.Length - pattern.Length;
 
-                ulong firstMatch = 0;
-
-                var patSpan = signature.AsSpan();
-                for (ulong i = 0; i < (ulong)buffer.Length; i++)
+                for (int i = 0; i <= lastStart; i++)
                 {
-                    if (patSpan[0] == '?' || buffer[i] == GetByte(patSpan[..2]))
+                    bool isMatch = true;
+                    for (int j = 0; j < pattern.Length; j++)
                     {
-                        if (firstMatch == 0)
-                            firstMatch = rangeStart + i;
-
-                        if (patSpan.Length <= 2)
+                        var expected = pattern[j];
+                        if (expected.HasValue && buffer[i + j] != expected.Value)
+                        {
+                            isMatch = false;
                             break;
+                        }
+                    }
 
-                        patSpan = patSpan[(patSpan[0] == '?' ? 2 : 3)..];
-                    }
-                    else
-                    {
-                        patSpan = signature.AsSpan();
-                        firstMatch = 0;
-                    }
+                    if (!isMatch)
+                        continue;
+
+                    matches.Add(rangeStart + (ulong)i);
+                    if (matches.Count >= maxMatches)
+                        break;
                 }
 
-                return firstMatch;
+                return matches.ToArray();
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[DMA] Error in FindSignature: {ex.Message}");
+                XMLogging.WriteLine($"[DMA] Error in FindSignatures: {ex.Message}");
+                return Array.Empty<ulong>();
+            }
+        }
+
+        private static bool TryParseSignature(string signature, out byte?[] pattern)
+        {
+            var parts = signature.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length == 0)
+            {
+                pattern = Array.Empty<byte?>();
+                return false;
             }
 
-            return 0;
+            pattern = new byte?[parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var part = parts[i];
+                if (part is "?" or "??")
+                {
+                    pattern[i] = null;
+                    continue;
+                }
+
+                if (part.Length != 2 || !byte.TryParse(part, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var b))
+                {
+                    pattern = Array.Empty<byte?>();
+                    return false;
+                }
+
+                pattern[i] = b;
+            }
+
+            return true;
         }
 
         /// <summary>
