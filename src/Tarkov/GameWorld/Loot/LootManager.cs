@@ -17,7 +17,6 @@ using HandyControl.Controls;
 using System.Drawing.Imaging.Effects;
 using eft_dma_radar.UI.Misc;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using eft_dma_radar.Web.ProfileApi;
 
 namespace eft_dma_radar.Tarkov.Loot
 {

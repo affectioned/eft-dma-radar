@@ -5,8 +5,6 @@ using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
-using eft_dma_radar.Tarkov.API;
-using eft_dma_radar.Web.ProfileApi;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -254,14 +252,6 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 XMLogging.WriteLine(
                     $"[GearManager] Resolved ProfileID for {player}: {profileId}");
 
-                // Register this profileId in the local database. AccountId is not
-                // available from the player's own dogtag — it will be filled in if
-                // they appear as a killer on a corpse dogtag in this or a future raid.
-                DogtagDatabase.TryAddOrUpdate(profileId, null, null);
-
-                // If accountId was already seeded (e.g. they killed someone previously),
-                // trigger stats fetch now.
-                // PlayerLookupApiClient removed
             }
             catch { }
         }

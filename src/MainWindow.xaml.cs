@@ -1,6 +1,5 @@
 ﻿#nullable enable
 using eft_dma_radar.Tarkov;
-using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;

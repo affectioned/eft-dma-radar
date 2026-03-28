@@ -16,7 +16,6 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using static eft_dma_radar.Tarkov.API.EFTProfileService;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using Size = System.Windows.Size;
@@ -660,25 +659,11 @@ namespace eft_dma_radar.UI.Misc
         public string Filename { get; set; } = "config-eft-v3.json";
 
         /// <summary>
-        /// The eft profile service, false if wanting tarkov.dev, true if wanting eft-api.tech
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("alternateProfileService")]
-        public bool AlternateProfileService { get; set; } = false;
-
-        /// <summary>
         /// Send anonymous data to fd-mambo server to count amoutn of users. A simple ping, no IP or personal info is stored. It creates and uses a uniqe ID number.
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("sendAnonymousUsage")]
         public bool SendAnonymousUsage { get; set; } = false;
-
-        /// <summary>
-        /// The maximum amount of requests to send per minute to eft-api.tech (5 = free tier, 60+ = premium tier)
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("requestsPerMin")]
-        public int RequestsPerMin { get; set; } = 60;
 
         [JsonIgnore] private static readonly Lock _syncRoot = new();
 
@@ -2811,20 +2796,6 @@ namespace eft_dma_radar.UI.Misc
         [JsonInclude]
         public LowLevelCache LowLevel { get; private set; } = new();
 
-        [JsonPropertyName("profileApi")]
-        [JsonInclude]
-        public ProfileApiCache ProfileAPI { get; private set; } = new();
-    }
-
-    public sealed class ProfileApiCache
-    {
-        [JsonPropertyName("pid")]
-        [JsonInclude]
-        public uint PID { get; set; }
-
-        [JsonPropertyName("cache")]
-        [JsonInclude]
-        public ConcurrentDictionary<string, ProfileData> Profiles { get; private set; } = new();
     }
 
     /// <summary>

@@ -518,62 +518,6 @@
                                 </hc:SimpleStackPanel>
                             </Expander>
 
-                            <!-- Player API Service Section -->
-                            <Expander x:Name="expPlayerAPIService" Header="Player API Service" Style="{StaticResource PanelExpander}" IsExpanded="True">
-                                <hc:SimpleStackPanel Style="{StaticResource ExpanderContent}" Margin="2,8,2,0">
-
-                                    <!-- API Provider Selection -->
-                                    <Grid Margin="0,0,0,10" HorizontalAlignment="Center">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <RadioButton x:Name="rdbTarkovDev" Content="tarkov.dev"
-                                                     GroupName="APIProvider" Tag="TarkovDev"
-                                                     Grid.Column="0" Margin="0,0,20,0"/>
-
-                                        <RadioButton x:Name="rdbEftApiTech" Content="eft-api.tech"
-                                                     GroupName="APIProvider" Tag="EftApiTech"
-                                                     Grid.Column="1" IsChecked="True"/>
-                                    </Grid>
-
-                                    <!-- API Management Controls (Only visible for eft-api.tech) -->
-                                    <StackPanel Margin="0,0,0,8">
-                                        <StackPanel.Style>
-                                            <Style TargetType="StackPanel">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsChecked, ElementName=rdbEftApiTech}" Value="True">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </StackPanel.Style>
-
-                                        <!-- Action Buttons -->
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
-                                            <Button x:Name="btnCreateApiFile" Content="Create API File?" 
-                                                    Margin="0,0,5,0"/>
-                                            <Button x:Name="btnOpenApiFolder" Content="Open Folder" 
-                                                    Margin="5,0,5,0"/>
-                                            <Button x:Name="btnClearApiFile" Content="Clear" 
-                                                    Margin="5,0,0,0"/>
-                                        </StackPanel>
-
-                                        <!-- Status Information -->
-                                        <TextBlock x:Name="txtApiStatus" Text="No API key saved." 
-                                                   Style="{StaticResource LabelText}" 
-                                                   Margin="0,5,0,0" 
-                                                   HorizontalAlignment="Center"
-                                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                                   FontStyle="Italic"
-                                                   FontSize="12"/>
-                                    </StackPanel>
-
-                                </hc:SimpleStackPanel>
-                            </Expander>
-
                         </hc:SimpleStackPanel>
                     </ScrollViewer>
                 </hc:TabItem>

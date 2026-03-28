@@ -1,5 +1,4 @@
 using eft_dma_radar.Tarkov;
-using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
@@ -83,8 +82,6 @@ namespace eft_dma_radar.UI.Pages
         private const int HK_ZoomAmt = 2; // amt to zoom
 
         private bool _uiReady = false;
-        private bool _suppressApiEvents = false;
-
         private PopupWindow _openColorPicker;
         private Dictionary<string, SolidColorBrush> _brushFields = new Dictionary<string, SolidColorBrush>();
 
@@ -163,7 +160,6 @@ namespace eft_dma_radar.UI.Pages
                     expMonitorSettings,
                     expQuestHelper,
                     expWebRadar,
-                    expPlayerAPIService,
                     expPlayerColors,
                     expLootColors,
                     expOtherColors,
@@ -221,7 +217,6 @@ namespace eft_dma_radar.UI.Pages
                 LoadGeneralSettings();
                 LoadColorSettings();
                 LoadHotkeySettings();
-                LoadApiSettings();
                 _uiReady = true;  // mark UI ready only after all programmatic changes done
             });
         }
@@ -648,12 +643,6 @@ namespace eft_dma_radar.UI.Pages
             txtWebRadarPort.TextChanged += GeneralTextbox_TextChanged;
 
 
-            // Player API Service
-            rdbTarkovDev.Checked += GeneralRadioButton_Checked;
-            rdbEftApiTech.Checked += GeneralRadioButton_Checked;
-            btnCreateApiFile.Click += btnCreateApiFile_Click;
-            btnOpenApiFolder.Click += btnOpenApiFolder_Click;
-            btnClearApiFile.Click += btnClearApiFile_Click;
         }
 
         private void LoadGeneralSettings()
@@ -678,13 +667,6 @@ namespace eft_dma_radar.UI.Pages
 
             // Web Radar Server
             InitializeWebRadar();
-
-            // Player API Service
-            var alternateService = Config.AlternateProfileService;
-            if (alternateService)
-                rdbEftApiTech.IsChecked = true;
-            else
-                rdbTarkovDev.IsChecked = true;
 
             UpdateUIScale();
 
@@ -1362,43 +1344,6 @@ namespace eft_dma_radar.UI.Pages
                 SaveEntityTypeSettings(_currentEntityType);
         }
 
-        private void UpdateApiStatus()
-        {
-            var hasKey = ApiKeyStore.TryLoadApiKey(out _);
-
-            if (hasKey)
-            {
-                txtApiStatus.Text = $"API key loaded successfully";
-                btnCreateApiFile.Content = "Edit API Fileï¿?";
-                btnCreateApiFile.ToolTip = "Replace the stored API key";
-                btnClearApiFile.IsEnabled = true;
-                btnOpenApiFolder.IsEnabled = true;
-            }
-            else
-            {
-                txtApiStatus.Text = "No API key saved.";
-                btnCreateApiFile.Content = "Create API Fileï¿?";
-                btnCreateApiFile.ToolTip = "Create and store an API key securely";
-                btnClearApiFile.IsEnabled = false;
-                btnOpenApiFolder.IsEnabled = false;
-            }
-        }
-
-        private void LoadApiSettings()
-        {
-            _suppressApiEvents = true;
-
-            try
-            {
-                rdbEftApiTech.IsChecked = Config.AlternateProfileService;
-                rdbTarkovDev.IsChecked = !Config.AlternateProfileService;
-                UpdateApiStatus();
-            }
-            finally
-            {
-                _suppressApiEvents = false;
-            }
-        }
         #endregion
 
         #region Events
@@ -1452,9 +1397,6 @@ namespace eft_dma_radar.UI.Pages
                     case "UPnP":
                         Config.WebRadar.UPnP = value;
                         break;
-                    case "EnableApi":
-                        Config.AlternateProfileService = value;
-                        break;
                 }
 
                 Config.Save();
@@ -1471,25 +1413,6 @@ namespace eft_dma_radar.UI.Pages
 
                 if (isChecked)
                 {
-                    switch (tag)
-                    {
-                        case "TarkovDev":
-                            if (_suppressApiEvents || !_uiReady)
-                                return;
-
-                            Config.AlternateProfileService = false;
-
-                            UpdateApiStatus();
-                            break;
-                        case "EftApiTech":
-                            if (_suppressApiEvents || !_uiReady)
-                                return;
-
-                            Config.AlternateProfileService = true;
-
-                            UpdateApiStatus();
-                            break;
-                    }
                     Config.Save();
                     XMLogging.WriteLine("Saved Config");
                 }
@@ -1652,82 +1575,6 @@ namespace eft_dma_radar.UI.Pages
             InitMonitors();
         }
 
-
-        private async void btnCreateApiFile_Click(object sender, RoutedEventArgs e)
-        {
-            btnCreateApiFile.IsEnabled = false;
-
-            try
-            {
-                var exists = File.Exists(ApiKeyStore.StorePath);
-
-                if (exists)
-                {
-                    var res = MessageBox.Show(
-                        "An API key already exists. Do you want to replace it?",
-                        "Replace API Key",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (res != MessageBoxResult.Yes)
-                        return;
-                }
-
-                var key = await ApiKeyWizard.CaptureApiKeyAsync();
-                if (string.IsNullOrWhiteSpace(key))
-                    return;
-
-                ApiKeyStore.SaveApiKey(key);
-
-                UpdateApiStatus();
-
-                MessageBox.Show(
-                    exists ? "API key updated successfully." : "API key saved securely (encrypted).",
-                    "Success",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to save API key:\n{ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                btnCreateApiFile.IsEnabled = true;
-            }
-        }
-
-
-        private void btnOpenApiFolder_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Directory.CreateDirectory(ApiKeyStore.StoreDir);
-                Process.Start("explorer.exe", ApiKeyStore.StoreDir);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to open folder:\n{ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void btnClearApiFile_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (File.Exists(ApiKeyStore.StorePath))
-                    File.Delete(ApiKeyStore.StorePath);
-
-                UpdateApiStatus();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to delete api.json:\n{ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         private void widgetsCheckComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

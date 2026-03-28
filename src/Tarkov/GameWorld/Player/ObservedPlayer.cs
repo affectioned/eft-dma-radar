@@ -8,7 +8,6 @@ using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
 using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Web.ProfileApi;
 using static SDK.Enums;
 using static SDK.Offsets;
 
