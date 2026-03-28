@@ -8,10 +8,7 @@ using System.Net.Http;
 using System.Windows.Media.Imaging;
 using SkiaSharp;
 using System.IO;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
-using eft_dma_radar.Tarkov.WebRadar;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.SKWidgetControl;
@@ -42,7 +39,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using static eft_dma_radar.Tarkov.Features.MemoryWrites.Aimbot;
 using static SDK.Offsets;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
@@ -334,12 +330,6 @@ namespace eft_dma_radar.UI.Pages
                             importedConfig.Cache = currentCache;
                             importedConfig.WebRadar = currentWebRadar;
 
-                            if (importedConfig.MemWrites.MemWritesEnabled)
-                            {
-                                var memoryWritingDecision = MemoryWritingControl.HandleConfigImportMemoryWriting(importedConfig);
-                                MemoryWritingControl.MemoryWritingImportHandler.ApplyMemoryWritingDecision(importedConfig, memoryWritingDecision);
-                            }
-
                             Program.UpdateConfig(importedConfig);
 
                             await Dispatcher.InvokeAsync(() =>
@@ -372,16 +362,6 @@ namespace eft_dma_radar.UI.Pages
                                 var mainWindow = MainWindow.Window;
                                 if (mainWindow != null)
                                 {
-                                    if (mainWindow.MemoryWritingControl != null)
-                                    {
-                                        MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
-                                        mainWindow.MemoryWritingControl.LoadSettings();
-                                        await Task.Delay(50);
-
-                                        mainWindow.MemoryWritingControl.FeatureInstanceCheck();
-                                        await Task.Delay(50);
-                                    }
-
                                     if (mainWindow.LootSettingsControl != null)
                                     {
                                         mainWindow.LootSettingsControl.LoadSettings();
@@ -486,12 +466,6 @@ namespace eft_dma_radar.UI.Pages
         {
             try
             {
-                var mainWindow = MainWindow.Window;
-                MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
-
-                if (mainWindow?.MemoryWritingControl != null)
-                    mainWindow.MemoryWritingControl.FeatureInstanceCheck();
-
                 XMLogging.WriteLine("[Config] Feature instances updated successfully");
             }
             catch (Exception ex)
@@ -1163,18 +1137,9 @@ namespace eft_dma_radar.UI.Pages
         {
             chkWebRadarUPnP.IsChecked = Config.WebRadar.UPnP;
             txtWebRadarPort.Text = Config.WebRadar.Port;
-
-
-            if (WebRadarServer.IsRunning)
-            {
-                btnWebRadarStart.Content = "Stop";
-                ToggleWebRadarControls(false);
-            }
-            else
-            {
-                btnWebRadarStart.Content = "Start";
-                ToggleWebRadarControls(true);
-            }
+            // WebRadarServer removed
+            btnWebRadarStart.Content = "Start";
+            ToggleWebRadarControls(false);
         }
 
         private void ToggleWebRadarControls(bool enabled = false)
@@ -1670,88 +1635,16 @@ namespace eft_dma_radar.UI.Pages
             catch { }
         }
 
-        private async void btnWebRadarStart_Click(object sender, RoutedEventArgs e)
+        private void btnWebRadarStart_Click(object sender, RoutedEventArgs e)
         {
-            if (WebRadarServer.IsRunning)
-            {
-                ToggleWebRadarControls(false);
-                btnWebRadarStart.Content = "Stopping...";
-
-                try
-                {
-                    await WebRadarServer.StopAsync();
-
-                    btnWebRadarStart.Content = "Start";
-                    lblWebRadarLink.Text = "";
-                    ToggleWebRadarControls(true);
-
-                    NotificationsShared.Info("Web Radar Server stopped successfully.");
-                }
-                catch (Exception ex)
-                {
-                    NotificationsShared.Error($"ERROR Stopping Web Radar Server: {ex.Message}");
-                    btnWebRadarStart.Content = "Stop";
-                    ToggleWebRadarControls(true);
-                }
-            }
-            else
-            {
-                ToggleWebRadarControls(false);
-                btnWebRadarStart.Content = "Starting...";
-
-                try
-                {
-                    var tickRate = TimeSpan.FromMilliseconds(1000d / 60);
-                    var bindIP = "0.0.0.0";
-                    var port = int.Parse(txtWebRadarPort.Text.Trim());
-                    var useUPnP = chkWebRadarUPnP.IsChecked == true;
-
-
-                    await WebRadarServer.StartAsync(bindIP, port, tickRate, useUPnP);
-
-                    btnWebRadarStart.Content = "Stop";
-
-                    var externalIP = await WebRadarServer.GetExternalIPAsync();
-                    var webClientUrl = $"http://{externalIP}";
-
-                    lblWebRadarLink.Text = $"{webClientUrl}:{port}";
-
-                    NotificationsShared.Success("Web Radar Server started successfully!");
-                }
-                catch (Exception ex)
-                {
-                    NotificationsShared.Error($"ERROR Starting Web Radar Server: {ex.Message}");
-                    btnWebRadarStart.Content = "Start";
-                    ToggleWebRadarControls(true);
-                }
-            }
+            // WebRadarServer removed
+            NotificationsShared.Warning("Web Radar feature has been removed.");
         }
 
         private void btnAutoDetectIP_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var localIP = WebRadarServer.GetLocalIPAddress();
-
-                if (!string.IsNullOrEmpty(localIP))
-                {
-                    Config.WebRadar.IP = localIP;
-                    Config.Save();
-
-                    NotificationsShared.Success($"Auto-detected local IP: {localIP}");
-                    XMLogging.WriteLine($"[AutoDetectIP] Found local IP: {localIP}");
-                }
-                else
-                {
-                    NotificationsShared.Warning("Could not auto-detect local IP address. Please enter manually.");
-                    XMLogging.WriteLine("[AutoDetectIP] Failed to detect local IP");
-                }
-            }
-            catch (Exception ex)
-            {
-                NotificationsShared.Error($"Error auto-detecting IP: {ex.Message}");
-                XMLogging.WriteLine($"[AutoDetectIP] Error: {ex.Message}");
-            }
+            // WebRadarServer removed
+            NotificationsShared.Warning("Web Radar feature has been removed.");
         }
 
         private void btnRefreshMonitors_Click(object sender, RoutedEventArgs e)
@@ -2764,20 +2657,18 @@ namespace eft_dma_radar.UI.Pages
                 // Global
                 case nameof(HotkeyConfig.ToggleRageMode):
                     Config.MemWrites.RageMode = isActive;
-                    mainWindow.MemoryWritingControl.chkRageMode.IsChecked = isActive;
                     break;
                 // Aimbot
                 case nameof(HotkeyConfig.ToggleAimbot):
                     Config.MemWrites.Aimbot.Enabled = isActive;
-                    mainWindow.MemoryWritingControl.chkEnableAimbot.IsChecked = isActive;
                     break;
                 case nameof(HotkeyConfig.EngageAimbot):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageAimbot = {isActive}");
                     Aimbot.Engaged = isActive;
                     break;
                 case nameof(HotkeyConfig.EngageLTW):
-                    LootThroughWalls.ZoomEngaged = isActive;
-                    break;                    
+                    // LootThroughWalls removed
+                    break;
                 case nameof(HotkeyConfig.EngageTeammate):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;
@@ -2785,66 +2676,50 @@ namespace eft_dma_radar.UI.Pages
                 case nameof(HotkeyConfig.ToggleAimbotMode):
                     if (isActive)
                     {
-                        Config.MemWrites.Aimbot.TargetingMode = Config.MemWrites.Aimbot.TargetingMode == AimbotTargetingMode.FOV
-                            ? AimbotTargetingMode.CQB
-                            : AimbotTargetingMode.FOV;
+                        // Toggle between mode 0 (FOV) and mode 1 (CQB)
+                        Config.MemWrites.Aimbot.TargetingMode = Config.MemWrites.Aimbot.TargetingMode == 0 ? 1 : 0;
                     }
                     break;
                 case nameof(HotkeyConfig.AimbotBone):
-                    if (isActive)
-                        mainWindow.MemoryWritingControl.ToggleAimbotBone();
+                    // MemoryWritingControl removed
                     break;
                 case nameof(HotkeyConfig.SafeLock):
                     Config.MemWrites.Aimbot.SilentAim.SafeLock = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Safe Lock", isActive);
                     break;
                 case nameof(HotkeyConfig.RandomBone):
                     Config.MemWrites.Aimbot.RandomBone.Enabled = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Random Bone", isActive);
                     break;
                 case nameof(HotkeyConfig.AutoBone):
                     Config.MemWrites.Aimbot.SilentAim.AutoBone = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Auto Bone", isActive);
                     break;
                 case nameof(HotkeyConfig.HeadshotAI):
                     Config.MemWrites.Aimbot.HeadshotAI = isActive;
-                    mainWindow.MemoryWritingControl.UpdateSpecificAimbotOption("Headshot AI", isActive);
                     break;
                 // Weapons
                 case nameof(HotkeyConfig.FastWeaponOps):
                     Config.MemWrites.FastWeaponOps = isActive;
-                    mainWindow.MemoryWritingControl.chkFastWeaponOps.IsChecked = isActive;
                     break;
                 case nameof(HotkeyConfig.NoRecoil):
                     Config.MemWrites.NoRecoil = isActive;
-                    mainWindow.MemoryWritingControl.chkNoRecoil.IsChecked = isActive;
                     break;
                 // Movement
                 case nameof(HotkeyConfig.WideLean):
                     Config.MemWrites.WideLean.Enabled = isActive;
-                    mainWindow.MemoryWritingControl.chkWideLean.IsChecked = isActive;
                     break;
                 case nameof(HotkeyConfig.WideLeanUp):
-                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Up : WideLean.EWideLeanDirection.Off);
-                    break;
                 case nameof(HotkeyConfig.WideLeanLeft):
-                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Left : WideLean.EWideLeanDirection.Off);
-                    break;
                 case nameof(HotkeyConfig.WideLeanRight):
-                    SetWideLeanDirection(isActive ? WideLean.EWideLeanDirection.Right : WideLean.EWideLeanDirection.Off);
+                    // WideLean direction control removed
                     break;
                 // Camera
                 case nameof(HotkeyConfig.NoVisor):
                     Config.MemWrites.NoVisor = isActive;
-                    mainWindow.MemoryWritingControl.chkNoVisor.IsChecked = isActive;
                     break;
                 case nameof(HotkeyConfig.NightVision):
                     Config.MemWrites.NightVision = isActive;
-                    mainWindow.MemoryWritingControl.chkNightVision.IsChecked = isActive;
                     break;
                 case nameof(HotkeyConfig.ThermalVision):
                     Config.MemWrites.ThermalVision = isActive;
-                    mainWindow.MemoryWritingControl.chkThermalVision.IsChecked = isActive;
                     break;
                 #endregion
 
@@ -2921,17 +2796,6 @@ namespace eft_dma_radar.UI.Pages
                     });
                 }
             }
-        }
-
-        private void SetWideLeanDirection(WideLean.EWideLeanDirection dir)
-        {
-            if (!Config.MemWrites.WideLean.Enabled)
-            {
-                WideLean.Direction = WideLean.EWideLeanDirection.Off;
-                return;
-            }
-
-            WideLean.Direction = WideLean.Direction == dir ? WideLean.EWideLeanDirection.Off : dir;
         }
 
         private void RefreshHotkeyDisplay()
@@ -3161,14 +3025,6 @@ namespace eft_dma_radar.UI.Pages
 
                 await Dispatcher.InvokeAsync(async () =>
                 {
-                    if (mainWindow.MemoryWritingControl != null)
-                    {
-                        MemWrites.Enabled = Config.MemWrites.MemWritesEnabled;
-                        mainWindow.MemoryWritingControl.LoadSettings();
-                        await Task.Delay(50);
-                        mainWindow.MemoryWritingControl.FeatureInstanceCheck();
-                    }
-
                     if (mainWindow.LootSettingsControl != null)
                     {
                         mainWindow.LootSettingsControl.LoadSettings();

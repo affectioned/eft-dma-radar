@@ -261,9 +261,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 
                 // If accountId was already seeded (e.g. they killed someone previously),
                 // trigger stats fetch now.
-                var cached = PlayerLookupApiClient.TryGetCached(profileId);
-                if (cached?.AccountId is string acctId)
-                    EFTProfileService.RegisterProfile(acctId);
+                // PlayerLookupApiClient removed
             }
             catch { }
         }

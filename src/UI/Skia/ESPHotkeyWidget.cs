@@ -1,6 +1,6 @@
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
+using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
 using SkiaSharp;
@@ -407,11 +407,11 @@ namespace eft_dma_radar.UI.ESP
                     case "Wide Lean":
                         return Config.MemWrites.WideLean.Enabled;
                     case "Wide Lean Up":
-                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Up;
+                        return false; // WideLean direction removed
                     case "Wide Lean Right":
-                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Right;
+                        return false; // WideLean direction removed
                     case "Wide Lean Left":
-                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Left;
+                        return false; // WideLean direction removed
                     //case "Move Speed":
                     //    return Config.MemWrites.MoveSpeed.Enabled;
 

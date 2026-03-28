@@ -1,6 +1,5 @@
 ﻿using eft_dma_radar;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.UI;
 using eft_dma_radar.UI.LootFilters;
 using eft_dma_radar.UI.Misc;
@@ -21,7 +20,6 @@ using static eft_dma_radar.Tarkov.API.EFTProfileService;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using Size = System.Windows.Size;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Chams;
 public static class ConfigManager
 {
     private static readonly string ConfigDirectory = Program.ConfigPath.FullName;
@@ -356,9 +354,7 @@ namespace eft_dma_radar.UI.Misc
         [JsonIgnore]
         public LowLevelCache LowLevelCache => this.Cache.LowLevel;
         [JsonIgnore]
-        public ChamsConfig ChamsConfig => this.MemWrites.Chams;    
-        [JsonIgnore]
-        public bool AdvancedMemWrites => this.MemWrites.AdvancedMemWrites;           
+        public bool AdvancedMemWrites => this.MemWrites.AdvancedMemWrites;
         #endregion
 
         /// <summary>
@@ -602,6 +598,12 @@ namespace eft_dma_radar.UI.Misc
         public MemWritesConfig MemWrites { get; private set; } = new();
 
         /// <summary>
+        /// Aimbot Configuration (shortcut).
+        /// </summary>
+        [JsonIgnore]
+        public AimbotConfig Aimbot => MemWrites.Aimbot;
+
+        /// <summary>
         /// ESP Configuration.
         /// </summary>
         [JsonInclude]
@@ -629,13 +631,6 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("hotKeys")]
         public HotkeyConfig HotKeys { get; private set; } = new();
         /// <summary>
-        /// Web Radar Configuration.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("webRadar")]
-        public WebRadarConfig WebRadar { get; set; } = new();
-
-        /// <summary>
         /// Containers configuration.
         /// </summary>
         [JsonPropertyName("containers")]
@@ -647,6 +642,13 @@ namespace eft_dma_radar.UI.Misc
         [JsonInclude]
         [JsonPropertyName("R9tQvX5")]
         public PersistentCache Cache { get; set; } = new();
+
+        /// <summary>
+        /// Web Radar Configuration (retained for config compatibility).
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("webRadar")]
+        public WebRadarConfig WebRadar { get; set; } = new();
 
         #region Config Interface
 
@@ -816,9 +818,6 @@ namespace eft_dma_radar.UI.Misc
             if (config.QuestHelper == null)
                 config.QuestHelper = new QuestHelperConfig();
 
-            if (config.MemWrites == null)
-                config.MemWrites = new MemWritesConfig();
-
             if (config.ESP == null)
                 config.ESP = new ESPConfig();
 
@@ -831,14 +830,17 @@ namespace eft_dma_radar.UI.Misc
             if (config.HotKeys == null)
                 config.HotKeys = new HotkeyConfig();
 
-            if (config.WebRadar == null)
-                config.WebRadar = new WebRadarConfig();
+            if (config.MemWrites == null)
+                config.MemWrites = new MemWritesConfig();
 
             if (config.Containers == null)
                 config.Containers = new ContainersConfig();
 
             if (config.Cache == null)
                 config.Cache = new PersistentCache();
+
+            if (config.WebRadar == null)
+                config.WebRadar = new WebRadarConfig();
 
             if (config.Colors == null)
                 config.Colors = RadarColorOptions.GetDefaultColors();
@@ -856,9 +858,6 @@ namespace eft_dma_radar.UI.Misc
 
                 if (config.PanelPositions.LootSettings == null)
                     config.PanelPositions.LootSettings = new PanelPositionConfig();
-
-                if (config.PanelPositions.MemoryWriting == null)
-                    config.PanelPositions.MemoryWriting = new PanelPositionConfig();
 
                 if (config.PanelPositions.ESP == null)
                     config.PanelPositions.ESP = new PanelPositionConfig();
@@ -1059,12 +1058,6 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("lootSettings")]
         public PanelPositionConfig LootSettings { get; set; } = new PanelPositionConfig();
-
-        /// <summary>
-        /// Memory writing panel position
-        /// </summary>
-        [JsonPropertyName("memoryWriting")]
-        public PanelPositionConfig MemoryWriting { get; set; } = new PanelPositionConfig();
 
         /// <summary>
         /// ESP panel position
@@ -2322,11 +2315,6 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("wideLean")]
         public WideLeanConfig WideLean { get; set; } = new();
         /// <summary>
-        /// Chams Feature Config
-        /// </summary>
-        [JsonPropertyName("chams")]
-        public ChamsConfig Chams { get; set; } = new();
-        /// <summary>
         /// Makes weapon operations faster (ads, mag loading, etc.)
         /// </summary>
         [JsonPropertyName("fastWeaponOps")]
@@ -2504,7 +2492,7 @@ namespace eft_dma_radar.UI.Misc
         /// Last Aimbot Targeting Mode that the player set.
         /// </summary>
         [JsonPropertyName("targetingMode")]
-        public Aimbot.AimbotTargetingMode TargetingMode { get; set; } = Aimbot.AimbotTargetingMode.FOV;
+        public int TargetingMode { get; set; } = 0;
 
         /// <summary>
         /// Aimbot FOV via ESP Circle.
@@ -2546,6 +2534,44 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("randomBone")]
         public AimbotRandomBoneConfig RandomBone { get; set; } = new();
+
+        // ── Makcu hardware aimbot properties ──────────────────────────────────
+
+        /// <summary>Auto-connect to Makcu on startup.</summary>
+        [JsonPropertyName("autoConnect")]
+        public bool AutoConnect { get; set; } = false;
+
+        /// <summary>COM port for Makcu device (e.g. "COM3").</summary>
+        [JsonPropertyName("makcuPort")]
+        public string MakcuPort { get; set; } = "COM3";
+
+        /// <summary>FOV radius in degrees for target acquisition.</summary>
+        [JsonPropertyName("fovDegrees")]
+        public float FovDegrees { get; set; } = 5f;
+
+        /// <summary>Horizontal smoothing factor (0-1).</summary>
+        [JsonPropertyName("alphaX")]
+        public float AlphaX { get; set; } = 0.1f;
+
+        /// <summary>Vertical smoothing factor (0-1).</summary>
+        [JsonPropertyName("alphaY")]
+        public float AlphaY { get; set; } = 0.1f;
+
+        /// <summary>Deadzone radius in pixels before movement is applied.</summary>
+        [JsonPropertyName("deadzone")]
+        public float Deadzone { get; set; } = 2f;
+
+        /// <summary>Gaussian noise amount for humanized movement (0 = off).</summary>
+        [JsonPropertyName("gaussianNoise")]
+        public float GaussianNoise { get; set; } = 0f;
+
+        /// <summary>Target AI players as well as human players.</summary>
+        [JsonPropertyName("aimAI")]
+        public bool AimAI { get; set; } = false;
+
+        /// <summary>Bone to aim at.</summary>
+        [JsonPropertyName("aimBone")]
+        public Bones AimBone { get; set; } = Bones.HumanHead;
     }
 
     public sealed class AimbotRandomBoneConfig

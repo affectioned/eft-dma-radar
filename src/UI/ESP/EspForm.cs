@@ -1,7 +1,5 @@
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
@@ -694,9 +692,9 @@ namespace eft_dma_radar.UI.ESP
                     DrawRaidStats(canvas, players);
 
                 if (ESPConfig.ShowAimFOV &&
-                    MemWriteFeature<Aimbot>.Instance.Enabled)
+                    Config.Aimbot.Enabled)
                 {
-                    AimFOV = Aimbot.Config.FOV;
+                    AimFOV = Config.Aimbot.FOV;
                     DrawAimFOV(canvas);
                 }
 
@@ -937,25 +935,12 @@ private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
 
     Vector3 targetWorldPos;
 
-    var aimbotCache = MemWriteFeature<Aimbot>.Instance.Cache;
+    // Free aim preview
+    if (localPlayer.Firearm.FireportRotation is not Quaternion rot)
+        return;
 
-    // ?? AIM LOCK ACTIVE ? snap line to target
-    if (ESP.Config.ShowAimLock &&
-        aimbotCache?.AimbotLockedPlayer is Player locked &&
-        locked.IsAlive &&
-        aimbotCache.CurrentTargetBonePos is Vector3 lastPos)
-    {
-        targetWorldPos = lastPos;
-    }
-    else
-    {
-        // Free aim preview
-        if (localPlayer.Firearm.FireportRotation is not Quaternion rot)
-            return;
-
-        var forward = rot.Down();
-        targetWorldPos = fireportPos + forward * 1000f;
-    }
+    var forward = rot.Down();
+    targetWorldPos = fireportPos + forward * 1000f;
 
     if (!CameraManagerBase.WorldToScreen(ref targetWorldPos, out var targetScr))
         return;
@@ -1372,7 +1357,7 @@ private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
 
             var anchorY =
                 CameraManagerBase.ViewportCenter.Y +
-                Aimbot.Config.FOV +
+                Config.Aimbot.FOV +
                 15f * ESPConfig.FontScale +
                 _closestPlayerOffset.Y;
 
@@ -1727,7 +1712,7 @@ private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
 
         #endregion
 
-#region Mini Radar (Optimized – Layer-Stable & Throttled)
+#region Mini Radar (Optimized ï¿½ Layer-Stable & Throttled)
 
 private static readonly SKPaint _radarBgPaint =
     new SKPaint { Color = new SKColor(0, 0, 0, 180) };
@@ -1799,7 +1784,7 @@ private void DrawRadar(SKCanvas canvas, LocalPlayer localPlayer)
     var mapParams = map.GetParametersE(radarSize, _radarZoom, ref center);
 
     // ------------------------------------------------------------
-    // MAP CACHE — STABLE & FLOAT-SAFE
+    // MAP CACHE ï¿½ STABLE & FLOAT-SAFE
     // ------------------------------------------------------------
 
     long now = Environment.TickCount64;
@@ -2429,7 +2414,7 @@ private void DrawRadarInfo(SKCanvas canvas)
             var textHeight = SKPaints.ESPFontMedium13.Size;
 
             var anchorX = CameraManagerBase.ViewportCenter.X + _closestPlayerOffset.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + Config.Aimbot.FOV + 15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
 
             var x = anchorX - textWidth / 2;
 
@@ -2628,7 +2613,7 @@ private void DrawRadarInfo(SKCanvas canvas)
                 var sampleHeight = SKPaints.ESPFontMedium13.Size;
 
                 var sampleAnchorX = CameraManagerBase.ViewportCenter.X;
-                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale;
+                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + Config.Aimbot.FOV + 15f * ESPConfig.FontScale;
 
                 var sampleX = sampleAnchorX - sampleWidth / 2;
 
@@ -2639,7 +2624,7 @@ private void DrawRadarInfo(SKCanvas canvas)
             var textHeight = SKPaints.ESPFontMedium13.Size;
 
             var anchorX = CameraManagerBase.ViewportCenter.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + Aimbot.Config.FOV + 15f * ESPConfig.FontScale;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + Config.Aimbot.FOV + 15f * ESPConfig.FontScale;
 
             var x = anchorX - textWidth / 2;
 
@@ -2869,40 +2854,16 @@ private void DrawRadarInfo(SKCanvas canvas)
 
         private string GenerateCurrentStatusText()
         {
-            var aimEnabled = MemWriteFeature<Aimbot>.Instance.Enabled;
-            var rageMode = Config.MemWritesEnabled && Config.MemWrites.RageMode;
-            var wideLeanEnabled = MemWrites.Enabled && MemWriteFeature<WideLean>.Instance.Enabled;
-            //var lootThroughWallsZoomed = MemWrites.Enabled && MemWriteFeature<LootThroughWalls>.Instance.Enabled && LootThroughWalls.ZoomEngaged;
-            //var moveSpeedEnabled = MemWrites.Enabled && MemWriteFeature<MoveSpeed>.Instance.Enabled;
+            var aimEnabled = Config.Aimbot.Enabled;
 
             string label = null;
 
-            if (rageMode)
-                label = aimEnabled ? $"{Aimbot.Config.TargetingMode.GetDescription()}: RAGE MODE" : "RAGE MODE";
-            else if (aimEnabled)
+            if (aimEnabled)
             {
-                var mode = Aimbot.Config.TargetingMode.GetDescription();
-                if (Aimbot.Config.RandomBone.Enabled)
-                    label = $"{mode}: Random Bone";
-                else if (Aimbot.Config.SilentAim.AutoBone)
-                    label = $"{mode}: Auto Bone";
+                if (Config.Aimbot.RandomBone.Enabled)
+                    label = "Aimbot: Random Bone";
                 else
-                    label = $"{mode}: {Aimbot.Config.Bone.GetDescription()}";
-            }
-
-            var secondaryFeatures = new List<string>();
-
-            if (wideLeanEnabled)
-                secondaryFeatures.Add("Lean");
-            //if (lootThroughWallsZoomed)
-            //    secondaryFeatures.Add("LTW");
-            //else if (moveSpeedEnabled)
-            //    secondaryFeatures.Add("MOVE");
-
-            if (secondaryFeatures.Any())
-            {
-                var secondaryText = $"({string.Join(") (", secondaryFeatures)})";
-                label = label is null ? secondaryText : $"{label} {secondaryText}";
+                    label = $"Aimbot: {Config.Aimbot.AimBone.GetDescription()}";
             }
 
             return label ?? "";

@@ -4,8 +4,6 @@ using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
-using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
@@ -89,8 +87,6 @@ namespace eft_dma_radar
         private const int MIN_LOOT_FILTER_PANEL_HEIGHT = 200;
         private const int MIN_ESP_PANEL_WIDTH = 200;
         private const int MIN_ESP_PANEL_HEIGHT = 200;
-        private const int MIN_MEMORY_WRITING_PANEL_WIDTH = 200;
-        private const int MIN_MEMORY_WRITING_PANEL_HEIGHT = 200;
         private const int MIN_SETTINGS_PANEL_WIDTH = 200;
         private const int MIN_SETTINGS_PANEL_HEIGHT = 200;
         private const int MIN_SEARCH_SETTINGS_PANEL_WIDTH = 200;
@@ -1015,63 +1011,7 @@ namespace eft_dma_radar
         /// <param name="canvas"></param>
         private void SetStatusText(SKCanvas canvas)
         {
-            try
-            {
-                var memWritesEnabled = MemWrites.Enabled;
-                var aimEnabled = Aimbot.Config.Enabled;
-                var mode = Aimbot.Config.TargetingMode;
-                string? label = null;
-                
-                if (memWritesEnabled && Config.MemWrites.RageMode)
-                    label = MemWriteFeature<Aimbot>.Instance.Enabled ? $"{mode.GetDescription()}: RAGE MODE" : "RAGE MODE";
-
-                if (memWritesEnabled && aimEnabled)
-                {
-                    if (Aimbot.Config.RandomBone.Enabled)
-                        label = $"{mode.GetDescription()}: Random Bone";
-                    else if (Aimbot.Config.SilentAim.AutoBone)
-                        label = $"{mode.GetDescription()}: Auto Bone";
-                    else
-                    {
-                        var defaultBone = MemoryWritingControl.cboTargetBone.Text;
-                        label = $"{mode.GetDescription()}: {defaultBone}";
-                    }
-                }
-
-                if (memWritesEnabled)
-                {
-                    if (MemWriteFeature<WideLean>.Instance.Enabled)
-                    {
-                        if (label is null)
-                            label = "Lean";
-                        else
-                            label += " (Lean)";
-                    }
-
-                }
-
-                if (label is null)
-                    return;
-
-                var width = (float)skCanvas.CanvasSize.Width;
-                var height = (float)skCanvas.CanvasSize.Height;
-                var labelWidth = SKPaints.RadarFontMedium13.MeasureText(label);
-                var spacing = 1f * UIScale;
-                var top = spacing; // Start from top of the canvas
-                var labelHeight = SKPaints.RadarFontMedium13.Spacing;
-                var bgRect = new SKRect(
-                    width / 2 - labelWidth / 2,
-                    top,
-                    width / 2 + labelWidth / 2,
-                    top + labelHeight + spacing);
-                canvas.DrawRect(bgRect, SKPaints.PaintTransparentBacker);
-                var textLoc = new SKPoint(width / 2, top + labelHeight);
-                canvas.DrawText(label, textLoc, SKTextAlign.Center, SKPaints.RadarFontMedium13, SKPaints.TextStatusSmall);
-            }
-            catch (Exception ex)
-            {
-                XMLogging.WriteLine($"ERROR Setting Aim UI Text: {ex}");
-            }
+            // Memory writes removed - nothing to display
         }
 
         public void PurgeSKResources()
@@ -1287,56 +1227,6 @@ namespace eft_dma_radar
             LootSettingsPanel.Height = height;
 
             EnsurePanelInBounds(LootSettingsPanel, mainContentGrid, adjustSize: false);
-        }
-        #endregion
-
-        #region Memory Writing Settings
-        /// <summary>
-        /// Handles setting memory writing panel visibility
-        /// </summary>
-        private void btnMemoryWritingSettings_Click(object sender, RoutedEventArgs e)
-        {
-            NotifyUIActivity();
-            TogglePanelVisibility("MemoryWriting");
-        }
-
-        /// <summary>
-        /// Handle close request from memory writing control
-        /// </summary>
-        private void MemoryWritingControl_CloseRequested(object sender, EventArgs e)
-        {
-            MemoryWritingPanel.Visibility = Visibility.Collapsed;
-        }
-
-        /// <summary>
-        /// Handle drag request from memory writing control
-        /// </summary>
-        private void MemoryWritingControl_DragRequested(object sender, PanelDragEventArgs e)
-        {
-            var left = Canvas.GetLeft(MemoryWritingPanel) + e.OffsetX;
-            var top = Canvas.GetTop(MemoryWritingPanel) + e.OffsetY;
-
-            Canvas.SetLeft(MemoryWritingPanel, left);
-            Canvas.SetTop(MemoryWritingPanel, top);
-
-            EnsurePanelInBounds(MemoryWritingPanel, mainContentGrid, adjustSize: false);
-        }
-
-        /// <summary>
-        /// Handle resize request from memory writing control
-        /// </summary>
-        private void MemoryWritingControl_ResizeRequested(object sender, PanelResizeEventArgs e)
-        {
-            var width = MemoryWritingPanel.Width + e.DeltaWidth;
-            var height = MemoryWritingPanel.Height + e.DeltaHeight;
-
-            width = Math.Max(width, MIN_MEMORY_WRITING_PANEL_WIDTH);
-            height = Math.Max(height, MIN_MEMORY_WRITING_PANEL_HEIGHT);
-
-            MemoryWritingPanel.Width = width;
-            MemoryWritingPanel.Height = height;
-
-            EnsurePanelInBounds(MemoryWritingPanel, mainContentGrid, adjustSize: false);
         }
         #endregion
 
@@ -1838,12 +1728,7 @@ namespace eft_dma_radar
         }
         private void InitilizeTelemetry()
         {
-            bool sendUsage = Config?.SendAnonymousUsage ?? true;
-            if (!sendUsage)
-                    return;
-                    
-            Telemetry.Start(appVersion: Program.Version, true);
-            Telemetry.BeatNow(Program.Version);
+            // Telemetry removed
         }
 
         private void NotifyUIActivity()
@@ -1900,7 +1785,6 @@ namespace eft_dma_radar
         {
             var coordinator = PanelCoordinator.Instance;
             coordinator.RegisterRequiredPanel("GeneralSettings");
-            coordinator.RegisterRequiredPanel("MemoryWriting");
             coordinator.RegisterRequiredPanel("ESP");
             coordinator.RegisterRequiredPanel("LootFilter");
             coordinator.RegisterRequiredPanel("LootSettings");
@@ -1919,12 +1803,9 @@ namespace eft_dma_radar
                 ESPControl.BringToFrontRequested += (s, args) => BringPanelToFront(ESPCanvas);
                 GeneralSettingsControl.BringToFrontRequested += (s, args) => BringPanelToFront(GeneralSettingsCanvas);
                 LootSettingsControl.BringToFrontRequested += (s, args) => BringPanelToFront(LootSettingsCanvas);
-                MemoryWritingControl.BringToFrontRequested += (s, args) => BringPanelToFront(MemoryWritingCanvas);
                 LootFilterControl.BringToFrontRequested += (s, args) => BringPanelToFront(LootFilterCanvas);
                 MapSetupControl.BringToFrontRequested += (s, args) => BringPanelToFront(MapSetupCanvas);
                 SettingsSearchControl.BringToFrontRequested += (s, e) => BringPanelToFront(SettingsSearchCanvas);
-                QuestPlannerControl.BringToFrontRequested += (s, e) => BringPanelToFront(QuestPlannerCanvas);
-                HideoutStashControl.BringToFrontRequested += (s, e) => BringPanelToFront(HideoutStashCanvas);
                 WatchlistControl.BringToFrontRequested += (s, e) => BringPanelToFront(WatchlistCanvas);
                 PlayerHistoryControl.BringToFrontRequested += (s, e) => BringPanelToFront(PlayerHistoryCanvas);
 
@@ -2166,7 +2047,6 @@ namespace eft_dma_radar
             {
                 "GeneralSettingsPanel" => MIN_SETTINGS_PANEL_WIDTH,
                 "LootSettingsPanel" => MIN_LOOT_PANEL_WIDTH,
-                "MemoryWritingPanel" => MIN_MEMORY_WRITING_PANEL_WIDTH,
                 "ESPPanel" => MIN_ESP_PANEL_WIDTH,
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_WIDTH,
                 "MapSetupPanel" => 300,
@@ -2183,7 +2063,6 @@ namespace eft_dma_radar
             {
                 "GeneralSettingsPanel" => MIN_SETTINGS_PANEL_HEIGHT,
                 "LootSettingsPanel" => MIN_LOOT_PANEL_HEIGHT,
-                "MemoryWritingPanel" => MIN_MEMORY_WRITING_PANEL_HEIGHT,
                 "ESPPanel" => MIN_ESP_PANEL_HEIGHT,
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_HEIGHT,
                 "MapSetupPanel" => 300,
@@ -2211,7 +2090,6 @@ namespace eft_dma_radar
             {
                 GeneralSettingsCanvas,
                 LootSettingsCanvas,
-                MemoryWritingCanvas,
                 ESPCanvas,
                 LootFilterCanvas,
                 MapSetupCanvas
@@ -2236,21 +2114,17 @@ namespace eft_dma_radar
         {
             AttachPreviewMouseDown(GeneralSettingsPanel, GeneralSettingsCanvas);
             AttachPreviewMouseDown(LootSettingsPanel, LootSettingsCanvas);
-            AttachPreviewMouseDown(MemoryWritingPanel, MemoryWritingCanvas);
             AttachPreviewMouseDown(ESPPanel, ESPCanvas);
             AttachPreviewMouseDown(LootFilterPanel, LootFilterCanvas);
             AttachPreviewMouseDown(MapSetupPanel, MapSetupCanvas);
             AttachPreviewMouseDown(SettingsSearchPanel, SettingsSearchCanvas);
-            AttachPreviewMouseDown(QuestPlannerPanel, QuestPlannerCanvas);
 
             ESPCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(ESPCanvas);
             GeneralSettingsCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(GeneralSettingsCanvas);
             LootSettingsCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(LootSettingsCanvas);
-            MemoryWritingCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(MemoryWritingCanvas);
             LootFilterCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(LootFilterCanvas);
             MapSetupCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(MapSetupCanvas);
             SettingsSearchCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(SettingsSearchCanvas);
-            QuestPlannerCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(QuestPlannerCanvas);
         }
 
         private void TogglePanelVisibility(string panelKey)
@@ -2377,10 +2251,6 @@ namespace eft_dma_radar
             LootSettingsControl.ResizeRequested += sharedResizeHandler;
             LootSettingsControl.CloseRequested += sharedCloseHandler;
 
-            MemoryWritingControl.DragRequested += sharedDragHandler;
-            MemoryWritingControl.ResizeRequested += sharedResizeHandler;
-            MemoryWritingControl.CloseRequested += sharedCloseHandler;
-
             ESPControl.DragRequested += sharedDragHandler;
             ESPControl.ResizeRequested += sharedResizeHandler;
             ESPControl.CloseRequested += sharedCloseHandler;
@@ -2395,14 +2265,6 @@ namespace eft_dma_radar
             SettingsSearchControl.DragRequested   += sharedDragHandler;
             SettingsSearchControl.ResizeRequested += sharedResizeHandler;
             SettingsSearchControl.CloseRequested  += sharedCloseHandler;
-
-            QuestPlannerControl.DragRequested += sharedDragHandler;
-            QuestPlannerControl.ResizeRequested += sharedResizeHandler;
-            QuestPlannerControl.CloseRequested += sharedCloseHandler;
-
-            HideoutStashControl.DragRequested += sharedDragHandler;
-            HideoutStashControl.ResizeRequested += sharedResizeHandler;
-            HideoutStashControl.CloseRequested += sharedCloseHandler;
 
             WatchlistControl.DragRequested += sharedDragHandler;
             WatchlistControl.ResizeRequested += sharedResizeHandler;
@@ -2419,13 +2281,10 @@ namespace eft_dma_radar
             {
                 ["GeneralSettings"] = new PanelInfo(GeneralSettingsPanel, GeneralSettingsCanvas, "GeneralSettings", MIN_SETTINGS_PANEL_WIDTH, MIN_SETTINGS_PANEL_HEIGHT),
                 ["LootSettings"] = new PanelInfo(LootSettingsPanel, LootSettingsCanvas, "LootSettings", MIN_LOOT_PANEL_WIDTH, MIN_LOOT_PANEL_HEIGHT),
-                ["MemoryWriting"] = new PanelInfo(MemoryWritingPanel, MemoryWritingCanvas, "MemoryWriting", MIN_MEMORY_WRITING_PANEL_WIDTH, MIN_MEMORY_WRITING_PANEL_HEIGHT),
                 ["ESP"] = new PanelInfo(ESPPanel, ESPCanvas, "ESP", MIN_ESP_PANEL_WIDTH, MIN_ESP_PANEL_HEIGHT),
                 ["LootFilter"] = new PanelInfo(LootFilterPanel, LootFilterCanvas, "LootFilter", MIN_LOOT_FILTER_PANEL_WIDTH, MIN_LOOT_FILTER_PANEL_HEIGHT),
                 ["MapSetup"] = new PanelInfo(MapSetupPanel, MapSetupCanvas, "MapSetup", 300, 300),
                 ["SettingsSearch"] = new PanelInfo(SettingsSearchPanel, SettingsSearchCanvas, "SettingsSearch", MIN_SEARCH_SETTINGS_PANEL_WIDTH, MIN_SEARCH_SETTINGS_PANEL_HEIGHT),
-                ["QuestPlanner"] = new PanelInfo(QuestPlannerPanel, QuestPlannerCanvas, "QuestPlanner", MIN_QUEST_PLANNER_PANEL_WIDTH, MIN_QUEST_PLANNER_PANEL_HEIGHT),
-                ["HideoutStash"] = new PanelInfo(HideoutStashPanel, HideoutStashCanvas, "HideoutStash", MIN_HIDEOUT_STASH_PANEL_WIDTH, MIN_HIDEOUT_STASH_PANEL_HEIGHT),
                 ["Watchlist"] = new PanelInfo(WatchlistPanel, WatchlistCanvas, "Watchlist", MIN_WATCHLIST_PANEL_WIDTH, MIN_WATCHLIST_PANEL_HEIGHT),
                 ["PlayerHistory"] = new PanelInfo(PlayerHistoryPanel, PlayerHistoryCanvas, "PlayerHistory", MIN_PLAYERHISTORY_PANEL_WIDTH, MIN_PLAYERHISTORY_PANEL_HEIGHT)
             };

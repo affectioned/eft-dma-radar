@@ -25,7 +25,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 var profileId = _player.ProfileID;
                 if (string.IsNullOrEmpty(profileId))
                     return null;
-                return PlayerLookupApiClient.TryGetCached(profileId)?.AccountId;
+                return null; // PlayerLookupApiClient removed
             }
         }
 

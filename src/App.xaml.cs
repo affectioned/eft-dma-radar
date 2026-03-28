@@ -19,7 +19,6 @@ namespace eft_dma_radar
 
         protected override void OnExit(ExitEventArgs e)
         {
-            Telemetry.Stop();           // dispose the timer cleanly
             base.OnExit(e);
         }
 

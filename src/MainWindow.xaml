@@ -114,20 +114,7 @@
                             hc:IconElement.Width="18"
                             hc:IconElement.Geometry="{StaticResource GlassesGeometry}" Click="btnESPSettings_Click"/>
 
-                    <Button x:Name="btnMemoryWritingSettings"
-                            Style="{StaticResource ButtonIcon}" 
-                            ToolTip="Opens the memory writing configuration panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource WandMagicSparklesGeometry}"
-                            Click="btnMemoryWritingSettings_Click"/>
-
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
-
-                    <Button x:Name="btnGeneralSettings" 
+                    <Button x:Name="btnGeneralSettings"
                             Style="{StaticResource ButtonIcon}" 
                             ToolTip="Opens the general settings panel"
                             Background="Transparent"
@@ -251,24 +238,6 @@
             </Border>
         </Canvas>
 
-        <!-- memory writing panel -->
-        <Canvas Name="MemoryWritingCanvas" Panel.ZIndex="1000">
-            <Canvas.Resources>
-                <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
-            </Canvas.Resources>
-
-            <Border x:Name="MemoryWritingPanel" 
-                    Width="350" Height="550"
-                    Canvas.Left="650" Canvas.Top="70"
-                    CornerRadius="8" 
-                    Visibility="Collapsed"
-                    Effect="{StaticResource PanelShadow}"
-                    Background="Transparent"
-                    BorderThickness="0">
-                <local:MemoryWritingControl x:Name="MemoryWritingControl"/>
-            </Border>
-        </Canvas>
-        
         <!-- esp panel -->
         <Canvas Name="ESPCanvas" Panel.ZIndex="1000">
             <Canvas.Resources>
@@ -337,42 +306,6 @@
                     Background="Transparent"
                     BorderThickness="0">
                 <local:MapSetupControl x:Name="MapSetupControl"/>
-            </Border>
-        </Canvas>
-
-        <!-- quest planner panel -->
-        <Canvas Name="QuestPlannerCanvas" Panel.ZIndex="1000">
-            <Canvas.Resources>
-                <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
-            </Canvas.Resources>
-
-            <Border x:Name="QuestPlannerPanel"
-                    Width="340" Height="600"
-                    Canvas.Left="650" Canvas.Top="50"
-                    CornerRadius="8"
-                    Visibility="Collapsed"
-                    Effect="{StaticResource PanelShadow}"
-                    Background="Transparent"
-                    BorderThickness="0">
-                <local:QuestPlannerControl x:Name="QuestPlannerControl"/>
-            </Border>
-        </Canvas>
-
-        <!-- hideout stash panel -->
-        <Canvas Name="HideoutStashCanvas" Panel.ZIndex="1000">
-            <Canvas.Resources>
-                <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
-            </Canvas.Resources>
-
-            <Border x:Name="HideoutStashPanel"
-                    Width="540" Height="480"
-                    Canvas.Left="500" Canvas.Top="70"
-                    CornerRadius="8"
-                    Visibility="Collapsed"
-                    Effect="{StaticResource PanelShadow}"
-                    Background="Transparent"
-                    BorderThickness="0">
-                <local:HideoutStashControl x:Name="HideoutStashControl"/>
             </Border>
         </Canvas>
 

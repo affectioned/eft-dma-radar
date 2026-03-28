@@ -1,5 +1,4 @@
-﻿using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
-using eft_dma_radar.Common.DMA.Features;
+﻿using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
 using static SDK.Enums;

@@ -21,7 +21,6 @@ using VmmSharpEx;
 using VmmSharpEx.Options;
 using VmmSharpEx.Scatter;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Hideout;
 
 namespace eft_dma_radar.Tarkov
 {
@@ -126,9 +125,6 @@ namespace eft_dma_radar.Tarkov
         public LootManager  Loot         => Game?.Loot;
         public QuestManager QuestManager => Game?.QuestManager;
         public LocalGameWorld Game       { get; private set; }
-
-        /// <summary>Hideout state manager (active while not in raid).</summary>
-        public HideoutManager Hideout { get; } = new();
 
         /// <summary>IL2CPP GameObjectManager address.</summary>
         public ulong GOM { get; private set; }
@@ -362,7 +358,6 @@ namespace eft_dma_radar.Tarkov
             GCSettings.LatencyMode = GCLatencyMode.Interactive;
             _syncInRaid.Reset();
             Game = null;
-            Hideout.Reset();
         }
 
         private void MemDMA_RaidStarted(object sender, EventArgs e)
@@ -902,7 +897,7 @@ namespace eft_dma_radar.Tarkov
         {
             behaviour.ThrowIfInvalidVirtualAddress();
         
-            // IL2CPP Behaviour.enabled ¡ú byte
+            // IL2CPP Behaviour.enabled ï¿½ï¿½ byte
             const uint BEHAVIOUR_ENABLED_OFFSET = 0x10;
         
             WriteValue(game, behaviour + BEHAVIOUR_ENABLED_OFFSET, enabled ? (byte)1 : (byte)0);

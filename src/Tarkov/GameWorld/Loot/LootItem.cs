@@ -127,9 +127,7 @@ namespace eft_dma_radar.Tarkov.Loot
         /// <summary>
         /// True if this item is still needed for a hideout upgrade and the option is enabled.
         /// </summary>
-        public bool IsHideoutRequired =>
-            Config.LootHideoutRequired &&
-            Program.Hideout.NeededItemIds.Contains(ID);
+        public bool IsHideoutRequired => false; // HideoutManager removed
 
         public GroupedLootFilterEntry MatchedFilter
         {
@@ -780,11 +778,7 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                 var itemPaint = GetItemTextPaint(lootItem);
                 lines.Add((lootItem.Name, itemPaint));
 
-                if (lootItem.IsHideoutRequired &&
-                    Program.Hideout.NeededItemCounts.TryGetValue(lootItem.ID, out var stillNeeded))
-                {
-                    lines.Add(($"Hideout: need {stillNeeded} more", SKPaints.TextHideoutItem));
-                }
+                // HideoutManager removed - no hideout item count display
 
                 Position.ToMapPos(mapParams.Map).ToZoomedPos(mapParams).DrawMouseoverText(canvas, lines);
             }

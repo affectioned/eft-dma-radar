@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
 using eft_dma_radar.Tarkov.Loot;
@@ -115,7 +114,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
         private static void Memory_GameStopped(object sender, EventArgs e)
         {
-            Interlocked.Exchange(ref _lastDisposedBase, 0); // Game process exited — all addresses are invalid
+            Interlocked.Exchange(ref _lastDisposedBase, 0); // Game process exited ï¿½ all addresses are invalid
             LevelSettings = 0;
             MatchingProgress = 0;
             LevelSettingsResolver.Reset();
@@ -237,20 +236,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             XMLogging.WriteLine("[Raid] Game data initialized successfully!");
 
-            if (Config.MemWrites.Aimbot.Enabled && Config.MemWrites.MemWritesEnabled)
-            {
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        Features.MemoryWrites.Aimbot.RunBallisticsDiagnosticOnce();
-                    }
-                    catch (Exception ex)
-                    {
-                        XMLogging.WriteLine($"[Raid] Ballistics diagnostic failed: {ex.Message}");
-                    }
-                }, ct);
-            }
         }
 
         /// <summary>
@@ -319,7 +304,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     if (instance.Base == Interlocked.Read(ref _lastDisposedBase))
                         throw new InvalidOperationException("GameWorld not found");
 
-                    // Accepted — this is a genuinely new GameWorld instance.
+                    // Accepted ï¿½ this is a genuinely new GameWorld instance.
                     Interlocked.Exchange(ref _lastDisposedBase, 0);
 
                     // Assign MatchingProgress from cache (may already be resolved)
@@ -329,7 +314,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         XMLogging.WriteLine($"[IL2CPP] MatchingProgress assigned @ 0x{mp:X}");
                     }
 
-                    // Matching phase is over — stop the stage poller and freeze the timer
+                    // Matching phase is over ï¿½ stop the stage poller and freeze the timer
                     MatchingProgressResolver.NotifyRaidStarted();
 
                     // Phase 2: Wait for raid to be ready, then initialize game data
@@ -378,9 +363,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (!localGameWorld.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid LocalGameWorld address");
         
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
                 // OFFLINE / ONLINE detection (cheap)
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
                 try
                 {
                     ulong classNamePtr = Memory.ReadPtrChain(
@@ -402,9 +387,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     IsOffline = false;
                 }
         
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
-                // LEVEL SETTINGS ¡§C non-blocking
-                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
+                // LEVEL SETTINGS ï¿½ï¿½C non-blocking
+                // ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
                 try
                 {
                     // 1) Fast path: use cached value if we already resolved it
@@ -415,7 +400,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     }
                     else
                     {
-                        // 2) No cached value yet ¡§C schedule a background resolve.
+                        // 2) No cached value yet ï¿½ï¿½C schedule a background resolve.
                         //    Do NOT block the game / raid init thread here.
                         LevelSettings = 0;
         
@@ -549,7 +534,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 Thread.Sleep(10); // short delay between attempts
             }
 
-            // Definitively over — clean up once then signal
+            // Definitively over ï¿½ clean up once then signal
             LevelSettings = 0;
             MatchingProgress = 0;
             LevelSettingsResolver.Reset();
@@ -578,7 +563,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (_rgtPlayers.GetPlayerCount() <= 0)
                     return false;
 
-                // 3) Map transition detection ¡§C but not on every single call
+                // 3) Map transition detection ï¿½ï¿½C but not on every single call
                 if ((_mapCheckTick++ & 0x3F) == 0) // every 64 calls
                 {
                     var currentMapId = GetCurrentMapId();
@@ -680,11 +665,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                                 continue;
                             try
                             {
-                                // Trigger stats fetch if this player's accountId was already
-                                // seeded from a previous corpse dogtag read.
-                                var cached = PlayerLookupApiClient.TryGetCached(player.ProfileID);
-                                if (cached?.AccountId is string acctId)
-                                    EFTProfileService.RegisterProfile(acctId);
+                                // Profile lookup removed
                             }
                             catch (Exception ex)
                             {
@@ -719,7 +700,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 while (InRaid)
                 {
                     if (Memory.IsDisposed) { Dispose(); break; }
-                    if (Config.RatelimitRealtimeReads ||!CameraManagerBase.EspRunning || (MemWriteFeature<Aimbot>.Instance.Enabled && Aimbot.Engaged))
+                    if (Config.RatelimitRealtimeReads || !CameraManagerBase.EspRunning)
                     {
                         _refreshWait.AutoWait(TimeSpan.FromMilliseconds(1), 1000);
                     }
@@ -1064,7 +1045,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch
             {
-                // Camera can fail transiently during loading/transitions — retry next tick
+                // Camera can fail transiently during loading/transitions ï¿½ retry next tick
             }
         }
 
@@ -1131,7 +1112,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 // GameWorld that Unity keeps alive on the post-raid menu screen.
                 Interlocked.Exchange(ref _lastDisposedBase, Base);
 
-                XMLogging.WriteLine("[Raid] LocalGameWorld disposed — entering cooldown.");
+                XMLogging.WriteLine("[Raid] LocalGameWorld disposed ï¿½ entering cooldown.");
 
                 foreach (var feature in IFeature.AllFeatures)
                 {
