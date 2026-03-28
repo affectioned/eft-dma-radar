@@ -383,13 +383,13 @@ namespace eft_dma_radar.UI.ESP
                     case "Aimbot Bone":
                         return false;
                     case "Safe Lock":
-                        return Config.MemWrites.Aimbot.SilentAim.SafeLock;
+                        return false;
                     case "Random Bone":
-                        return Config.MemWrites.Aimbot.RandomBone.Enabled;
+                        return false;
                     case "Auto Bone":
-                        return Config.MemWrites.Aimbot.SilentAim.AutoBone;
+                        return false;
                     case "Headshot AI":
-                        return Config.MemWrites.Aimbot.HeadshotAI;
+                        return false;
 
                     // Memory Writes - Weapons
                     //case "No Malfunctions":

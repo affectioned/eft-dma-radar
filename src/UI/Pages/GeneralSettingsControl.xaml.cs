@@ -2674,26 +2674,16 @@ namespace eft_dma_radar.UI.Pages
                     TeammatesWorker.Engaged = isActive;
                     break;
                 case nameof(HotkeyConfig.ToggleAimbotMode):
-                    if (isActive)
-                    {
-                        // Toggle between mode 0 (FOV) and mode 1 (CQB)
-                        Config.MemWrites.Aimbot.TargetingMode = Config.MemWrites.Aimbot.TargetingMode == 0 ? 1 : 0;
-                    }
                     break;
                 case nameof(HotkeyConfig.AimbotBone):
-                    // MemoryWritingControl removed
                     break;
                 case nameof(HotkeyConfig.SafeLock):
-                    Config.MemWrites.Aimbot.SilentAim.SafeLock = isActive;
                     break;
                 case nameof(HotkeyConfig.RandomBone):
-                    Config.MemWrites.Aimbot.RandomBone.Enabled = isActive;
                     break;
                 case nameof(HotkeyConfig.AutoBone):
-                    Config.MemWrites.Aimbot.SilentAim.AutoBone = isActive;
                     break;
                 case nameof(HotkeyConfig.HeadshotAI):
-                    Config.MemWrites.Aimbot.HeadshotAI = isActive;
                     break;
                 // Weapons
                 case nameof(HotkeyConfig.FastWeaponOps):

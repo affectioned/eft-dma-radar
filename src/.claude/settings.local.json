@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find /c/Users/admin/AppData/Local/GitHub/EFT-DMA-Radar/src -type f -name \"*.cs\" -not -path \"*/.vs/*\" -not -path \"*/bin/*\" -not -path \"*/obj/*\" -not -path \"*/.claude/*\" | xargs grep -c \"^\\\\s*\\\\\\(public\\\\|private\\\\|internal\\\\\\)\\\\s\\\\+\\\\\\(abstract\\\\s\\\\+\\\\\\)\\\\?class\" | sort -t: -k2 -rn | head -15)",
-      "Bash(grep -rn \"^\\\\s*private\\\\s.*=\\\\s*null\\\\|^\\\\s*private\\\\s.*=\\\\s*new\\\\|^\\\\s*internal\\\\s.*=\\\\s*null\" /c/Users/admin/AppData/Local/GitHub/EFT-DMA-Radar/src --include=\"*.cs\" -not -path \"*/.vs/*\" -not -path \"*/bin/*\" -not -path \"*/obj/*\" -not -path \"*/.claude/*\" | head -40)"
+      "Bash(grep -rn \"^\\\\s*private\\\\s.*=\\\\s*null\\\\|^\\\\s*private\\\\s.*=\\\\s*new\\\\|^\\\\s*internal\\\\s.*=\\\\s*null\" /c/Users/admin/AppData/Local/GitHub/EFT-DMA-Radar/src --include=\"*.cs\" -not -path \"*/.vs/*\" -not -path \"*/bin/*\" -not -path \"*/obj/*\" -not -path \"*/.claude/*\" | head -40)",
+      "Bash(dotnet build:*)"
     ]
   }
 }

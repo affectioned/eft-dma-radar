@@ -691,10 +691,14 @@ namespace eft_dma_radar.UI.ESP
                 if (ESPConfig.ShowRaidStats)
                     DrawRaidStats(canvas, players);
 
-                if (ESPConfig.ShowAimFOV &&
-                    Config.Aimbot.Enabled)
+                if (ESPConfig.ShowAimFOV)
                 {
-                    AimFOV = Config.Aimbot.FOV;
+                    var aimCfg = (SharedProgram.Config as Config)?.Aimbot;
+                    if (aimCfg != null)
+                    {
+                        float halfWidth = CameraManagerBase.Viewport.Width / 2f;
+                        AimFOV = halfWidth * MathF.Tan(aimCfg.FovDegrees * (MathF.PI / 180f));
+                    }
                     DrawAimFOV(canvas);
                 }
 
@@ -1357,7 +1361,7 @@ private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
 
             var anchorY =
                 CameraManagerBase.ViewportCenter.Y +
-                Config.Aimbot.FOV +
+                AimFOV +
                 15f * ESPConfig.FontScale +
                 _closestPlayerOffset.Y;
 
@@ -2414,7 +2418,7 @@ private void DrawRadarInfo(SKCanvas canvas)
             var textHeight = SKPaints.ESPFontMedium13.Size;
 
             var anchorX = CameraManagerBase.ViewportCenter.X + _closestPlayerOffset.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + Config.Aimbot.FOV + 15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + AimFOV +15f * ESPConfig.FontScale + _closestPlayerOffset.Y;
 
             var x = anchorX - textWidth / 2;
 
@@ -2613,7 +2617,7 @@ private void DrawRadarInfo(SKCanvas canvas)
                 var sampleHeight = SKPaints.ESPFontMedium13.Size;
 
                 var sampleAnchorX = CameraManagerBase.ViewportCenter.X;
-                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + Config.Aimbot.FOV + 15f * ESPConfig.FontScale;
+                var sampleAnchorY = CameraManagerBase.ViewportCenter.Y + AimFOV +15f * ESPConfig.FontScale;
 
                 var sampleX = sampleAnchorX - sampleWidth / 2;
 
@@ -2624,7 +2628,7 @@ private void DrawRadarInfo(SKCanvas canvas)
             var textHeight = SKPaints.ESPFontMedium13.Size;
 
             var anchorX = CameraManagerBase.ViewportCenter.X;
-            var anchorY = CameraManagerBase.ViewportCenter.Y + Config.Aimbot.FOV + 15f * ESPConfig.FontScale;
+            var anchorY = CameraManagerBase.ViewportCenter.Y + AimFOV +15f * ESPConfig.FontScale;
 
             var x = anchorX - textWidth / 2;
 
@@ -2860,7 +2864,7 @@ private void DrawRadarInfo(SKCanvas canvas)
 
             if (aimEnabled)
             {
-                if (Config.Aimbot.RandomBone.Enabled)
+                if (false)
                     label = "Aimbot: Random Bone";
                 else
                     label = $"Aimbot: {Config.Aimbot.AimBone.GetDescription()}";

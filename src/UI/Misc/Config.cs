@@ -598,10 +598,11 @@ namespace eft_dma_radar.UI.Misc
         public MemWritesConfig MemWrites { get; private set; } = new();
 
         /// <summary>
-        /// Aimbot Configuration (shortcut).
+        /// Aimbot Configuration.
         /// </summary>
-        [JsonIgnore]
-        public AimbotConfig Aimbot => MemWrites.Aimbot;
+        [JsonInclude]
+        [JsonPropertyName("aimbot")]
+        public AimbotConfig Aimbot { get; private set; } = new();
 
         /// <summary>
         /// ESP Configuration.
@@ -906,22 +907,13 @@ namespace eft_dma_radar.UI.Misc
                     config.QuestHelper.BlacklistedQuests = new HashSet<string>();
             }
 
+            if (config.Aimbot == null)
+                config.Aimbot = new AimbotConfig();
+
             if (config.MemWrites != null)
             {
-                if (config.MemWrites.Aimbot == null)
-                    config.MemWrites.Aimbot = new AimbotConfig();
-
                 if (config.MemWrites.WideLean == null)
                     config.MemWrites.WideLean = new WideLeanConfig();
-
-                if (config.MemWrites.Aimbot != null)
-                {
-                    if (config.MemWrites.Aimbot.SilentAim == null)
-                        config.MemWrites.Aimbot.SilentAim = new SilentAimConfig();
-
-                    if (config.MemWrites.Aimbot.RandomBone == null)
-                        config.MemWrites.Aimbot.RandomBone = new AimbotRandomBoneConfig();
-                }
             }
 
             if (config.ESP != null)
@@ -2483,95 +2475,65 @@ namespace eft_dma_radar.UI.Misc
     public sealed class AimbotConfig
     {
         /// <summary>
-        /// Enable Aimbot Feature on Startup.
+        /// Enable the aimbot.
         /// </summary>
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; } = false;
 
         /// <summary>
-        /// Last Aimbot Targeting Mode that the player set.
+        /// COM port for the Makcu device (e.g. "COM3").
         /// </summary>
-        [JsonPropertyName("targetingMode")]
-        public int TargetingMode { get; set; } = 0;
-
-        /// <summary>
-        /// Aimbot FOV via ESP Circle.
-        /// </summary>
-        [JsonPropertyName("fov")]
-        public float FOV { get; set; } = 150f;
-
-        /// <summary>
-        /// Aimbot max aiming distance.
-        /// </summary>
-        [JsonPropertyName("distance")]
-        public float Distance { get; set; } = 500f;
-
-        /// <summary>
-        /// Bone for the Default Aimbot Target.
-        /// </summary>
-        [JsonPropertyName("bone")]
-        public Bones Bone { get; set; } = Bones.HumanSpine3;
-
-        /// <summary>
-        /// Always headshot AI Targets.
-        /// </summary>
-        [JsonPropertyName("headshotAI")]
-        public bool HeadshotAI { get; set; } = true;
-
-        /// <summary>
-        /// True if Aimbot Re-Locking is disabled after a target dies/is no longer valid.
-        /// </summary>
-        [JsonPropertyName("disableReLock")]
-        public bool DisableReLock { get; set; } = false;
-
-        /// <summary>
-        /// Silent Aim Config
-        /// </summary>
-        [JsonPropertyName("silentAimCfg")]
-        public SilentAimConfig SilentAim { get; set; } = new();
-        /// <summary>
-        /// Random Bone Config
-        /// </summary>
-        [JsonPropertyName("randomBone")]
-        public AimbotRandomBoneConfig RandomBone { get; set; } = new();
-
-        // ── Makcu hardware aimbot properties ──────────────────────────────────
-
-        /// <summary>Auto-connect to Makcu on startup.</summary>
-        [JsonPropertyName("autoConnect")]
-        public bool AutoConnect { get; set; } = false;
-
-        /// <summary>COM port for Makcu device (e.g. "COM3").</summary>
         [JsonPropertyName("makcuPort")]
         public string MakcuPort { get; set; } = "COM3";
 
-        /// <summary>FOV radius in degrees for target acquisition.</summary>
-        [JsonPropertyName("fovDegrees")]
-        public float FovDegrees { get; set; } = 5f;
+        /// <summary>
+        /// Automatically connect to the Makcu device on application startup.
+        /// </summary>
+        [JsonPropertyName("autoConnect")]
+        public bool AutoConnect { get; set; } = false;
 
-        /// <summary>Horizontal smoothing factor (0-1).</summary>
+        /// <summary>
+        /// Maximum FOV radius (degrees from crosshair) to consider a target.
+        /// </summary>
+        [JsonPropertyName("fovDegrees")]
+        public float FovDegrees { get; set; } = 10f;
+
+        /// <summary>
+        /// Which bone to aim at.
+        /// </summary>
+        [JsonPropertyName("aimBone")]
+        public Bones AimBone { get; set; } = Bones.HumanHead;
+
+        /// <summary>
+        /// Horizontal lerp alpha [0.01–1.0].
+        /// </summary>
         [JsonPropertyName("alphaX")]
         public float AlphaX { get; set; } = 0.1f;
 
-        /// <summary>Vertical smoothing factor (0-1).</summary>
+        /// <summary>
+        /// Vertical lerp alpha [0.01–1.0].
+        /// </summary>
         [JsonPropertyName("alphaY")]
         public float AlphaY { get; set; } = 0.1f;
 
-        /// <summary>Deadzone radius in pixels before movement is applied.</summary>
+        /// <summary>
+        /// Deadzone radius (pixels). Movement is skipped when target is this close to center.
+        /// </summary>
         [JsonPropertyName("deadzone")]
-        public float Deadzone { get; set; } = 2f;
+        public float Deadzone { get; set; } = 3f;
 
-        /// <summary>Gaussian noise amount for humanized movement (0 = off).</summary>
+        /// <summary>
+        /// Standard deviation of Gaussian noise added to each mouse move. 0 = no noise.
+        /// </summary>
         [JsonPropertyName("gaussianNoise")]
         public float GaussianNoise { get; set; } = 0f;
 
-        /// <summary>Target AI players as well as human players.</summary>
+        /// <summary>
+        /// When true, AI-controlled enemies are also targeted.
+        /// </summary>
         [JsonPropertyName("aimAI")]
-        public bool AimAI { get; set; } = false;
+        public bool AimAI { get; set; } = true;
 
-        /// <summary>Bone to aim at.</summary>
-        [JsonPropertyName("aimBone")]
-        public Bones AimBone { get; set; } = Bones.HumanHead;
     }
 
     public sealed class AimbotRandomBoneConfig
