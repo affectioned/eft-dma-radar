@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(xargs grep:*)",
+      "Bash(find C:UsersadminAppDataLocalGitHubEFT-DMA-Radarsrc -name *.cs -type f)",
+      "Bash(grep -r \"AimbotLocked\\\\|Aimbot.*class\\\\|class.*Aimbot\" C:UsersadminAppDataLocalGitHubEFT-DMA-Radarsrc --include=*.cs)"
+    ]
+  }
+}
