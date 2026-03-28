@@ -994,6 +994,17 @@ namespace eft_dma_radar.Tarkov
             return _actualMemory.FindSignature(signature, moduleName);
         }
 
+        public ulong[] FindSignatures(string signature, string moduleName, int maxMatches = int.MaxValue)
+        {
+            if (!HasDMA)
+            {
+                LogSafeOnce("[SafeMode] FindSignatures skipped (DMA disabled)");
+                return Array.Empty<ulong>();
+            }
+
+            return _actualMemory.FindSignatures(signature, moduleName, maxMatches);
+        }
+
         public ulong FindSignature(string signature, ulong rangeStart, ulong rangeEnd, uint pid)
         {
             if (!HasDMA)
@@ -1003,6 +1014,17 @@ namespace eft_dma_radar.Tarkov
             }
 
             return _actualMemory.FindSignature(signature, rangeStart, rangeEnd, pid);
+        }
+
+        public ulong[] FindSignatures(string signature, ulong rangeStart, ulong rangeEnd, uint pid, int maxMatches = int.MaxValue)
+        {
+            if (!HasDMA)
+            {
+                LogSafeOnce("[SafeMode] FindSignatures (range) skipped (DMA disabled)");
+                return Array.Empty<ulong>();
+            }
+
+            return _actualMemory.FindSignatures(signature, rangeStart, rangeEnd, pid, maxMatches);
         }
 
         public void ThrowIfNotInGame()

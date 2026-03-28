@@ -20,11 +20,14 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         /// </summary>
         private static readonly (string Sig, int RelOffset, int InstrLen, string Desc)[] TypeInfoTableSigs =
         [
+            // Read-side (lookup function): mov rax, [rip+rel32]; lea r14,[rax+rsi*8]; ...; nop; test rdi,rdi; jnz
+            ("48 8B 05 ? ? ? ? ? ? ? ? ? ? ? 90 48 85 DB 75 ? 48 8D 2D ? ? ? ? 48 89 6C 24 ? 48 8B CD E8 ? ? ? ? 90 ? ? ? 48 85 DB 75 ? 8B CF", 3, 7, "read: mov rax,[rip+rel32] (table lookup)"),
+
             // Write-side (initialization): mov [rip+rel32], rax; mov rax, [rip+rel32]; mov edx, [rax+...]
             ("48 89 05 ? ? ? ? 48 8B 05 ? ? ? ? 8B 48", 3, 7, "write: mov [rip+rel32],rax (init store)"),
 
-            // Read-side (lookup function): mov rax, [rip+rel32]; lea r14,[rax+rsi*8]; ...; nop; test rdi,rdi; jnz
-            ("48 8B 05 ? ? ? ? ? ? ? ? ? ? ? 90 48 85 DB 75 ? 48 8D 2D ? ? ? ? 48 89 6C 24 ? 48 8B CD E8 ? ? ? ? 90 ? ? ? 48 85 DB 75 ? 8B CF", 3, 7, "read: mov rax,[rip+rel32] (table lookup)"),
+            // Minimal write-side anchor: mov [rip+rel32], rax; mov rax, [rip+rel32]
+            ("48 89 05 ? ? ? ? 48 8B 05", 3, 7, "write: mov [rip+rel32],rax; mov rax,[rip+rel32] (minimal)"),
         ];
 
         /// <summary>
@@ -37,32 +40,96 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         private static bool ResolveTypeInfoTableRva(ulong gaBase)
         {
             DebugTestAllSignatures(gaBase);
+
+            const int maxMatchesPerSignature = 64;
+            var testedRvas = new HashSet<ulong>();
+
+            ulong selectedRva = 0;
+            ulong selectedSigAddr = 0;
+            string? selectedSig = null;
+
+            int totalValidMatches = 0;
+
             foreach (var (sig, relOff, instrLen, _) in TypeInfoTableSigs)
             {
-                var sigAddr = Memory.FindSignature(sig, "GameAssembly.dll");
-                if (sigAddr == 0)
-                    continue;
-
-                var rva = ResolveRipRelativeRva(sigAddr, relOff, instrLen, gaBase);
-                if (rva == 0)
-                    continue;
-
-                if (ValidateTypeInfoTable(gaBase, rva))
+                ulong[] sigAddrs;
+                try
                 {
-                    var previous = Offsets.Special.TypeInfoTableRva;
-                    Offsets.Special.TypeInfoTableRva = rva;
-
-                    if (previous != rva)
-                        XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTableRva UPDATED: 0x{previous:X} → 0x{rva:X}");
-
-                    return true;
+                    sigAddrs = Memory.FindSignatures(sig, "GameAssembly.dll", maxMatchesPerSignature);
                 }
+                catch (Exception ex)
+                {
+                    XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable sig scan error ({sig}): {ex.Message}");
+                    continue;
+                }
+
+                int validMatches = 0;
+                var sigUniqueRvas = new HashSet<ulong>();
+                ulong sigFirstValidRva = 0;
+                ulong sigFirstValidAddr = 0;
+
+                foreach (var sigAddr in sigAddrs)
+                {
+                    var rva = ResolveRipRelativeRva(sigAddr, relOff, instrLen, gaBase);
+                    if (rva == 0)
+                        continue;
+
+                    if (!ValidateTypeInfoTable(gaBase, rva))
+                        continue;
+
+                    validMatches++;
+                    totalValidMatches++;
+                    sigUniqueRvas.Add(rva);
+
+                    if (sigFirstValidRva == 0)
+                    {
+                        sigFirstValidRva = rva;
+                        sigFirstValidAddr = sigAddr;
+                    }
+
+                    bool isNewGlobalValid = testedRvas.Add(rva);
+                    if (!isNewGlobalValid)
+                        continue;
+
+                    if (selectedRva == 0)
+                    {
+                        selectedRva = rva;
+                        selectedSigAddr = sigAddr;
+                        selectedSig = sig;
+                    }
+                }
+
+                if (sigFirstValidRva != 0)
+                {
+                    XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable sig '{sig}': found={sigAddrs.Length}, valid={validMatches}, unique={sigUniqueRvas.Count}, anyValid=yes, firstValid=GA+0x{sigFirstValidAddr - gaBase:X}, rva=0x{sigFirstValidRva:X}");
+                }
+                else
+                {
+                    XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable sig '{sig}': found={sigAddrs.Length}, valid=0, unique=0, anyValid=no");
+                }
+            }
+
+            if (selectedRva != 0)
+            {
+                var previous = Offsets.Special.TypeInfoTableRva;
+                Offsets.Special.TypeInfoTableRva = selectedRva;
+
+                if (selectedSig is not null)
+                    XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable selected: sig={selectedSig}, GA+0x{selectedSigAddr - gaBase:X}, rva=0x{selectedRva:X}");
+
+                XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable validation totals: valid={totalValidMatches}, unique={testedRvas.Count}");
+
+                if (previous != selectedRva)
+                    XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTableRva UPDATED: 0x{previous:X} → 0x{selectedRva:X}");
+
+                return true;
             }
 
             // All signatures failed — validate the hardcoded fallback.
             if (Offsets.Special.TypeInfoTableRva != 0 && ValidateTypeInfoTable(gaBase, Offsets.Special.TypeInfoTableRva))
                 return true;
 
+            XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable validation totals: valid={totalValidMatches}, unique={testedRvas.Count}");
             XMLogging.WriteLine("[Il2CppDumper] WARNING: All TypeInfoTable resolution strategies failed — offsets may be stale!");
             return false;
         }
@@ -241,32 +308,57 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             for (int idx = 0; idx < TypeInfoTableSigs.Length; idx++)
             {
-                var (sig, relOff, instrLen, desc) = TypeInfoTableSigs[idx];
+                var (sig, relOff, instrLen, _) = TypeInfoTableSigs[idx];
                 try
                 {
-                    var sigAddr = Memory.FindSignature(sig, "GameAssembly.dll");
-                    if (sigAddr == 0)
+                    var sigAddrs = Memory.FindSignatures(sig, "GameAssembly.dll", 64);
+                    if (sigAddrs.Length == 0)
                     {
-                        bodyLines.Add($"[{idx}] MISS — {desc}");
+                        bodyLines.Add($"[{idx}] MISS — sig={sig}");
                         continue;
                     }
 
-                    var rva = ResolveRipRelativeRva(sigAddr, relOff, instrLen, gaBase);
-                    string matchInfo = $"GA+0x{sigAddr - gaBase:X}";
+                    int badRip = 0;
+                    int invalid = 0;
+                    ulong firstValidRva = 0;
+                    ulong firstValidSigAddr = 0;
 
-                    if (rva == 0)
+                    foreach (var sigAddr in sigAddrs)
                     {
-                        bodyLines.Add($"[{idx}] BAD RIP — {desc} ({matchInfo})");
-                        continue;
+                        var rva = ResolveRipRelativeRva(sigAddr, relOff, instrLen, gaBase);
+                        if (rva == 0)
+                        {
+                            badRip++;
+                            continue;
+                        }
+
+                        if (!ValidateTypeInfoTable(gaBase, rva))
+                        {
+                            invalid++;
+                            continue;
+                        }
+
+                        firstValidRva = rva;
+                        firstValidSigAddr = sigAddr;
+                        break;
                     }
 
-                    bool valid = ValidateTypeInfoTable(gaBase, rva);
-                    string status = valid ? $"OK RVA=0x{rva:X}" : $"INVALID RVA=0x{rva:X}";
-                    bodyLines.Add($"[{idx}] {status} — {desc} ({matchInfo})");
+                    if (firstValidRva != 0)
+                    {
+                        bodyLines.Add($"[{idx}] OK RVA=0x{firstValidRva:X} — sig={sig} (matches={sigAddrs.Length}, GA+0x{firstValidSigAddr - gaBase:X})");
+                    }
+                    else if (badRip == sigAddrs.Length)
+                    {
+                        bodyLines.Add($"[{idx}] BAD RIP — sig={sig} (matches={sigAddrs.Length})");
+                    }
+                    else
+                    {
+                        bodyLines.Add($"[{idx}] INVALID — sig={sig} (matches={sigAddrs.Length}, badRip={badRip}, invalid={invalid})");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    bodyLines.Add($"[{idx}] ERROR {ex.Message} — {desc}");
+                    bodyLines.Add($"[{idx}] ERROR {ex.Message} — sig={sig}");
                 }
             }
 
@@ -378,10 +470,22 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             {
                 try
                 {
-                    var sigAddr = Memory.FindSignature(sig, "GameAssembly.dll");
-                    if (sigAddr == 0) continue;
-                    var rva = ResolveRipRelativeRva(sigAddr, relOff, instrLen, gaBase);
-                    if (rva != 0 && ValidateTypeInfoTable(gaBase, rva))
+                    var sigAddrs = Memory.FindSignatures(sig, "GameAssembly.dll", 64);
+                    if (sigAddrs.Length == 0)
+                        continue;
+
+                    bool hasValid = false;
+                    foreach (var sigAddr in sigAddrs)
+                    {
+                        var rva = ResolveRipRelativeRva(sigAddr, relOff, instrLen, gaBase);
+                        if (rva != 0 && ValidateTypeInfoTable(gaBase, rva))
+                        {
+                            hasValid = true;
+                            break;
+                        }
+                    }
+
+                    if (hasValid)
                         count++;
                 }
                 catch { /* skip */ }
