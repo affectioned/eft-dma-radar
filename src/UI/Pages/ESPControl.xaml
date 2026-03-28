@@ -41,6 +41,257 @@
                           Background="Transparent"
                           BorderThickness="0">
 
+                <!-- Chams Tab -->
+                <hc:TabItem Header="Chams">
+                    <ScrollViewer Style="{StaticResource PanelScrollViewer}">
+                        <hc:SimpleStackPanel>
+                            <!-- General Settings Section -->
+                            <Expander x:Name="expChamsGeneralSettings" Header="General Settings" Style="{StaticResource PanelExpander}" IsExpanded="True">
+                                <hc:SimpleStackPanel Style="{StaticResource ExpanderContent}" Margin="2,8,2,0">
+                                    <!-- Enable Chams -->
+                                    <CheckBox x:Name="chkEnableChams" Content="Enable Chams" 
+                                              Style="{StaticResource DynamicCheckBoxStyle}" 
+                                              Margin="0,0,0,15" Tag="EnableChams"/>
+
+                                    <!-- Chams Material Management  -->
+                                    <GroupBox Header="Material Management" Style="{StaticResource TransparentGroupBoxStyle}"
+                                              Padding="5,0,5,5" Margin="0,0,0,8" Visibility="Hidden">
+                                        <hc:SimpleStackPanel Margin="0,5,0,0">
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0" Margin="0,0,0,0"
+                                                           Text="Materials Status:"
+                                                           Style="{StaticResource LabelText}"
+                                                           FontSize="14"
+                                                           VerticalAlignment="Center"/>
+
+                                                <TextBlock x:Name="txtChamsMaterialStatus" 
+                                                           Grid.Column="1" Margin="4,0,0,0"
+                                                           Text="Unknown" 
+                                                           Style="{StaticResource LabelText}"
+                                                           FontSize="14"
+                                                           VerticalAlignment="Center"/>
+
+                                                <TextBlock x:Name="txtChamsMaterialCount" 
+                                                           Grid.Column="2" Margin="0,0,0,0"
+                                                           Text="0/0 loaded" 
+                                                           Style="{StaticResource LabelText}"
+                                                           FontSize="14"
+                                                           VerticalAlignment="Center"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="8"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Button x:Name="btnRefreshChamsMaterials" 
+                                                        Grid.Column="0"
+                                                        Content="? Refresh Materials" 
+                                                        Style="{StaticResource ButtonWarning}"
+                                                        HorizontalAlignment="Stretch"
+                                                        ToolTip="Force refresh all chams materials. Use if materials failed to load properly."
+                                                        Tag="RefreshChamsMaterials"/>
+
+                                                <Button x:Name="btnClearChamsCache" 
+                                                        Grid.Column="2"
+                                                        Content="?? Clear Cache" 
+                                                        Style="{StaticResource ButtonDanger}"
+                                                        HorizontalAlignment="Stretch"
+                                                        ToolTip="Clear chams material cache and force full reload on next refresh."
+                                                        Tag="ClearChamsCache"/>
+                                            </Grid>
+
+                                            <hc:SimpleStackPanel Margin="0,0,0,0">
+                                                <!-- Warning Text -->
+                                                <TextBlock x:Name="txtAdvancedMemWritesWarning"
+                                                           TextWrapping="Wrap"
+                                                           Style="{StaticResource LabelText}"
+                                                           FontSize="13"
+                                                           TextAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                           <Run Text="?" FontSize="16" />
+                                                           <Run Text="Advanced Material Types"/>
+                                                           <Run Text="(WireFrame, VisCheck Glow, VisCheck Flat)" FontWeight="Bold"/>
+                                                           <Run Text="require"/>
+                                                           <Run Text="Advanced Memory Writes" FontWeight="Bold" Foreground="Orange"/>
+                                                </TextBlock>
+                                            </hc:SimpleStackPanel>
+                                        </hc:SimpleStackPanel>
+                                    </GroupBox>
+                                     
+                                </hc:SimpleStackPanel>
+                            </Expander>
+
+                            <!-- Entity Settings Section -->
+                            <Expander x:Name="expChamsEntitySettings" Header="Entity Settings" Style="{StaticResource PanelExpander}" IsExpanded="True">
+                                <hc:SimpleStackPanel Style="{StaticResource ExpanderContent}" Margin="2,8,2,0">
+                                    <!-- Entity Type Selection -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="Entity Type" Style="{StaticResource LabelText}" 
+                                                   VerticalAlignment="Center" Grid.Column="0"/>
+
+                                        <hc:ComboBox x:Name="cboChamsEntityType" Grid.Column="1">
+                                            <ComboBoxItem Content="AI" Tag="AI"/>
+                                            <ComboBoxItem Content="Aimbot Target" Tag="AimbotTarget"/>
+                                            <ComboBoxItem Content="Boss" Tag="Boss"/>
+                                            <ComboBoxItem Content="Player Scav" Tag="PlayerScav"/>
+                                            <ComboBoxItem Content="PMC" Tag="PMC"/>
+                                            <ComboBoxItem Content="Raider/Rogue/Guard" Tag="Guard"/>
+                                            <ComboBoxItem Content="Teammate" Tag="Teammate"/>
+                                        </hc:ComboBox>
+                                    </Grid>
+
+                                    <!-- Entity Enabled Checkbox -->
+                                    <CheckBox x:Name="chkEntityEnabled" Content="Entity Chams" 
+                                              Style="{StaticResource DynamicCheckBoxStyle}" 
+                                              Margin="0,0,0,12" Tag="EntityEnabled"/>
+
+                                    <!-- Material Type Selection -->
+                                    <Grid x:Name="materialGroup" Margin="0,0,0,8" Visibility="Visible">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="Material Type" Style="{StaticResource LabelText}" 
+                                                   VerticalAlignment="Center" Grid.Column="0"/>
+
+                                        <hc:ComboBox x:Name="cboMaterialType" Grid.Column="1" Tag="MaterialType">
+                                            <ComboBoxItem Content="Basic" Tag="Basic" IsSelected="True"/>
+                                            <ComboBoxItem Content="Visible" Tag="Visible"/>
+                                        </hc:ComboBox>
+                                    </Grid>
+
+                                    <!-- Player Entity Material Types -->
+                                    <GroupBox x:Name="playerEntityGroup" Header="Material Types" Style="{StaticResource TransparentGroupBoxStyle}"
+                                              Padding="5,0,5,5" Margin="0,0,0,12" Visibility="Collapsed">
+                                        <hc:SimpleStackPanel Margin="0,5,0,0">
+                                            <!-- Clothing Chams -->
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <CheckBox x:Name="chkClothingChamsEnabled" Content="Clothing Chams" 
+                                                          Style="{StaticResource DynamicCheckBoxStyle}" 
+                                                          Grid.Column="0" Tag="ClothingChamsEnabled"
+                                                          VerticalAlignment="Center"/>
+
+                                                <hc:ComboBox x:Name="cboClothingMaterialType" Grid.Column="1" Tag="ClothingMaterialType">
+                                                    <ComboBoxItem Content="Basic" Tag="Basic" IsSelected="True"/>
+                                                    <ComboBoxItem Content="Visible" Tag="Visible"/>
+                                                </hc:ComboBox>
+                                            </Grid>
+
+                                            <!-- Gear Chams -->
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <CheckBox x:Name="chkGearChamsEnabled" Content="Gear Chams" 
+                                                          Style="{StaticResource DynamicCheckBoxStyle}" 
+                                                          Grid.Column="0" Tag="GearChamsEnabled"
+                                                          VerticalAlignment="Center"/>
+
+                                                <hc:ComboBox x:Name="cboGearMaterialType" Grid.Column="1" Tag="GearMaterialType">
+                                                    <ComboBoxItem Content="Basic" Tag="Basic" IsSelected="True"/>
+                                                    <ComboBoxItem Content="Visible" Tag="Visible"/>
+                                                </hc:ComboBox>
+                                            </Grid>
+
+                                            <!-- Death Material -->
+                                            <Grid Margin="0,0,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <CheckBox x:Name="chkDeathMaterialEnabled" Content="Death Material" 
+                                                          Style="{StaticResource DynamicCheckBoxStyle}" 
+                                                          Grid.Column="0" Tag="DeathMaterialEnabled"
+                                                          VerticalAlignment="Center"/>
+
+                                                <hc:ComboBox x:Name="cboDeathMaterialType" Grid.Column="1" Tag="DeathMaterialType">
+                                                    <ComboBoxItem Content="Basic" Tag="Basic"/>
+                                                    <ComboBoxItem Content="Visible" Tag="Visible"/>
+                                                </hc:ComboBox>
+                                            </Grid>
+                                        </hc:SimpleStackPanel>
+                                    </GroupBox>
+
+                                    <!-- Material Color Selection -->
+                                    <GroupBox x:Name="materialColorGroup" Header="Material Color Selection" Style="{StaticResource TransparentGroupBoxStyle}"
+                                              Padding="5,0,5,5" Margin="0,0,0,12">
+                                        <hc:SimpleStackPanel Margin="0,5,0,0">
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Text="Material Type" Style="{StaticResource LabelText}" 
+                                                           VerticalAlignment="Center" Grid.Column="0"/>
+
+                                                <hc:ComboBox x:Name="cboColorMaterialType" Grid.Column="1" Tag="ColorMaterialType">
+                                                    <ComboBoxItem Content="Visible" Tag="VisCheckFlat" IsSelected="True"/>
+                                                </hc:ComboBox>
+                                            </Grid>
+
+                                            <!-- Colors -->
+                                            <Grid Margin="0,5,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Text="Visible " Grid.Row="0" Grid.Column="0" 
+                                                           Style="{StaticResource ColorPickerLabel}"/>
+                                                <Button x:Name="btnChamsVisibleColor" Grid.Row="0" Grid.Column="1" Tag="VisibleColor"
+                                                        Style="{StaticResource ColorPickerButtonPreserveColor}">
+                                                    <Button.Background>
+                                                        <SolidColorBrush x:Name="chamsVisibleColor" Color="Green"/>
+                                                    </Button.Background>
+                                                </Button>
+
+                                                <TextBlock Text="Invisible Color" Grid.Row="0" Grid.Column="3" 
+                                                           Style="{StaticResource ColorPickerLabel}"/>
+                                                <Button x:Name="btnChamsInvisibleColor" Grid.Row="0" Grid.Column="4" Tag="InvisibleColor"
+                                                        Style="{StaticResource ColorPickerButtonPreserveColor}" IsEnabled="False">
+                                                    <Button.Background>
+                                                        <SolidColorBrush x:Name="chamsInvisibleColor" Color="Red"/>
+                                                    </Button.Background>
+                                                </Button>
+                                            </Grid>
+                                        </hc:SimpleStackPanel>
+                                    </GroupBox>
+                                </hc:SimpleStackPanel>
+                            </Expander>
+                        </hc:SimpleStackPanel>
+                    </ScrollViewer>
+                </hc:TabItem>
+
                 <!-- Fuser Tab -->
                 <hc:TabItem Header="Fuser">
                     <ScrollViewer Style="{StaticResource PanelScrollViewer}">
@@ -80,22 +331,10 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="FPS Cap" Style="{StaticResource LabelText}"
+                                        <TextBlock Text="FPS Cap" Style="{StaticResource LabelText}" 
                                                    VerticalAlignment="Center" Grid.Column="0"/>
                                         <hc:NumericUpDown x:Name="nudFPSCap" Value="60" Minimum="30" Maximum="500"
                                                           Grid.Column="1" Width="80" HorizontalAlignment="Left" Tag="FPSCap"/>
-                                    </Grid>
-
-                                    <!-- VSync -->
-                                    <Grid Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="VSync" Style="{StaticResource LabelText}"
-                                                   VerticalAlignment="Center" Grid.Column="0"/>
-                                        <CheckBox x:Name="chkVSync" Grid.Column="1" VerticalAlignment="Center"
-                                                  Tag="VSync"/>
                                     </Grid>
 
                                     <!-- Font Scale Slider -->
@@ -246,13 +485,17 @@
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
-                                        
+
                                         <CheckBox x:Name="chkHighAlert" Content="High Alert Indicator" Tag="HighAlertIndicator"
                                               Margin="0,0,0,10" Grid.Row="0" Grid.Column="0"
                                               Style="{StaticResource DynamicCheckBoxStyle}"/>
 
                                         <CheckBox x:Name="chkImportantIndicators" Content="Important Indicator" Tag="ImportantIndicators"
                                               Margin="0,0,0,10" Grid.Row="0" Grid.Column="1"
+                                              Style="{StaticResource DynamicCheckBoxStyle}"/>
+
+                                        <CheckBox x:Name="chkUseOverrideTextColor" Content="Override Text Color" Tag="UseOverrideTextColor"
+                                              Margin="0,0,0,10" Grid.Row="1" Grid.Column="0"
                                               Style="{StaticResource DynamicCheckBoxStyle}"/>
 
                                         <CheckBox x:Name="chkShowImportantPlayerLoot" Content="Show Important Loot" Tag="ShowImportantPlayerLoot"

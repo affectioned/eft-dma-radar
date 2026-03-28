@@ -1,5 +1,8 @@
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Pools;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace eft_dma_radar.Common.Unity
 {
@@ -160,6 +163,7 @@ namespace eft_dma_radar.Common.Unity
         public void UpdateRootPosition(ref Vector3 newPos)
         {
             newPos.ThrowIfAbnormal();
+            Memory.WriteValue(HierarchyAddr + TransformHierarchy.RootPosOffset, ref newPos);
         }
 
         // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
@@ -356,6 +360,6 @@ namespace eft_dma_radar.Common.Unity
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(this Quaternion q) =>
             float.IsFinite(q.X) && float.IsFinite(q.Y) &&
-            float.IsFinite(q.Z) && float.IsFinite(q.W);
+            float.IsFinite(q.Z) && float.IsFinite(q.W);        
     }
 }

@@ -1,4 +1,8 @@
 using eft_dma_radar.Common.Misc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace eft_dma_radar.UI.Misc
@@ -52,36 +56,7 @@ namespace eft_dma_radar.UI.Misc
 
         private const int MONITORINFOF_PRIMARY = 0x00000001;
 
-        [DllImport("user32.dll", CharSet = CharSet.Ansi)]
-        private static extern bool EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode);
-
-        private const int ENUM_CURRENT_SETTINGS = -1;
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        private struct DEVMODE
-        {
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
-            public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra;
-            public int dmFields, dmPositionX, dmPositionY, dmDisplayOrientation, dmDisplayFixedOutput;
-            public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
-            public short dmLogPixels;
-            public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency;
-        }
-
         #endregion
-
-        /// <summary>
-        /// Returns the refresh rate (Hz) of the given screen, or 60 as a safe fallback.
-        /// </summary>
-        public static int GetRefreshRate(Screen screen)
-        {
-            var dm = new DEVMODE();
-            dm.dmSize = (short)Marshal.SizeOf(dm);
-            if (EnumDisplaySettings(screen.DeviceName, ENUM_CURRENT_SETTINGS, ref dm) && dm.dmDisplayFrequency > 0)
-                return dm.dmDisplayFrequency;
-            return 60;
-        }
 
         /// <summary>
         /// Get all monitors on the local machine (not the game PC).

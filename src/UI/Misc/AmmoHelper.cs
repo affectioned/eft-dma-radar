@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace eft_dma_radar.UI.Misc
 {
     public static class AmmoLookup

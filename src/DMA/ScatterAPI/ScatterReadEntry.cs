@@ -1,5 +1,9 @@
-﻿using eft_dma_radar.Common.Misc;
+﻿using eft_dma_radar.Common.DMA;
+using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Pools;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using static eft_dma_radar.Common.Unity.UnityTransform;
 
 namespace eft_dma_radar.Common.DMA.ScatterAPI
@@ -233,7 +237,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
             Address = default;
             CB = default;
             IsFailed = default;
-
+        
             ActionOnComplete = null;
         }
     }

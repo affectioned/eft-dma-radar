@@ -1,4 +1,7 @@
+using eft_dma_radar.Common.DMA;
+using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.DMA.ScatterAPI;
+using System.Collections.Concurrent;
 using eft_dma_radar.Common.Misc;
 
 namespace eft_dma_radar.Tarkov.Unity.IL2CPP
@@ -10,8 +13,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         private static volatile bool _loaded = false;
 
         private static ulong[] _typeTable = Array.Empty<ulong>();
-        private static ulong[] _namePtr = Array.Empty<ulong>();
-        private static ulong[] _nsPtr = Array.Empty<ulong>();
+        private static ulong[] _namePtr  = Array.Empty<ulong>();
+        private static ulong[] _nsPtr    = Array.Empty<ulong>();
 
         private static ulong _lastGA = 0;
         private static ulong _lastTablePtr = 0;
@@ -30,8 +33,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             _loaded = false;
             _typeTable = Array.Empty<ulong>();
-            _namePtr = Array.Empty<ulong>();
-            _nsPtr = Array.Empty<ulong>();
+            _namePtr   = Array.Empty<ulong>();
+            _nsPtr     = Array.Empty<ulong>();
             _cache.Clear();
 
             _lastGA = 0;
@@ -65,46 +68,12 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     _lastGA = ga;
 
                     // Load TypeInfoTable pointer
-                    ulong tablePtr = 0;
-                    ulong tableRva = 0;
-
-                    try
-                    {
-                        const string sig = "48 89 05 ? ? ? ? 48 8B 05 ? ? ? ? 8B 50";
-                        ulong addr = Memory.FindSignature(sig, "GameAssembly.dll");
-                        if (addr.IsValidVirtualAddress())
-                        {
-                            int rva = Memory.ReadValue<int>(addr + 3);
-                            ulong ptr = Memory.ReadPtr(addr + 7 + (ulong)rva, false);
-
-                            if (ptr.IsValidVirtualAddress())
-                            {
-                                XMLogging.WriteLine("[IL2CppClass] TypeInfoTable located via signature");
-                                tablePtr = Memory.ReadPtr(ptr);
-                                tableRva = ptr - ga;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        XMLogging.WriteLine($"[IL2CppClass] TypeInfoTable signature scan failed: {ex.Message}");
-                        ulong fallback = ga + Offsets.Special.TypeInfoTableRva;
-
-                        if (fallback.IsValidVirtualAddress())
-                        {
-                            XMLogging.WriteLine("[IL2CppClass] TypeInfoTable located via hardcoded offset");
-                            tablePtr = Memory.ReadPtr(fallback);
-                            tableRva = Offsets.Special.TypeInfoTableRva;
-                        }
-                    }
-
+                    ulong tablePtr = Memory.ReadPtr(ga + Offsets.Special.TypeInfoTableRva);
                     if (!tablePtr.IsValidVirtualAddress())
                     {
                         Reset("TypeInfoTablePtr invalid");
                         return;
                     }
-
-                    XMLogging.WriteLine($"[IL2CppClass] TypeInfoTable at 0x{tablePtr:X} (GameAssembly+0x{tableRva:X})");
 
                     // Moved?
                     if (_lastTablePtr != 0 && _lastTablePtr != tablePtr)
@@ -126,7 +95,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     _typeTable = tmp;
 
                     _namePtr = new ulong[actualCount];
-                    _nsPtr = new ulong[actualCount];
+                    _nsPtr   = new ulong[actualCount];
 
                     // Scatter read name + namespace pointers
                     var ptrEntries = new ScatterEntry.PtrEntry[actualCount * 2];
@@ -151,7 +120,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     for (int i = 0; i < actualCount; i++)
                     {
                         _namePtr[i] = ptrEntries[k++].Transfer();
-                        _nsPtr[i] = ptrEntries[k++].Transfer();
+                        _nsPtr[i]   = ptrEntries[k++].Transfer();
                     }
 
                     _loaded = true;
@@ -183,7 +152,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             for (int i = 0; i < count; i++)
             {
                 ulong nameP = _namePtr[i];
-                ulong nsP = _nsPtr[i];
+                ulong nsP   = _nsPtr[i];
 
                 // Pointer went stale? Reset + reload
                 if (!nameP.IsValidVirtualAddress())
@@ -249,6 +218,6 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 _namePtr = Array.Empty<ulong>();
                 _nsPtr = Array.Empty<ulong>();
             }
-        }
+        }        
     }
 }

@@ -19,6 +19,7 @@ namespace eft_dma_radar.UI
         RegularLoot,
         ValuableLoot,
         WishlistLoot,
+        HideoutLoot,
         ContainerLoot,
         MedsFilterLoot,
         FoodFilterLoot,
@@ -50,7 +51,8 @@ namespace eft_dma_radar.UI
         AimbotLock,
         ClosestPlayer,
         TopLoot,
-        MiniRadarTheme
+        MiniRadarTheme,
+        OverridePlayerText
     }
 
     internal static class EspColorOptions
@@ -89,6 +91,7 @@ namespace eft_dma_radar.UI
                 [EspColorOption.RegularLoot] = SKColors.WhiteSmoke.ToString(),
                 [EspColorOption.ValuableLoot] = SKColors.Turquoise.ToString(),
                 [EspColorOption.WishlistLoot] = SKColors.Red.ToString(),
+                [EspColorOption.HideoutLoot] = SKColor.Parse("00BCD4").ToString(),
                 [EspColorOption.ContainerLoot] = SKColor.Parse("FFFFCC").ToString(),
                 [EspColorOption.QuestLoot] = SKColors.YellowGreen.ToString(),
                 [EspColorOption.Airdrop] = SKColors.Red.ToString(),
@@ -121,7 +124,8 @@ namespace eft_dma_radar.UI
                 [EspColorOption.AimbotLock] = SKColors.WhiteSmoke.ToString(),
                 [EspColorOption.ClosestPlayer] = SKColors.WhiteSmoke.ToString(),
                 [EspColorOption.TopLoot] = SKColors.WhiteSmoke.ToString(),
-                [EspColorOption.MiniRadarTheme] = SKColors.WhiteSmoke.ToString()
+                [EspColorOption.MiniRadarTheme] = SKColors.WhiteSmoke.ToString(),
+                [EspColorOption.OverridePlayerText] = SKColors.White.ToString()
             };
 
         /// <summary>
@@ -196,6 +200,10 @@ namespace eft_dma_radar.UI
                         case EspColorOption.WishlistLoot:
                             SKPaints.PaintWishlistItemESP.Color = skColor;
                             SKPaints.TextWishlistItemESP.Color = skColor;
+                            break;
+                        case EspColorOption.HideoutLoot:
+                            SKPaints.PaintHideoutItemESP.Color = skColor;
+                            SKPaints.TextHideoutItemESP.Color = skColor;
                             break;
                         case EspColorOption.QuestLoot:
                             SKPaints.PaintQuestItemESP.Color = skColor;
@@ -311,6 +319,9 @@ namespace eft_dma_radar.UI
                         case EspColorOption.MiniRadarTheme:
                             SKPaints.PaintMiniRadarOutlineESP.Color = skColor;
                             SKPaints.PaintMiniRadarResizeHandleESP.Color = skColor;
+                            break;
+                        case EspColorOption.OverridePlayerText:
+                            SKPaints.TextOverridePlayerESP.Color = skColor;
                             break;
                     }
                 }

@@ -1,22 +1,29 @@
-﻿using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Tarkov.EFTPlayer;
+﻿using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using SkiaSharp;
 using SkiaSharp.Views.WPF;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using static eft_dma_radar.Tarkov.EFTPlayer.Player;
 
 namespace eft_dma_radar.UI.SKWidgetControl
 {
     public sealed class PlayerInfoWidget : SKWidget
     {
         private static Config Config => Program.Config;
-        private const int COL_NAME = 25;
-        private const int COL_GRP = 5;
+        private const int COL_NAME  = 25;
+        private const int COL_GRP   = 5;
         private const int COL_VALUE = 8;
         private const int COL_HANDS = 30;
-        private const int COL_DIST = 5;
-        private const int COL_KD = 7;
-        private const int COL_HOURS = 7;
-        private const int COL_RAIDS = 7;
-        private const int COL_SR = 6;
+        private const int COL_DIST  = 5;
+        private const int COL_KD     = 7;
+        private const int COL_HOURS  = 7;
+        private const int COL_RAIDS  = 7;
+        private const int COL_SR     = 6;        
         private readonly float _padding;
         private readonly List<(float TopY, float BottomY, string PlayerName)> _playerRows = new();
 
@@ -72,15 +79,15 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             var sb = new StringBuilder();
 
-            sb.AppendFormat("{0,-" + COL_NAME + "}", "Fac/Name/Lvl ")
-              .AppendFormat("{0,-" + COL_GRP + "}", "Grp")
+            sb.AppendFormat("{0,-" + COL_NAME  + "}", "Fac/Name/Lvl ")
+              .AppendFormat("{0,-" + COL_GRP   + "}", "Grp")
               .AppendFormat("{0,-" + COL_VALUE + "}", "Value")
               .AppendFormat("{0,-" + COL_HANDS + "}", "In Hands")
-              .AppendFormat("{0,-" + COL_DIST + "}", "Dist")
-              .AppendFormat("{0,-" + COL_KD + "}", "K/D")
+              .AppendFormat("{0,-" + COL_DIST  + "}", "Dist")
+              .AppendFormat("{0,-" + COL_KD    + "}", "K/D")
               .AppendFormat("{0,-" + COL_HOURS + "}", "Hours")
               .AppendFormat("{0,-" + COL_RAIDS + "}", "Raids")
-              .AppendFormat("{0,-" + COL_SR + "}", "S/R%")
+              .AppendFormat("{0,-" + COL_SR    + "}", "S/R%")
               .AppendLine();
 
             foreach (var player in filteredPlayers)
@@ -232,15 +239,15 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 (int)Math.Round(Vector3.Distance(localPlayerPos, player.Position));
 
             // -------- WRITE ROW --------
-            sb.AppendFormat("{0,-" + COL_NAME + "}", nameCol)
-              .AppendFormat("{0,-" + COL_GRP + "}", group)
+            sb.AppendFormat("{0,-" + COL_NAME  + "}", nameCol)
+              .AppendFormat("{0,-" + COL_GRP   + "}", group)
               .AppendFormat("{0,-" + COL_VALUE + "}", value)
               .AppendFormat("{0,-" + COL_HANDS + "}", inHands)
-              .AppendFormat("{0,-" + COL_DIST + "}", distance)
-              .AppendFormat("{0,-" + COL_KD + "}", kd)
+              .AppendFormat("{0,-" + COL_DIST  + "}", distance)
+              .AppendFormat("{0,-" + COL_KD    + "}", kd)
               .AppendFormat("{0,-" + COL_HOURS + "}", hours)
               .AppendFormat("{0,-" + COL_RAIDS + "}", raids)
-              .AppendFormat("{0,-" + COL_SR + "}", sr)
+              .AppendFormat("{0,-" + COL_SR    + "}", sr)
               .AppendLine();
         }
 

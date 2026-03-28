@@ -1,10 +1,12 @@
+using eft_dma_radar.UI.ESP;
+using eft_dma_radar.UI.Misc;
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Misc.Pools;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
-using eft_dma_radar.UI.Misc;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -206,24 +208,24 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         /// </summary>
         /// <param name="vertices">Fireport transform vertices.</param>
         private int _fireportStallTicks;
-
+        
         private void UpdateFireport(SharedArray<UnityTransform.TrsX> vertices)
         {
             try
             {
                 var pos = FireportTransform?.UpdatePosition(vertices);
-
+        
                 if (pos == FireportPosition)
                     _fireportStallTicks++;
                 else
                     _fireportStallTicks = 0;
-
+        
                 if (_fireportStallTicks > 30)
                 {
                     ResetFireport();
                     return;
                 }
-
+        
                 FireportPosition = pos;
                 FireportRotation = FireportTransform?.GetRotation(vertices);
             }

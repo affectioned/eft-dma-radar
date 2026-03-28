@@ -1,6 +1,12 @@
-﻿using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Tarkov.Loot;
+﻿using eft_dma_radar.Tarkov.Loot;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using SkiaSharp;
 using SkiaSharp.Views.WPF;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace eft_dma_radar.UI.SKWidgetControl
 {

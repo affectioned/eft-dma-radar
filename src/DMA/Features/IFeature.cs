@@ -1,4 +1,6 @@
-﻿namespace eft_dma_radar.Common.DMA.Features
+﻿using System.Collections.Concurrent;
+
+namespace eft_dma_radar.Common.DMA.Features
 {
     public interface IFeature
     {

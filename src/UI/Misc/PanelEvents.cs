@@ -1,4 +1,10 @@
-﻿namespace eft_dma_radar.UI.Misc
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace eft_dma_radar.UI.Misc
 {
     /// <summary>
     /// Event arguments for settings panel drag operations

@@ -1,6 +1,9 @@
-﻿using HandyControl.Themes;
+﻿using HandyControl.Data;
+using HandyControl.Themes;
 using System.Net.Http;
 using System.Windows;
+using System.Windows.Media;
+using eft_dma_radar.Common.Misc.Data;
 using Application = System.Windows.Application;
 using Brush = System.Windows.Media.Brush;
 namespace eft_dma_radar
@@ -16,6 +19,7 @@ namespace eft_dma_radar
 
         protected override void OnExit(ExitEventArgs e)
         {
+            Telemetry.Stop();           // dispose the timer cleanly
             base.OnExit(e);
         }
 
@@ -33,6 +37,6 @@ namespace eft_dma_radar
         /// <summary>
         /// HttpClientFactory for creating HttpClients.
         /// </summary>
-        public static IHttpClientFactory HttpClientFactory { get; }
+        public static IHttpClientFactory HttpClientFactory { get; }        
     }
 }

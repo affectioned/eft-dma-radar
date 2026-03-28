@@ -1,4 +1,6 @@
-﻿namespace eft_dma_radar.Common.Unity
+﻿using System.Numerics;
+
+namespace eft_dma_radar.Common.Unity
 {
     /// <summary>
     /// Defines an Entity that has a 3D GameWorld Position.

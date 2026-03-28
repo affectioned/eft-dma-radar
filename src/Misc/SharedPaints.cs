@@ -1,4 +1,5 @@
 ﻿using eft_dma_radar.Common.Unity;
+using SkiaSharp;
 
 namespace eft_dma_radar.Common.Misc
 {
@@ -14,11 +15,6 @@ namespace eft_dma_radar.Common.Misc
             Color = SKColor.Empty.WithAlpha(127),
             IsAntialias = true,
         };
-
-        /// <summary>
-        /// Sampling options to use with DrawImage calls (linear filter, no mipmaps).
-        /// </summary>
-        public static SKSamplingOptions BitmapSampling { get; } = new(SKFilterMode.Linear, SKMipmapMode.None);
 
         /// <summary>
         /// Gets an SKColorFilter that will reduce an image's brightness level.
@@ -42,5 +38,5 @@ namespace eft_dma_radar.Common.Misc
         {
             return new SKColor((byte)(color.R * 255), (byte)(color.G * 255), (byte)(color.B * 255), (byte)(color.A * 255));
         }
-    }
+    }    
 }

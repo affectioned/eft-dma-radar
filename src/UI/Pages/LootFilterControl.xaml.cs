@@ -1,14 +1,22 @@
-﻿using eft_dma_radar.Common.Misc;
-using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.Tarkov.Loot;
-using eft_dma_radar.UI.Controls;
+﻿using eft_dma_radar.Tarkov.Loot;
 using eft_dma_radar.UI.LootFilters;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
+using eft_dma_radar.UI.Controls;
 using HandyControl.Controls;
 using HandyControl.Tools;
+using SkiaSharp;
+using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Unicode;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -25,12 +33,13 @@ using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
 using ListView = System.Windows.Controls.ListView;
 using ListViewItem = System.Windows.Controls.ListViewItem;
-using MenuItem = System.Windows.Controls.MenuItem;
 using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Orientation = System.Windows.Controls.Orientation;
 using Point = System.Windows.Point;
 using UserControl = System.Windows.Controls.UserControl;
 using Window = HandyControl.Controls.Window;
+using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace eft_dma_radar.UI.Pages
 {
@@ -1007,7 +1016,7 @@ namespace eft_dma_radar.UI.Pages
 
             return false;
         }
-
+        
         private void SearchForItem()
         {
             var query = txtItemSearch.Text.ToLowerInvariant();

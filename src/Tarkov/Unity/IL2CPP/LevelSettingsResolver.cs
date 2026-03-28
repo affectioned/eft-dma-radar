@@ -1,5 +1,11 @@
+using System;
+using System.Diagnostics;
+using System.Threading;
+using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
+using SDK;
 
 namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 {
@@ -94,39 +100,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 }
 
                 // 2) Global pointer to GameObjectManager
-                ulong gomGlobal = 0;
+                var gomGlobal = unityBase + UnityOffsets.ModuleBase.GameObjectManager;
+                var gomPtr    = Memory.ReadPtr(gomGlobal);
 
-                try
-                {
-                    const string sig = "48 8B 35 ? ? ? ? 48 85 F6 0F 84 ? ? ? ? 8B 46";
-                    ulong addr = Memory.FindSignature(sig, "UnityPlayer.dll");
-
-                    if (addr.IsValidVirtualAddress())
-                    {
-                        int rva = Memory.ReadValue<int>(addr + 3);
-                        if (rva != 0)
-                        {
-                            ulong ptr = addr + 7 + (ulong)rva;
-                            if (ptr.IsValidVirtualAddress())
-                            {
-                                Debug.WriteLine("[LevelSettingsResolver] GameObjectManager located via signature");
-                                gomGlobal = ptr;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[LevelSettingsResolver] GameObjectManager signature scan failed: {ex.Message}");
-                }
-
-                if (gomGlobal == 0)
-                {
-                    Debug.WriteLine("[LevelSettingsResolver] GameObjectManager falling back to hardcoded offset");
-                    gomGlobal = unityBase + UnityOffsets.ModuleBase.GameObjectManager;
-                }
-
-                var gomPtr = Memory.ReadPtr(gomGlobal);
                 if (!gomPtr.IsValidVirtualAddress())
                 {
                     Debug.WriteLine($"[LevelSettingsResolver] GameObjectManager pointer invalid: 0x{gomPtr:X}");
@@ -137,7 +113,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 // 3) Read first / last active nodes
                 var firstNode = Memory.ReadValue<LinkedListObject>(gom.ActiveNodes);
-                var lastNode = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
+                var lastNode  = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
 
                 firstNode.ThisObject.ThrowIfInvalidVirtualAddress();
                 firstNode.NextObjectLink.ThrowIfInvalidVirtualAddress();

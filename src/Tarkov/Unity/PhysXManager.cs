@@ -1,4 +1,10 @@
-﻿using eft_dma_radar.Common.Misc;
+﻿using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using eft_dma_radar.Common.DMA;
+using eft_dma_radar.Common.Misc;
+using static eft_dma_radar.Common.Unity.MonoLib;
 
 namespace eft_dma_radar.Common.Unity.LowLevel.PhysX
 {

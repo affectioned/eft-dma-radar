@@ -1,4 +1,6 @@
-﻿namespace eft_dma_radar.Common.Misc.Data
+﻿using System.Text.Json.Serialization;
+
+namespace eft_dma_radar.Common.Misc.Data
 {
     public enum HotkeyMode
     {
@@ -49,7 +51,7 @@ namespace eft_dma_radar.Common.Misc.Data.EFT
         [JsonPropertyName("showWishlistLoot")] public HotkeyEntry ShowWishlistLoot { get; set; } = new();
         [JsonPropertyName("showMeds")] public HotkeyEntry ShowMeds { get; set; } = new();
         [JsonPropertyName("showFood")] public HotkeyEntry ShowFood { get; set; } = new();
-        [JsonPropertyName("showWeapons")] public HotkeyEntry ShowWeapons { get; set; } = new();
+        [JsonPropertyName("showWeapons")] public HotkeyEntry ShowWeapons{ get; set; } = new();
         [JsonPropertyName("showBackpacks")] public HotkeyEntry ShowBackpacks { get; set; } = new();
         [JsonPropertyName("showContainers")] public HotkeyEntry ShowContainers { get; set; } = new();
         [JsonPropertyName("importantCorpseLoot")] public HotkeyEntry ImportantCorpseLoot { get; set; } = new();
@@ -123,6 +125,7 @@ namespace eft_dma_radar.Common.Misc.Data.EFT
         [JsonPropertyName("playerInfoWidget")] public HotkeyEntry PlayerInfoWidget { get; set; } = new();
         [JsonPropertyName("lootInfoWidget")] public HotkeyEntry LootInfoWidget { get; set; } = new();
         [JsonPropertyName("questInfoWidget")] public HotkeyEntry QuestInfoWidget { get; set; } = new();
+
         [JsonPropertyName("connectGroups")] public HotkeyEntry ConnectGroups { get; set; } = new();
         [JsonPropertyName("maskNames")] public HotkeyEntry MaskNames { get; set; } = new();
         [JsonPropertyName("playersOnTop")] public HotkeyEntry PlayersOnTop { get; set; } = new();

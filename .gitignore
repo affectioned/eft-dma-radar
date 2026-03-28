@@ -362,8 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /src/bin
-/.claude
 
-# Third-party native DLLs (must be placed next to the exe manually — see README)
-*.dll
-/src/.claude
+.planning/

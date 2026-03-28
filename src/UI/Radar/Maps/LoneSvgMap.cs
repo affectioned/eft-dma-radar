@@ -1,7 +1,10 @@
 ﻿using eft_dma_radar.Common.Misc;
+using SkiaSharp;
 using SkiaSharp.Views.WPF;
 using Svg.Skia;
 using System.IO;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace eft_dma_radar.Common.Maps
 {
@@ -111,7 +114,7 @@ namespace eft_dma_radar.Common.Maps
                         ? SharedPaints.PaintBitmapAlpha
                         : SharedPaints.PaintBitmap;
 
-                canvas.DrawImage(layer.Image, mapBounds, windowBounds, SharedPaints.BitmapSampling, paint);
+                canvas.DrawImage(layer.Image, mapBounds, windowBounds, paint);
             }
         }
 

@@ -1,4 +1,6 @@
-﻿namespace eft_dma_radar.Common.Misc
+﻿using System.Runtime.CompilerServices;
+
+namespace eft_dma_radar.Common.Misc
 {
     /// <summary>
     /// Caches Type Sizes of value types.

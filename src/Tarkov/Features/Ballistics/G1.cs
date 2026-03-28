@@ -1,4 +1,6 @@
-﻿namespace eft_dma_radar.Tarkov.Features.Ballistics
+﻿using System.Runtime.CompilerServices;
+
+namespace eft_dma_radar.Tarkov.Features.Ballistics
 {
     internal static class G1
     {

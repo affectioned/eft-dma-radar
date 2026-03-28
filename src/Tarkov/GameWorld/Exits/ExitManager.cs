@@ -1,5 +1,5 @@
-using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Unity.Collections;
 
 namespace eft_dma_radar.Tarkov.GameWorld.Exits
@@ -37,12 +37,12 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                     var listOffset = _isPMC ?
                         Offsets.ExfilController.ExfiltrationPointArray : Offsets.ExfilController.ScavExfiltrationPointArray;
                     var exfilPoints = Memory.ReadPtr(exfilController + listOffset, false);
-
+                    
                     if (exfilPoints != 0)
                     {
                         using var exfils = MemArray<ulong>.Get(exfilPoints, false);
                         XMLogging.WriteLine($"[ExitManager] {(_isPMC ? "PMC" : "Scav")} exfil array @ 0x{exfilPoints:X}, count: {exfils.Count}");
-
+                        
                         foreach (var exfilAddr in exfils)
                         {
                             try
@@ -61,11 +61,10 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                         XMLogging.WriteLine($"[ExitManager] {(_isPMC ? "PMC" : "Scav")} exfil array is null");
                     }
                 }
-                catch (Exception ex) when (!ex.Message.Contains("0x0"))
+                catch (Exception ex)
                 {
                     XMLogging.WriteLine($"[ExitManager] Exfil array read failed: {ex.Message}");
                 }
-                catch { /* 0x0 — not yet populated, will retry */ }
 
                 // Secret Extracts
                 try
@@ -75,7 +74,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                     {
                         using var secrets = MemArray<ulong>.Get(secretExfilPtr, false);
                         XMLogging.WriteLine($"[ExitManager] Secret exfil array @ 0x{secretExfilPtr:X}, count: {secrets.Count}");
-
+                        
                         foreach (var secretAddr in secrets)
                         {
                             try
@@ -95,11 +94,10 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                         XMLogging.WriteLine($"[ExitManager] SecretExfiltrationPointArray is null (offset 0x{Offsets.ExfilController.SecretExfiltrationPointArray:X})");
                     }
                 }
-                catch (Exception ex) when (!ex.Message.Contains("0x0"))
+                catch (Exception ex)
                 {
                     XMLogging.WriteLine($"[ExitManager] Secret exfil array read failed: {ex.Message}");
                 }
-                catch { /* 0x0 — not yet populated, will retry */ }
 
                 // Transits - Using hardcoded IL2CPP dictionary offsets (different from Mono)
                 // IL2CPP Dictionary<K,V> structure:
@@ -120,16 +118,16 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                             const uint IL2CPP_ENTRIES_START = 0x20;   // Array data start offset
                             const int IL2CPP_ENTRY_SIZE = 24;         // Size of each dictionary entry
                             const int IL2CPP_ENTRY_VALUE_OFFSET = 16; // Offset to value within entry (after hashCode+next+key+pad)
-
+                            
                             var count = Memory.ReadValue<int>(transitsPtr + IL2CPP_DICT_COUNT, false);
-
+                            
                             if (count > 0 && count < 100) // Sanity check
                             {
                                 var entriesPtr = Memory.ReadPtr(transitsPtr + IL2CPP_DICT_ENTRIES, false);
                                 if (entriesPtr != 0)
                                 {
                                     var entriesBase = entriesPtr + IL2CPP_ENTRIES_START;
-
+                                    
                                     for (int i = 0; i < count; i++)
                                     {
                                         try
@@ -137,7 +135,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                                             // Read the TransitPoint pointer from the entry's value field
                                             var entryAddr = entriesBase + (ulong)(i * IL2CPP_ENTRY_SIZE);
                                             var transitAddr = Memory.ReadPtr(entryAddr + IL2CPP_ENTRY_VALUE_OFFSET, false);
-
+                                            
                                             if (transitAddr != 0)
                                             {
                                                 var transit = new TransitPoint(transitAddr);
@@ -149,7 +147,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                                             XMLogging.WriteLine($"[ExitManager] Failed to read transit[{i}]: {ex.Message}");
                                         }
                                     }
-
+                                    
                                 }
                             }
                         }
@@ -181,7 +179,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                 {
                     _initAttempts++;
                     Init();
-
+                    
                     if (_exits?.Count > 0)
                         XMLogging.WriteLine($"[ExitManager] Successfully initialized {_exits.Count} exits on attempt {_initAttempts}");
                     else if (_initAttempts % 5 == 0)
@@ -189,10 +187,10 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                 }
 
                 ArgumentNullException.ThrowIfNull(_exits, nameof(_exits));
-
+                
                 if (_exits.Count == 0)
                     return; // Still no exits, wait for next refresh
-
+                    
                 using var map = ScatterReadMap.Get();
                 var round1 = map.AddRound();
                 for (int ix = 0; ix < _exits.Count; ix++)

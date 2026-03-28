@@ -22,7 +22,7 @@ namespace eft_dma_radar.Misc
                 ShowDateTime = false
             });
         }
-
+     
         public static void InfoWithToken(string token, string message)
         {
             Growl.Clear(token);

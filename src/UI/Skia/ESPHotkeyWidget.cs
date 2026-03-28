@@ -1,7 +1,13 @@
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data.EFT;
+using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace eft_dma_radar.UI.ESP
 {
@@ -364,36 +370,86 @@ namespace eft_dma_radar.UI.ESP
                         return Config.ESP.PlayerTypeESPSettings?.Settings?.Values?.Any(s => s.ShowImportantLoot) ?? false;
 
                     // Memory Writes - Global
+                    case "Toggle Rage Mode":
+                        return Config.MemWrites.RageMode;
 
                     // Memory Writes - Aimbot
+                    case "Toggle Aimbot":
+                        return Config.MemWrites.Aimbot.Enabled;
+                    case "Engage Aimbot":
+                        return Aimbot.Engaged;
                     case "Toggle Aimbot Mode":
                         return false;
                     case "Aimbot Bone":
                         return false;
+                    case "Safe Lock":
+                        return Config.MemWrites.Aimbot.SilentAim.SafeLock;
+                    case "Random Bone":
+                        return Config.MemWrites.Aimbot.RandomBone.Enabled;
+                    case "Auto Bone":
+                        return Config.MemWrites.Aimbot.SilentAim.AutoBone;
+                    case "Headshot AI":
+                        return Config.MemWrites.Aimbot.HeadshotAI;
 
                     // Memory Writes - Weapons
                     //case "No Malfunctions":
                     //    return Config.MemWrites.NoWeaponMalfunctions;
+                    case "Fast Weapon Ops":
+                        return Config.MemWrites.FastWeaponOps;
+                    case "Disable Weapon Collision":
+                        return Config.MemWrites.DisableWeaponCollision;
+                    case "No Recoil":
+                        return Config.MemWrites.NoRecoil;
 
                     // Memory Writes - Movement
+                    case "Infinite Stamina":
+                        return Config.MemWrites.InfStamina;
+                    case "Wide Lean":
+                        return Config.MemWrites.WideLean.Enabled;
+                    case "Wide Lean Up":
+                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Up;
+                    case "Wide Lean Right":
+                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Right;
+                    case "Wide Lean Left":
+                        return Config.MemWrites.WideLean.Enabled && WideLean.Direction == WideLean.EWideLeanDirection.Left;
                     //case "Move Speed":
                     //    return Config.MemWrites.MoveSpeed.Enabled;
 
                     // Memory Writes - World
                     //case "Disable Shadows":
                     //    return Config.MemWrites.DisableShadows;
-                    //case "Loot Through Walls":
-                    //    return Config.MemWrites.LootThroughWalls.Enabled;
-                    //case "Extended Reach":
-                    //    return Config.MemWrites.ExtendedReach.Enabled;
-                    //case "Engage LTW":
-                    //    return LootThroughWalls.ZoomEngaged;
+                    case "Disable Grass":
+                        return Config.MemWrites.DisableGrass;
+                    case "Clear Weather":
+                        return Config.MemWrites.ClearWeather;
+                    case "Time Of Day":
+                        return Config.MemWrites.TimeOfDay.Enabled;
+                    case "Full Bright":
+                        return Config.MemWrites.FullBright.Enabled;
+                   //case "Loot Through Walls":
+                   //    return Config.MemWrites.LootThroughWalls.Enabled;
+                   //case "Extended Reach":
+                   //    return Config.MemWrites.ExtendedReach.Enabled;
+                   //case "Engage LTW":
+                   //    return LootThroughWalls.ZoomEngaged;
 
                     // Memory Writes - Camera
+                    case "No Visor":
+                        return Config.MemWrites.NoVisor;
+                    case "Night Vision":
+                        return Config.MemWrites.NightVision;
+                    case "Thermal Vision":
+                        return Config.MemWrites.ThermalVision;
+                    case "Third Person":
+                        return Config.MemWrites.ThirdPerson;
+                    case "Owl Mode":
+                        return Config.MemWrites.OwlMode;
                     //case "Instant Zoom":
                     //    return Config.MemWrites.FOV.InstantZoomActive;
 
                     // Memory Writes - Misc
+                    case "Big Heads":
+                        return Config.MemWrites.BigHead.Enabled;
 
                     // General Settings
                     case "Aimview Widget":
@@ -406,6 +462,7 @@ namespace eft_dma_radar.UI.ESP
                         return Config.ShowLootInfoWidget;
                     case "Quest Info Widget":
                         return Config.ShowQuestInfoWidget;
+
                     case "Connect Groups":
                         return Config.ConnectGroups;
                     case "Mask Names":

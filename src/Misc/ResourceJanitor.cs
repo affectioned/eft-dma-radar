@@ -1,5 +1,6 @@
 ﻿using eft_dma_radar.Common.Misc;
 using System.Runtime;
+using System.Runtime.InteropServices;
 
 namespace eft_dma_radar.Common
 {

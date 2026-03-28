@@ -1,18 +1,26 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
 using System.Windows.Threading;
+using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
+using Color = System.Windows.Media.Color;
+using ColorConverter = System.Windows.Media.ColorConverter;
 using ComboBox = System.Windows.Controls.ComboBox;
-using GroupBox = System.Windows.Controls.GroupBox;
+using MessageBox = eft_dma_radar.UI.Controls.MessageBox;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
-using RadioButton = System.Windows.Controls.RadioButton;
-using TabControl = System.Windows.Controls.TabControl;
-using TextBox = System.Windows.Controls.TextBox;
 using UserControl = System.Windows.Controls.UserControl;
 using Window = System.Windows.Window;
+using RadioButton = System.Windows.Controls.RadioButton;
+using TextBox = System.Windows.Controls.TextBox;
+using GroupBox = System.Windows.Controls.GroupBox;
+using TabControl = System.Windows.Controls.TabControl;
+using System.Windows.Media.Media3D;
 namespace eft_dma_radar.UI.Misc
 {
     public enum SettingsHitKind
@@ -42,7 +50,7 @@ namespace eft_dma_radar.UI.Misc
 
     internal static class SettingsIndexer
     {
-        private static string? ExtractItemText(object item)
+        private static string ExtractItemText(object item)
         {
             switch (item)
             {
@@ -377,7 +385,7 @@ namespace eft_dma_radar.UI.Misc
 
     internal static class SettingsReveal
     {
-        private static string? ExtractItemText(object item)
+        private static string ExtractItemText(object item)
         {
             switch (item)
             {
@@ -509,10 +517,10 @@ namespace eft_dma_radar.UI.Misc
                         }
                     }
                     break;
-            }
+            }            
         }
 
-        private static TAncestor? FindAncestor<TAncestor>(DependencyObject start) where TAncestor : DependencyObject
+        private static TAncestor FindAncestor<TAncestor>(DependencyObject start) where TAncestor : DependencyObject
         {
             for (DependencyObject cur = start; cur != null; cur = GetParentSafe(cur))
                 if (cur is TAncestor a) return a;

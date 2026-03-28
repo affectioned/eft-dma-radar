@@ -1,4 +1,12 @@
-﻿namespace eft_dma_radar.UI.ESP
+﻿using SkiaSharp;
+using SkiaSharp.Views.Desktop;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Windows.Forms;
+
+namespace eft_dma_radar.UI.ESP
 {
     public abstract class ESPWidget : IDisposable
     {

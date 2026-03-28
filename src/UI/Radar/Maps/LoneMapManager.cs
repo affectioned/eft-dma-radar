@@ -1,5 +1,7 @@
-﻿using System.Collections.Frozen;
+﻿using eft_dma_radar.Common.Misc;
+using System.Collections.Frozen;
 using System.IO;
+using System.Text.Json;
 
 namespace eft_dma_radar.Common.Maps
 {
@@ -25,7 +27,7 @@ namespace eft_dma_radar.Common.Maps
         {
             try
             {
-                _mapsDirectory = Path.Combine(AppContext.BaseDirectory, "Maps");
+                _mapsDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Maps");
 
                 if (!Directory.Exists(_mapsDirectory))
                     throw new DirectoryNotFoundException($"Maps directory not found: {_mapsDirectory}");

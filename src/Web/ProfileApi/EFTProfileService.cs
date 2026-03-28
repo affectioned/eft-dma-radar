@@ -11,6 +11,7 @@ namespace eft_dma_radar.Tarkov.API
         private static readonly HttpClient _client;
         private static readonly Lock _syncRoot = new();
         private static readonly ConcurrentDictionary<string, ProfileData> _profiles = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> _eftApiNotFound = new(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> _tdevNotFound = new(StringComparer.OrdinalIgnoreCase);
 
         private static CancellationTokenSource _cts = new();
@@ -70,6 +71,12 @@ namespace eft_dma_radar.Tarkov.API
         /// Profile data returned by the Tarkov API.
         /// </summary>
         public static IReadOnlyDictionary<string, ProfileData> Profiles => _profiles;
+        private static readonly ConcurrentDictionary<string, ProfileResponseContainer> _eftApiMeta
+            = new(StringComparer.OrdinalIgnoreCase);
+
+        // Optional helper
+        public static bool TryGetEftApiMeta(string accountId, out ProfileResponseContainer meta)
+            => _eftApiMeta.TryGetValue(accountId, out meta);
         /// <summary>
         /// Attempt to register a Profile for lookup.
         /// </summary>
@@ -131,7 +138,19 @@ namespace eft_dma_radar.Tarkov.API
             {
                 ProfileData profile = null;
 
-                profile = await LookupFromTarkovDevAsync(accountId);
+                if (Program.Config.AlternateProfileService)
+                {
+                    var container = await LookupFromEftApiTechAsync(accountId); // returns ProfileResponseContainer
+                    if (container != null)
+                    {
+                        profile = container.Data;                 // what you already use everywhere
+                        _eftApiMeta[accountId] = container;       // lets you read: aid, isStreamer, lastUpdated, etc.
+                    }
+                }
+                else
+                {
+                    profile = await LookupFromTarkovDevAsync(accountId); // returns ProfileData
+                }
 
                 if (profile != null || _tdevNotFound.Contains(accountId))
                 {
@@ -189,7 +208,125 @@ namespace eft_dma_radar.Tarkov.API
             }
         }
 
+        /// <summary>
+        /// Perform a profile lookup via eft-api.tech
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        private static async Task<ProfileResponseContainer> LookupFromEftApiTechAsync(string accountId)
+        {
+            try
+            {
+                if (_eftApiNotFound.Contains(accountId))
+                    return null;
+
+                string loadedKey;
+                    
+                if (ApiKeyStore.TryLoadApiKey(out loadedKey))
+                    XMLogging.WriteLine($"Got API Key{loadedKey}");
+
+                if (string.IsNullOrWhiteSpace(loadedKey))
+                {
+                    XMLogging.WriteLine("[EFTProfileService] eft-api.tech requires an API key but none was found.");
+                    return null;
+                }
+                if (string.IsNullOrWhiteSpace(loadedKey))
+                {
+                    XMLogging.WriteLine("[EFTProfileService] eft-api.tech requires an API key. API Key is empty/null.");
+                    return null;
+                }
+
+                var ct = _cts?.Token ?? CancellationToken.None;
+                var uri = $"https://eft-api.tech/api/profile/{accountId}?includeOnlyPmcStats=true";
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", loadedKey);
+
+                // Use the service's shared HttpClient to avoid NRE and reduce socket churn
+                using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    XMLogging.WriteLine($"[EFTProfileService] Profile '{accountId}' not found by eft-api.tech.");
+                    _eftApiNotFound.Add(accountId);
+                    return null;
+                }
+
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    XMLogging.WriteLine("[EFTProfileService] Rate-Limited by eft-api.tech - Pausing for 1 minute.");
+                    await Task.Delay(TimeSpan.FromMinutes(1), ct);
+                    return null;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                await using var stream = await response.Content.ReadAsStreamAsync(ct);
+                var container = await JsonSerializer.DeserializeAsync<ProfileResponseContainer>(stream, cancellationToken: ct);
+
+                if (container == null)
+                {
+                    XMLogging.WriteLine("[EFTProfileService] Deserialization returned null container from eft-api.tech.");
+                    return null;
+                }
+
+                // Data may legitimately be null if API has no stats for that account
+                if (container.Data == null)
+                {
+                    XMLogging.WriteLine($"[EFTProfileService] Profile '{accountId}' returned no Data from eft-api.tech (null).");
+                    return null;
+                }
+
+                XMLogging.WriteLine($"[EFTProfileService] Got Profile '{accountId}' via eft-api.tech!");
+                return container;
+            }
+            catch (OperationCanceledException)
+            {
+                // normal during game stop / CTS cancel
+                return null;
+            }
+            catch (Exception ex)
+            {
+                XMLogging.WriteLine($"[EFTProfileService] Unhandled ERROR looking up profile '{accountId}' via eft-api.tech: {ex}");
+                return null;
+            }
+        }
+
         #region Profile Response JSON Structure
+
+        public sealed class ProfileResponseContainer
+        {
+            [JsonPropertyName("aid")]
+            public long Aid { get; set; }
+
+            [JsonPropertyName("data")]
+            public ProfileData Data { get; set; }
+
+            [JsonPropertyName("isStreamer")]
+            public bool IsStreamer { get; set; }
+
+            [JsonPropertyName("lastUpdated")]
+            public LastUpdatedInfo LastUpdated { get; set; }
+
+            [JsonPropertyName("saved")]
+            public bool Saved { get; set; }
+
+            [JsonPropertyName("success")]
+            public bool Success { get; set; }
+
+            [JsonPropertyName("twitchUsername")]
+            public string TwitchUsername { get; set; }
+        }
+
+        public sealed class LastUpdatedInfo
+        {
+            [JsonPropertyName("epoch")]
+            public long Epoch { get; set; }
+
+            [JsonPropertyName("readable")]
+            public string Readable { get; set; }
+        }
 
         public sealed class ProfileData
         {
