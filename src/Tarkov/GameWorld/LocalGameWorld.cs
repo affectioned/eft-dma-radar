@@ -65,6 +65,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
         public static ulong LevelSettings { get; private set; }
         public static ulong MatchingProgress { get; private set; }
 
+        /// <summary>
+        /// Address of the last disposed LocalGameWorld instance.
+        /// Used to reject stale GameWorld objects that Unity keeps alive
+        /// in the scene graph after a raid ends (post-raid menu).
+        /// Accessed via <see cref="Interlocked"/> (ulong cannot be volatile).
+        /// </summary>
+        private static ulong _lastDisposedBase;
+
         private bool _disposed;
         private bool _raidStarted;
         private int _mapCheckTick;
@@ -107,6 +115,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
         private static void Memory_GameStopped(object sender, EventArgs e)
         {
+            Interlocked.Exchange(ref _lastDisposedBase, 0); // Game process exited — all addresses are invalid
             LevelSettings = 0;
             MatchingProgress = 0;
             LevelSettingsResolver.Reset();
@@ -304,6 +313,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     // Phase 1: Find GameWorld (minimal init)
                     var instance = GetLocalGameWorld(ct);
+
+                    // Reject stale GameWorld that Unity keeps alive on the post-raid menu.
+                    // The same Base address means the object was not destroyed and recreated.
+                    if (instance.Base == Interlocked.Read(ref _lastDisposedBase))
+                        throw new InvalidOperationException("GameWorld not found");
+
+                    // Accepted — this is a genuinely new GameWorld instance.
+                    Interlocked.Exchange(ref _lastDisposedBase, 0);
 
                     // Assign MatchingProgress from cache (may already be resolved)
                     if (MatchingProgressResolver.TryGetCached(out var mp) && mp.IsValidVirtualAddress())
@@ -1110,7 +1127,11 @@ namespace eft_dma_radar.Tarkov.GameWorld
             bool alreadyDisposed = Interlocked.Exchange(ref _disposed, true);
             if (!alreadyDisposed)
             {
-                XMLogging.WriteLine("[Raid] LocalGameWorld disposed ?? entering cooldown.");
+                // Record this address so CreateGameInstance rejects the stale
+                // GameWorld that Unity keeps alive on the post-raid menu screen.
+                Interlocked.Exchange(ref _lastDisposedBase, Base);
+
+                XMLogging.WriteLine("[Raid] LocalGameWorld disposed — entering cooldown.");
 
                 foreach (var feature in IFeature.AllFeatures)
                 {
