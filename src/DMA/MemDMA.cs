@@ -306,6 +306,12 @@ namespace eft_dma_radar.Tarkov
                                     NotificationsShared.Info("Restarting Radar per User Request.");
 
                                 _restartRadar = false;
+
+                                // Clear the stale-GameWorld guard BEFORE Dispose() records the
+                                // current Base address.  This allows CreateGameInstance to
+                                // re-detect the same (still-live) GameWorld after the restart.
+                                LocalGameWorld.ClearStaleGuard();
+
                                 RequestRestart();    // cancel token, will restart outer loop
                                 break;
                             }

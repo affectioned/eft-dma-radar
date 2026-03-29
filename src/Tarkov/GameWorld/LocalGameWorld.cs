@@ -73,6 +73,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// </summary>
         private static ulong _lastDisposedBase;
 
+        /// <summary>
+        /// When set, <see cref="Dispose"/> will NOT record <see cref="Base"/> into
+        /// <see cref="_lastDisposedBase"/>.  This allows a user-initiated restart
+        /// to re-detect the same (still-live) GameWorld.
+        /// Accessed via <see cref="Interlocked"/>.
+        /// </summary>
+        private static int _suppressStaleGuard;
+
         private bool _disposed;
         private bool _raidStarted;
         private int _mapCheckTick;
@@ -122,6 +130,18 @@ namespace eft_dma_radar.Tarkov.GameWorld
             LevelSettingsResolver.Reset();
             MatchingProgressResolver.Reset();
             Il2CppClass.ForceReset();      // <?? REQUIRED
+        }
+
+        /// <summary>
+        /// Clears the stale GameWorld address guard and suppresses the next
+        /// <see cref="Dispose"/> from re-recording it.
+        /// Call this when the user explicitly requests a radar restart so the
+        /// same (still-live) GameWorld can be re-detected by <see cref="CreateGameInstance"/>.
+        /// </summary>
+        public static void ClearStaleGuard()
+        {
+            Interlocked.Exchange(ref _suppressStaleGuard, 1);
+            Interlocked.Exchange(ref _lastDisposedBase, 0);
         }
 
         /// <summary>
@@ -1120,7 +1140,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             {
                 // Record this address so CreateGameInstance rejects the stale
                 // GameWorld that Unity keeps alive on the post-raid menu screen.
-                Interlocked.Exchange(ref _lastDisposedBase, Base);
+                // Skip when the user explicitly requested a restart — the GameWorld
+                // is still live and should be re-detectable.
+                if (Interlocked.Exchange(ref _suppressStaleGuard, 0) == 0)
+                    Interlocked.Exchange(ref _lastDisposedBase, Base);
 
                 XMLogging.WriteLine("[Raid] LocalGameWorld disposed — entering cooldown.");
 
