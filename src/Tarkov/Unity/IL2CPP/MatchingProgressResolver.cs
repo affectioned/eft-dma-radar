@@ -188,11 +188,10 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             try
             {
-                var unityBase = Memory.UnityBase;
-                if (unityBase == 0)
+                var gomAddr = Memory.GOM;
+                if (!gomAddr.IsValidVirtualAddress())
                     return 0;
 
-                var gomAddr = GameObjectManager.GetAddr(unityBase);
                 var gom     = GameObjectManager.Get(gomAddr);
 
                 // FindBehaviourByClassName returns the objectClass ptr of the first

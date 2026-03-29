@@ -29,6 +29,7 @@
     <Grid>
         <Grid Name="mainContentGrid" Margin="0,0,0,0">
             <skia:SKGLElement x:Name="skCanvas"/>
+            <skia:SKElement x:Name="skCanvasCpu" Visibility="Collapsed"/>
         </Grid>
 
         <Canvas Name="ToolbarCanvas" Panel.ZIndex="1500">

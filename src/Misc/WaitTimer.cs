@@ -92,8 +92,11 @@ namespace eft_dma_radar.Common.Misc
 
         private static nint CreateTimer()
         {
-            // Create a waitable timer
+            // CREATE_WAITABLE_TIMER_HIGH_RESOLUTION requires Windows 10 Build 1803+.
+            // Fall back to a standard waitable timer on older systems.
             var hTimer = CreateWaitableTimerEx(nint.Zero, nint.Zero, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+            if (hTimer == nint.Zero)
+                hTimer = CreateWaitableTimerEx(nint.Zero, nint.Zero, 0, TIMER_ALL_ACCESS);
             if (hTimer == nint.Zero)
                 throw new Win32Exception($"Failed to create the wait timer. Error code: {Marshal.GetLastWin32Error()}");
             return hTimer;

@@ -203,6 +203,14 @@ namespace eft_dma_radar.Tarkov
                     FullRefresh();
                     ResourceJanitor.Run();
                     LoadProcess();
+
+                    // Give the game time to load its DLLs before probing modules.
+                    // When the radar starts before the game, the exe is found but
+                    // UnityPlayer.dll / GameAssembly.dll may not be mapped yet.
+                    XMLogging.WriteLine("[Startup] Process found, waiting for modules to load...");
+                    Thread.Sleep(5000);
+                    FullRefresh();
+
                     LoadModules();
 
                     _starting = true;

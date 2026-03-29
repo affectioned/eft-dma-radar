@@ -261,11 +261,10 @@ namespace eft_dma_radar.Tarkov.Hideout
 
                 //DumpGOM();
 
-                var unityBase = Memory.UnityBase;
-                if (unityBase == 0)
+                var gomAddr = Memory.GOM;
+                if (!gomAddr.IsValidVirtualAddress())
                     return false;
 
-                var gomAddr = GameObjectManager.GetAddr(unityBase);
                 var gom     = GameObjectManager.Get(gomAddr);
 
                 var behaviour = gom.FindBehaviourByClassName(HideoutAreaClassName);
@@ -973,14 +972,13 @@ namespace eft_dma_radar.Tarkov.Hideout
             {
                 try
                 {
-                    var unityBase = Memory.UnityBase;
-                    if (unityBase == 0)
+                    var gomAddr = Memory.GOM;
+                    if (!gomAddr.IsValidVirtualAddress())
                     {
-                        XMLogging.WriteLine("[GOM Dump] UnityBase is 0 — not ready.");
+                        XMLogging.WriteLine("[GOM Dump] GOM is not resolved — not ready.");
                         return;
                     }
 
-                    var gomAddr = GameObjectManager.GetAddr(unityBase);
                     var gom     = GameObjectManager.Get(gomAddr);
 
                     var sb    = new System.Text.StringBuilder();

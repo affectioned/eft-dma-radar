@@ -111,9 +111,29 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // Dynamically resolve TypeInfoTableRva via sig scan (falls back to hardcoded).
             // We must do this even for the cache path so we have the RVA fingerprint
             // needed to validate whether the cache matches the current game build.
-            if (!ResolveTypeInfoTableRva(gaBase))
+            // The IL2CPP runtime may not have populated the TypeInfoTable yet if the
+            // radar started before the game, so retry with increasing delays.
+            const int maxRvaRetries = 30;
+            bool rvaResolved = false;
+            for (int rvaAttempt = 1; rvaAttempt <= maxRvaRetries; rvaAttempt++)
             {
-                XMLogging.WriteLine("[Il2CppDumper] ABORT: TypeInfoTable resolution failed — cannot dump offsets.");
+                if (ResolveTypeInfoTableRva(gaBase, quiet: rvaAttempt < maxRvaRetries))
+                {
+                    rvaResolved = true;
+                    break;
+                }
+
+                if (rvaAttempt < maxRvaRetries)
+                {
+                    int delay = rvaAttempt <= 10 ? 1000 : 2000;
+                    XMLogging.WriteLine($"[Il2CppDumper] TypeInfoTable not ready, retrying in {delay}ms... ({rvaAttempt}/{maxRvaRetries})");
+                    Thread.Sleep(delay);
+                }
+            }
+
+            if (!rvaResolved)
+            {
+                XMLogging.WriteLine("[Il2CppDumper] ABORT: TypeInfoTable resolution failed after all retries — cannot dump offsets.");
                 NotificationsShared.Error("IL2CPP dump failed: TypeInfoTable not found. Offsets may be stale.");
                 return;
             }

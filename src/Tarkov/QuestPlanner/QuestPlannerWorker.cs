@@ -88,6 +88,19 @@ internal static class QuestPlannerWorker
     private static readonly TimeSpan ProfileResolutionGracePeriod = TimeSpan.FromSeconds(10);
 
     /// <summary>
+    /// True once the "Profile not available" message has been logged.
+    /// Prevents repeated log spam while the profile is unavailable.
+    /// Reset when profile is resolved or a state transition occurs.
+    /// </summary>
+    private static bool _profileUnavailableLogged;
+
+    /// <summary>
+    /// Consecutive profile resolution failure count. Used for progressive backoff
+    /// so the worker doesn't poll every 1s when the game is loading / matching.
+    /// </summary>
+    private static int _profileFailCount;
+
+    /// <summary>
     /// Initialize the background service. Called from Program.cs startup.
     /// </summary>
     internal static void ModuleInit()
@@ -151,6 +164,8 @@ internal static class QuestPlannerWorker
                 IsStale = false;
                 _forceRecompute = true;
                 _stateTransitionTime = DateTime.UtcNow;
+                _profileUnavailableLogged = false;
+                _profileFailCount = 0;
             }
             return;
         }
@@ -166,6 +181,8 @@ internal static class QuestPlannerWorker
                 IsStale = false;
                 _forceRecompute = true; // Force recompute when we return to lobby
                 _stateTransitionTime = DateTime.UtcNow;
+                _profileUnavailableLogged = false;
+                _profileFailCount = 0;
             }
             return;
         }
@@ -186,16 +203,30 @@ internal static class QuestPlannerWorker
                 return;
             }
 
-            // Grace period expired - now mark as stale
-            if (!IsStale)
+            _profileFailCount++;
+
+            // Log once, then stay quiet until profile is resolved
+            if (!_profileUnavailableLogged)
             {
-                XMLogging.WriteLine("[QuestPlannerWorker] Profile not available - data may be stale");
+                XMLogging.WriteLine("[QuestPlannerWorker] Profile not available - waiting for lobby");
+                _profileUnavailableLogged = true;
                 IsStale = Current != null; // Only stale if we had previous data
             }
+
+            // Progressive backoff: wait longer the more times we fail (cap at 10s)
+            var backoffMs = Math.Min(_profileFailCount * 2000, 10000);
+            _wakeSignal.Wait(backoffMs);
+            _wakeSignal.Reset();
             return;
         }
 
-        // Profile resolved - clear stale flag
+        // Profile resolved - clear stale flag and reset backoff
+        if (_profileUnavailableLogged)
+        {
+            XMLogging.WriteLine("[QuestPlannerWorker] Profile available - resuming quest planning");
+            _profileUnavailableLogged = false;
+        }
+        _profileFailCount = 0;
         IsStale = false;
 
         // 5. Ensure task data is ready before doing any memory reads or diff work

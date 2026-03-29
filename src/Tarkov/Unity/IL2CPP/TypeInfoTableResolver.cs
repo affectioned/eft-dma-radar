@@ -51,7 +51,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         // ── Resolution pipeline ──────────────────────────────────────────────
 
-        private static bool ResolveTypeInfoTableRva(ulong gaBase)
+        private static bool ResolveTypeInfoTableRva(ulong gaBase, bool quiet = false)
         {
             var testedRvas = new HashSet<ulong>();
             var sigResults = new List<SigScanResult>(TypeInfoTableSigs.Length);
@@ -85,7 +85,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             }
             else
             {
-                XMLogging.WriteLine($"{LogTag} WARNING: All TypeInfoTable resolution strategies failed — offsets may be stale!");
+                if (!quiet)
+                    XMLogging.WriteLine($"{LogTag} WARNING: All TypeInfoTable resolution strategies failed — offsets may be stale!");
                 _lastResolutionMode = "FAILED";
                 success = false;
             }

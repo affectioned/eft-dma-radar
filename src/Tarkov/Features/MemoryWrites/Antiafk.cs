@@ -17,8 +17,9 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         {
             try
             {
-                var unityBase = Memory.UnityBase;
-                var gomAddr   = GameObjectManager.GetAddr(unityBase);
+                var gomAddr   = Memory.GOM;
+                if (!gomAddr.IsValidVirtualAddress())
+                    throw new InvalidOperationException("GOM not resolved");
                 var gom       = GameObjectManager.Get(gomAddr);
 
                 // ? DO NOT USE GAMEOBJECT NAME

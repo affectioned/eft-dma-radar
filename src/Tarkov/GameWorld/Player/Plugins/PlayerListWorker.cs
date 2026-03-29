@@ -421,8 +421,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         {
             try
             {
-                ulong unityBase = Memory.UnityBase;
-                ulong gomAddr = GameObjectManager.GetAddr(unityBase);
+                ulong gomAddr = Memory.GOM;
+                if (!gomAddr.IsValidVirtualAddress()) return null;
                 var gom = GameObjectManager.Get(gomAddr);
 
                 ulong app = gom.FindBehaviourByClassName("TarkovApplication");

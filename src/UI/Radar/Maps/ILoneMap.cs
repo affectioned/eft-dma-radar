@@ -34,6 +34,7 @@ namespace eft_dma_radar.Common.Maps
         /// <param name="localPlayerMapPos"></param>
         /// <returns></returns>
         XMMapParams GetParameters(SKGLElement element, int zoom, ref Vector2 localPlayerMapPos);
+        XMMapParams GetParameters(SKSize canvasSize, int zoom, ref Vector2 localPlayerMapPos);
         XMMapParams GetParametersE(SKSize control, float zoom, ref Vector2 localPlayerMapPos);
     }
 }

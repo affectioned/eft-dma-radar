@@ -65,7 +65,11 @@ namespace eft_dma_radar.UI.ESP
         private SKPoint _killfeedOffset = new SKPoint(0, 0);
         private volatile bool _espIsRendering = false;
 
-        private SKGLControl skglControl_ESP;
+        private SKGLControl skglControl_ESP;     // GPU path (non-RDP)
+        private SKControl skControlEsp;           // CPU path (RDP)
+        private static readonly bool _useRdpMode = RdpDetector.IsRemoteSession;
+        /// <summary>Returns the active WinForms render control regardless of RDP mode.</summary>
+        private Control EspControl => _useRdpMode ? (Control)skControlEsp : skglControl_ESP;
 
         private ESPQuestInfoWidget _espQuestInfo;
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -159,25 +163,42 @@ namespace eft_dma_radar.UI.ESP
         public ESPForm()
         {
             InitializeComponent();
-        
-            skglControl_ESP = new SKGLControl();
-            skglControl_ESP.Name = "skglControl_ESP";
-            skglControl_ESP.BackColor = Color.Black;
-            skglControl_ESP.Dock = DockStyle.Fill;
-            skglControl_ESP.Location = new Point(0, 0);
-            skglControl_ESP.Margin = new Padding(4, 3, 4, 3);
-            skglControl_ESP.Size = new Size(624, 441);
-            skglControl_ESP.TabIndex = 0;
-            skglControl_ESP.VSync = false;
-        
-            skglControl_ESP.MouseDown += ESPForm_MouseDown;
-            skglControl_ESP.MouseMove += ESPForm_MouseMove;
-            skglControl_ESP.MouseUp += ESPForm_MouseUp;
-        
-            this.Controls.Add(skglControl_ESP);
-        
-            CenterToScreen();
-            skglControl_ESP.DoubleClick += ESPForm_DoubleClick;
+
+            if (_useRdpMode)
+            {
+                skControlEsp = new SKControl();
+                skControlEsp.Name = "skControlEsp";
+                skControlEsp.BackColor = Color.Black;
+                skControlEsp.Dock = DockStyle.Fill;
+                skControlEsp.Location = new Point(0, 0);
+                skControlEsp.Margin = new Padding(4, 3, 4, 3);
+                skControlEsp.Size = new Size(624, 441);
+                skControlEsp.TabIndex = 0;
+                skControlEsp.MouseDown += ESPForm_MouseDown;
+                skControlEsp.MouseMove += ESPForm_MouseMove;
+                skControlEsp.MouseUp += ESPForm_MouseUp;
+                this.Controls.Add(skControlEsp);
+                CenterToScreen();
+                skControlEsp.DoubleClick += ESPForm_DoubleClick;
+            }
+            else
+            {
+                skglControl_ESP = new SKGLControl();
+                skglControl_ESP.Name = "skglControl_ESP";
+                skglControl_ESP.BackColor = Color.Black;
+                skglControl_ESP.Dock = DockStyle.Fill;
+                skglControl_ESP.Location = new Point(0, 0);
+                skglControl_ESP.Margin = new Padding(4, 3, 4, 3);
+                skglControl_ESP.Size = new Size(624, 441);
+                skglControl_ESP.TabIndex = 0;
+                skglControl_ESP.VSync = false;
+                skglControl_ESP.MouseDown += ESPForm_MouseDown;
+                skglControl_ESP.MouseMove += ESPForm_MouseMove;
+                skglControl_ESP.MouseUp += ESPForm_MouseUp;
+                this.Controls.Add(skglControl_ESP);
+                CenterToScreen();
+                skglControl_ESP.DoubleClick += ESPForm_DoubleClick;
+            }
             _fpsSw.Start();
         
             var allScreens = Screen.AllScreens;
@@ -220,7 +241,22 @@ namespace eft_dma_radar.UI.ESP
 
             _renderTimer.Start();
 
-            skglControl_ESP.PaintSurface += ESPForm_PaintSurface;
+            if (_useRdpMode)
+            {
+                skControlEsp.PaintSurface += ESPForm_PaintSurface_Cpu;
+            }
+            else
+            {
+                skglControl_ESP.PaintSurface += ESPForm_PaintSurface;
+
+                var sw = Stopwatch.StartNew();
+                while (skglControl_ESP.GRContext is null && sw.Elapsed.TotalSeconds < 5)
+                    await Task.Delay(25);
+
+                if (skglControl_ESP.GRContext is not null)
+                    skglControl_ESP.GRContext.SetResourceCacheLimit(268435456); // 256 MB
+            }
+
             _renderTimer.Elapsed += RenderTimer_Elapsed;
         }
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -238,7 +274,11 @@ namespace eft_dma_radar.UI.ESP
             _pathPool.Clear();
 
             // Remove event handlers
-            skglControl_ESP.PaintSurface -= ESPForm_PaintSurface;
+            if (_useRdpMode)
+                skControlEsp.PaintSurface -= ESPForm_PaintSurface_Cpu;
+            else
+                skglControl_ESP.PaintSurface -= ESPForm_PaintSurface;
+
             if (_renderTimer != null)
                 _renderTimer.Elapsed -= RenderTimer_Elapsed;
         }
@@ -328,7 +368,7 @@ namespace eft_dma_radar.UI.ESP
                     _espIsRendering = true;
                     try
                     {
-                        skglControl_ESP.Invalidate();
+                        EspControl.Invalidate();
                     }
                     finally
                     {
@@ -406,8 +446,8 @@ namespace eft_dma_radar.UI.ESP
         {
             var left = 2;
             var top = 0;
-            var right = (float)skglControl_ESP.Width;
-            var bottom = (float)skglControl_ESP.Height;
+            var right = (float)EspControl.Width;
+            var bottom = (float)EspControl.Height;
 
             if (Config.ESPWidgets.QuestInfoLocation == default)
                 Config.ESPWidgets.QuestInfoLocation = new SKRect(left + 50, top + 50, left + 450, top + 400);
@@ -451,7 +491,7 @@ namespace eft_dma_radar.UI.ESP
         /// </summary>
         public void PurgeSKResources()
         {
-            if (this.IsDisposed) return;
+            if (this.IsDisposed || _useRdpMode) return;
 
             this.Invoke(() =>
             {
@@ -553,7 +593,7 @@ namespace eft_dma_radar.UI.ESP
             var mouseEventArgs = e as MouseEventArgs;
             if (mouseEventArgs == null)
             {
-                var cursorPos = skglControl_ESP.PointToClient(Cursor.Position);
+                var cursorPos = EspControl.PointToClient(Cursor.Position);
                 mouseEventArgs = new MouseEventArgs(MouseButtons.Left, 2, cursorPos.X, cursorPos.Y, 0);
             }
 
@@ -567,12 +607,26 @@ namespace eft_dma_radar.UI.ESP
         }
 
         /// <summary>
-        /// Main ESP Render Event.
+        /// GPU render event (non-RDP path).
         /// </summary>
         private void ESPForm_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e)
         {
-            var canvas = e.Surface.Canvas;
+            DrawEspCanvas(e.Surface.Canvas);
+        }
 
+        /// <summary>
+        /// CPU render event (RDP path).
+        /// </summary>
+        private void ESPForm_PaintSurface_Cpu(object sender, SKPaintSurfaceEventArgs e)
+        {
+            DrawEspCanvas(e.Surface.Canvas);
+        }
+
+        /// <summary>
+        /// Shared ESP drawing logic used by both GPU and CPU paint handlers.
+        /// </summary>
+        private void DrawEspCanvas(SKCanvas canvas)
+        {
             SetFPS();
             SkiaResourceTracker.TrackESPFrame();
             canvas.Clear(InterfaceColorOptions.FuserBackgroundColor);
@@ -835,11 +889,11 @@ namespace eft_dma_radar.UI.ESP
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void DrawCrosshair(SKCanvas canvas)
         {
-            if (skglControl_ESP.Width <= 0 || skglControl_ESP.Height <= 0 || !ESPConfig.Crosshair.Enabled)
+            if (EspControl.Width <= 0 || EspControl.Height <= 0 || !ESPConfig.Crosshair.Enabled)
                 return;
 
-            var centerX = skglControl_ESP.Width / 2f;
-            var centerY = skglControl_ESP.Height / 2f;
+            var centerX = EspControl.Width / 2f;
+            var centerY = EspControl.Height / 2f;
             var size = 10 * ESPConfig.Crosshair.Scale;
             var thickness = 2 * ESPConfig.Crosshair.Scale;
             var dotSize = 3 * ESPConfig.Crosshair.Scale;
@@ -897,7 +951,7 @@ namespace eft_dma_radar.UI.ESP
                 if (string.IsNullOrEmpty(_lastStatusText))
                     return;
 
-                var clientArea = skglControl_ESP.ClientRectangle;
+                var clientArea = EspControl.ClientRectangle;
                 var labelWidth = SKPaints.ESPFontMedium13.MeasureText(_lastStatusText);
                 var spacing = 1f * ESPConfig.FontScale;
                 var top = clientArea.Top + spacing;
@@ -2823,7 +2877,7 @@ private void DrawRadarInfo(SKCanvas canvas)
             var spacing = 1f * ESPConfig.FontScale;
             var labelHeight = SKPaints.ESPFontMedium13.Spacing;
 
-            var clientArea = skglControl_ESP.ClientRectangle;
+            var clientArea = EspControl.ClientRectangle;
             var anchorX = clientArea.Width / 2 + _statusTextOffset.X;
             var anchorY = clientArea.Top + spacing + _statusTextOffset.Y;
 
@@ -2843,7 +2897,7 @@ private void DrawRadarInfo(SKCanvas canvas)
             var spacing = 1f * ESPConfig.FontScale;
             var labelHeight = SKPaints.ESPFontMedium13.Spacing;
 
-            var clientArea = skglControl_ESP.ClientRectangle;
+            var clientArea = EspControl.ClientRectangle;
             var anchorX = clientArea.Width / 2;
             var anchorY = clientArea.Top + spacing;
 
@@ -2913,7 +2967,7 @@ private void DrawRadarInfo(SKCanvas canvas)
             if (_dragState.IsActive)
                 return;
 
-            skglControl_ESP.Cursor = GetCursorForPoint(point);
+            EspControl.Cursor = GetCursorForPoint(point);
         }
 
         public void OnRenderContextChanged()
@@ -2924,7 +2978,7 @@ private void DrawRadarInfo(SKCanvas canvas)
         private void CheckRenderContextChanges()
         {
             var currentViewport = CameraManagerBase.Viewport;
-            var currentControlSize = skglControl_ESP.ClientSize;
+            var currentControlSize = EspControl.ClientSize;
 
             if (_lastViewport != currentViewport || _lastControlSize != currentControlSize)
             {
