@@ -58,11 +58,11 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 return _cachedHandsContainer;
 
             var PWA = localPlayer.PWA;
-            if (!PWA.IsValidVirtualAddress()) 
+            if (!PWA.IsValidVirtualAddress())
                 return 0x0;
 
             var handsContainer = Memory.ReadPtr(PWA + Offsets.ProceduralWeaponAnimation.HandsContainer);
-            if (!handsContainer.IsValidVirtualAddress()) 
+            if (!handsContainer.IsValidVirtualAddress())
                 return 0x0;
 
             _cachedHandsContainer = handsContainer;

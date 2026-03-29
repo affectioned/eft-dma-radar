@@ -9,7 +9,6 @@ global using System.Buffers.Binary;
 global using System.Collections;
 global using System.Collections.Concurrent;
 global using System.ComponentModel;
-global using System.Data;
 global using System.Diagnostics;
 global using System.Net;
 global using System.Net.Http.Headers;
@@ -338,8 +337,6 @@ namespace eft_dma_radar
                 }
 
                 loading.UpdateStatus("Initializing Safe Mode Features...", 85);
-                InitializeSafeModeFeatures();
-
                 loading.UpdateStatus("Safe Mode Ready - DMA functions disabled", 100);
                 Thread.Sleep(500);
             }
@@ -352,21 +349,6 @@ namespace eft_dma_radar
             finally
             {
                 loading.Dispatcher.Invoke(() => loading.Close());
-            }
-        }
-
-        /// <summary>
-        /// Initialize features that are safe to use without DMA
-        /// </summary>
-        private static void InitializeSafeModeFeatures()
-        {
-            try
-            {
-                XMLogging.WriteLine("Safe mode features initialized");
-            }
-            catch (Exception ex)
-            {
-                XMLogging.WriteLine($"Error initializing safe mode features: {ex}");
             }
         }
 
@@ -399,10 +381,6 @@ namespace eft_dma_radar
 
                 loading.UpdateStatus("Loading Completed!", 100);
                 Thread.Sleep(300);
-            }
-            catch (Exception)
-            {
-                throw;
             }
             finally
             {

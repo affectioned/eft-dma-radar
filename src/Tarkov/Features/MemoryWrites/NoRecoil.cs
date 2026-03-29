@@ -85,7 +85,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 }
 
                 var resetMask = (newSway > 0 && _lastSway == 0) || (recoilAmt > 0 && _lastRecoil == 0);
-                
+
                 if (resetMask)
                     WriteMask((int)ORIGINAL_PWA_MASK, mask);
                 else if (recoilAmt == 0 && newSway == 0 && mask != 1)

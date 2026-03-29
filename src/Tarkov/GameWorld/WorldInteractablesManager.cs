@@ -21,17 +21,17 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             ulong world = 0;
             ulong interactableArrayPtr = 0;
-        
+
             try
             {
-        
+
                 world = Memory.ReadPtr(_localGameWorld + Offsets.ClientLocalGameWorld.World, true);
-        
+
                 if (!world.IsValidVirtualAddress())
                     return;
 
                 interactableArrayPtr = Memory.ReadPtr(world + Offsets.WorldController.Interactables, true);
-        
+
                 if (!interactableArrayPtr.IsValidVirtualAddress())
                     return;
 

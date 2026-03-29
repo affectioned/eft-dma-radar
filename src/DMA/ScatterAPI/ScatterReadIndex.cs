@@ -17,7 +17,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
         /// <summary>
         /// Number of scatter entries registered on this index.
         /// </summary>
-        public int EntryCount => Entries.Count;        
+        public int EntryCount => Entries.Count;
         /// <summary>
         /// Callback to execute on completion.
         /// NOTE: Exceptions will be automatically handled.

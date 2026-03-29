@@ -10,8 +10,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private readonly struct SchemaField
         {
-            public readonly string    Il2CppName; // name as it appears in IL2CPP metadata
-            public readonly string    CsName;     // name to emit in the output struct
+            public readonly string Il2CppName; // name as it appears in IL2CPP metadata
+            public readonly string CsName;     // name to emit in the output struct
             public readonly FieldKind Kind;
             public SchemaField(string il2cpp, string cs, FieldKind kind = FieldKind.Normal)
             { Il2CppName = il2cpp; CsName = cs; Kind = kind; }
@@ -19,9 +19,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private sealed class SchemaClass
         {
-            public readonly string        Il2CppName; // plain class name used for name-based lookup
-            public readonly string        CsName;     // struct name in generated output
-            public readonly bool          IsStatic;   // emit as static class (singleton statics)
+            public readonly string Il2CppName; // plain class name used for name-based lookup
+            public readonly string CsName;     // struct name in generated output
+            public readonly bool IsStatic;   // emit as static class (singleton statics)
             public readonly SchemaField[] Fields;
             /// <summary>
             /// When non-null, resolves the class directly via

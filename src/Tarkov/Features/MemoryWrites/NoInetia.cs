@@ -82,7 +82,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
             }
 
 
-            _cachedHardSettings     = hardSettings;
+            _cachedHardSettings = hardSettings;
 
             XMLogging.WriteLine(
                 $"[Settings][OK] hard=0x{hardSettings:X}");

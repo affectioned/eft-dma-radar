@@ -35,6 +35,6 @@ namespace eft_dma_radar
         /// <summary>
         /// HttpClientFactory for creating HttpClients.
         /// </summary>
-        public static IHttpClientFactory HttpClientFactory { get; }        
+        public static IHttpClientFactory HttpClientFactory { get; }
     }
 }

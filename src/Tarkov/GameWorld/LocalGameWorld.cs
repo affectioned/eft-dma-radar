@@ -391,19 +391,19 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static LocalGameWorld GetLocalGameWorld(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-        
+
             try
             {
                 // Use IL2CPP GameObjectManager to find GameWorld (Mono is deprecated)
                 var gomAddress = Memory.GOM;
                 if (!gomAddress.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid GOM address");
-        
+
                 // Find GameWorld via IL2CPP GOM iteration with parallel search
                 var localGameWorld = GameWorldExtensions.GetGameWorld(gomAddress, ct, out string map);
                 if (!localGameWorld.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid LocalGameWorld address");
-        
+
                 // ?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่
                 // OFFLINE / ONLINE detection (cheap)
                 // ?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่
@@ -413,13 +413,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         localGameWorld,
                         UnityOffsets.Component.To_NativeClassName,
                         useCache: false);
-        
+
                     string className = Memory.ReadString(classNamePtr, 64, useCache: false);
-        
+
                     IsOffline = className.Equals(
                         "ClientLocalGameWorld",
                         StringComparison.OrdinalIgnoreCase);
-        
+
                     XMLogging.WriteLine($"[IL2CPP] Raid Mode: {(IsOffline ? "OFFLINE" : "ONLINE")}");
                 }
                 catch (Exception ex)
@@ -427,7 +427,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     XMLogging.WriteLine($"[IL2CPP] Could not detect offline mode: {ex.Message}");
                     IsOffline = false;
                 }
-        
+
                 // ?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่
                 // LEVEL SETTINGS กงC non-blocking
                 // ?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่?ก่
@@ -444,7 +444,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         // 2) No cached value yet กงC schedule a background resolve.
                         //    Do NOT block the game / raid init thread here.
                         LevelSettings = 0;
-        
+
                         ThreadPool.QueueUserWorkItem(_ =>
                         {
                             try
@@ -702,7 +702,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         }
                         foreach (var player in Memory.Players)
                         {
-                            if(player is null)
+                            if (player is null)
                                 continue;
                             try
                             {
@@ -745,7 +745,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 while (InRaid)
                 {
                     if (Memory.IsDisposed) { Dispose(); break; }
-                    if (Config.RatelimitRealtimeReads ||!CameraManagerBase.EspRunning || (MemWriteFeature<Aimbot>.Instance.Enabled && Aimbot.Engaged))
+                    if (Config.RatelimitRealtimeReads || !CameraManagerBase.EspRunning || (MemWriteFeature<Aimbot>.Instance.Enabled && Aimbot.Engaged))
                     {
                         _refreshWait.AutoWait(TimeSpan.FromMilliseconds(1), 1000);
                     }

@@ -57,13 +57,13 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 if (!IsHuman || string.IsNullOrEmpty(ProfileID))
                     return -1;
-        
+
                 return PlayerListWorker.GetOrAssignSpawnGroup(
                     ProfileID,
                     Position,
                     PlayerSide);
             }
-        }     
+        }
 
         /// <summary>
         /// Player's Faction.
@@ -117,12 +117,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 _pmcIndex[this] = index;
                 return index;
             }
-        }               
+        }
         /// <summary>
         /// Player's Skeleton Bones.
         /// </summary>
         public override Skeleton Skeleton { get; protected set; }
-        public override int VoipId { get; }  
+        public override int VoipId { get; }
         private static int ParseVoipId(ulong baseAddr)
         {
             try
@@ -141,7 +141,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 return -1;
             }
-        }     
+        }
         public bool TryEnsureSkeleton()
         {
             if (Skeleton != null)
@@ -157,7 +157,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 Skeleton = null;
                 return false;
             }
-        }            
+        }
         /// <summary>
         /// Player's Current Health Status
         /// </summary>
@@ -364,7 +364,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 var handController = Memory.ReadPtr(HandsControllerAddr);
                 var dickController = Memory.ReadPtr(handController + Offsets.ObservedHandsController.BundleAnimationBones);
-                this.PWA =  Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
+                this.PWA = Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
                 Profile = new PlayerProfile(this);
             }
 
@@ -672,7 +672,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 //    ZoomLevel = GetObservedScopeZoom(pwa);
                 //    //XMLogging.WriteLine($"Player '{Name}' Aiming Status: {IsAiming}, ZoomLevel: {ZoomLevel:F2}x");
                 //}
-                
+
             }
             catch //(Exception ex)
             {

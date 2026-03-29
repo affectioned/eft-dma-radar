@@ -1379,7 +1379,7 @@ namespace eft_dma_radar.UI.Pages
 
         private void LoadFuserSettings()
         {
-            var cfg = Config.ESP;            
+            var cfg = Config.ESP;
             // Load available monitors
             LoadMonitors();
 
@@ -1845,7 +1845,7 @@ namespace eft_dma_radar.UI.Pages
         private void ScaleESPLines()
         {
             var lineScale = Config.ESP.LineScale;
-            
+
             SKPaints.PaintVisible.StrokeWidth = 1.5f * lineScale;
             SKPaints.PaintUSECESP.StrokeWidth = 1.5f * lineScale;
             SKPaints.PaintBEARESP.StrokeWidth = 1.5f * lineScale;
@@ -1905,7 +1905,7 @@ namespace eft_dma_radar.UI.Pages
 
             #region Paints
             SKPaints.PaintMiniLocalPlayer.StrokeWidth = 3 * newScale;
-            SKPaints.PaintMiniTeammate.StrokeWidth = 3 * newScale;;
+            SKPaints.PaintMiniTeammate.StrokeWidth = 3 * newScale; ;
             SKPaints.PaintMiniUSEC.StrokeWidth = 3 * newScale;
             SKPaints.PaintMiniBEAR.StrokeWidth = 3 * newScale;
             SKPaints.PaintMiniSpecial.StrokeWidth = 3 * newScale;
@@ -2036,7 +2036,7 @@ namespace eft_dma_radar.UI.Pages
                     case "TrailDuration":
                         Config.ESP.EntityTypeESPSettings.GetSettings("Grenade").TrailDuration = floatValue;
                         break;
-                        case "MinTrailDistance":
+                    case "MinTrailDistance":
                         Config.ESP.EntityTypeESPSettings.GetSettings("Grenade").MinTrailDistance = floatValue;
                         break;
                     case "MinimumKD":
@@ -2214,14 +2214,14 @@ namespace eft_dma_radar.UI.Pages
                 cmbTargetMonitor.ItemsSource = monitors;
                 cmbTargetMonitor.DisplayMemberPath = "DisplayName";
                 cmbTargetMonitor.SelectedValuePath = "Index";
-                
+
                 // Select configured monitor (default to index 1 if available, otherwise primary)
                 var targetIndex = Config.ESP.EspTargetScreen;
                 if (targetIndex >= 0 && targetIndex < monitors.Count)
                     cmbTargetMonitor.SelectedIndex = targetIndex;
                 else
                     cmbTargetMonitor.SelectedIndex = monitors.Count > 1 ? 1 : 0; // Default to second monitor if available
-                
+
                 XMLogging.WriteLine($"[ESP] Loaded {monitors.Count} monitor(s), selected monitor {cmbTargetMonitor.SelectedIndex}");
             }
             catch (Exception ex)
@@ -2240,7 +2240,7 @@ namespace eft_dma_radar.UI.Pages
                 Config.ESP.EspTargetScreen = monitor.Index;
                 Config.Save();
                 XMLogging.WriteLine($"[ESP] Target monitor changed to {monitor.DisplayName}");
-                
+
                 // Log for debugging
                 XMLogging.WriteLine($"[ESP] Monitor resolution: {monitor.Width}x{monitor.Height} @ ({monitor.Left}, {monitor.Top})");
             }

@@ -168,7 +168,7 @@ namespace eft_dma_radar.Common.Misc
                 if (_timer.Elapsed.TotalMilliseconds >= 1000)
                 {
                     var count = Interlocked.Exchange(ref _box.Count, 0);
-                    var sum   = Interlocked.Exchange(ref _box.Sum,   0);
+                    var sum = Interlocked.Exchange(ref _box.Sum, 0);
                     _timer.Restart();
                     if (count > 0)
                     {

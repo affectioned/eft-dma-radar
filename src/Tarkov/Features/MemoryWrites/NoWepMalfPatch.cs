@@ -98,7 +98,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Patches
                         if (template.IsValidVirtualAddress())
                             heldTemplate = template;
 
-                            //XMLogging.WriteLine($"NoWepMalfPatch: Held weapon template addr=0x{heldTemplate:X}");
+                        //XMLogging.WriteLine($"NoWepMalfPatch: Held weapon template addr=0x{heldTemplate:X}");
                     }
                 }
             }
@@ -139,7 +139,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Patches
                         if (template.IsValidVirtualAddress())
                             slotTemplate = template;
 
-                            //XMLogging.WriteLine($"NoWepMalfPatch: Inventory slot '{name}' weapon template addr=0x{slotTemplate:X}");
+                        //XMLogging.WriteLine($"NoWepMalfPatch: Inventory slot '{name}' weapon template addr=0x{slotTemplate:X}");
                     }
                     catch { }
 

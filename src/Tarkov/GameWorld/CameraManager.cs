@@ -622,7 +622,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
         }
 
-        #if DEBUG
+#if DEBUG
         /// <summary>
         /// Sig audit lines collected by <see cref="DebugTestAllSignatures"/> for
         /// deferred output inside <see cref="DebugDumpState"/>.

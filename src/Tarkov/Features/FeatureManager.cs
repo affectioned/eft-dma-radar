@@ -62,10 +62,10 @@ namespace eft_dma_radar.Tarkov.Features
                         continue;
                     }
 
-                    bool enabled    = MemWrites.Enabled;
-                    bool ready      = Memory.Ready;
-                    bool inRaid     = Memory.InRaid;
-                    bool hasLocal   = Memory.LocalPlayer is not null;
+                    bool enabled = MemWrites.Enabled;
+                    bool ready = Memory.Ready;
+                    bool inRaid = Memory.InRaid;
+                    bool hasLocal = Memory.LocalPlayer is not null;
                     bool handsValid = hasLocal &&
                                       Memory.LocalPlayer!.Firearm.HandsController.Item1.IsValidVirtualAddress();
 

@@ -725,7 +725,7 @@ namespace eft_dma_radar.Tarkov.Features
                 XMLogging.WriteLine($"[Player Chams] Failed to get basic material ID: {ex}");
                 return -1;
             }
-        }        
+        }
         private static int GetVisibleMaterialId(CameraManager cameraManager, ChamsConfig.EntityChamsSettings settings)
         {
             try

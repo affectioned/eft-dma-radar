@@ -152,7 +152,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 if (statusNeeded > W) W = statusNeeded;
             }
 
-            string Row(string text)  => $"║  {text.PadRight(W - 2)}║";
+            string Row(string text) => $"║  {text.PadRight(W - 2)}║";
             string Sep(string label) => $"╠── {label} {new string('─', W - 4 - label.Length)}╣";
             string Header(string text)
             {

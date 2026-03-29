@@ -75,7 +75,7 @@ namespace eft_dma_radar.Web.ProfileApi
                 {
                     bool hasNewAccountId = !string.IsNullOrEmpty(accountId)
                                           && string.IsNullOrEmpty(existing.AccountId);
-                    bool hasNewNickname  = !string.IsNullOrEmpty(nickname)
+                    bool hasNewNickname = !string.IsNullOrEmpty(nickname)
                                           && string.IsNullOrEmpty(existing.Nickname);
 
                     if (hasNewAccountId || hasNewNickname)
@@ -85,7 +85,7 @@ namespace eft_dma_radar.Web.ProfileApi
                         return new DbEntry
                         {
                             AccountId = hasNewAccountId ? accountId : existing.AccountId,
-                            Nickname  = hasNewNickname  ? nickname  : existing.Nickname
+                            Nickname = hasNewNickname ? nickname : existing.Nickname
                         };
                     }
                     return existing;

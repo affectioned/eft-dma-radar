@@ -140,7 +140,8 @@ namespace eft_dma_radar.UI.Controls
 
             SizeChanged += TextValueSlider_SizeChanged;
 
-            Loaded += (s, e) => {
+            Loaded += (s, e) =>
+            {
                 UpdateValueDisplay();
                 UpdateValueTrack();
                 UpdateValueTextPosition();
@@ -482,7 +483,8 @@ namespace eft_dma_radar.UI.Controls
 
             UpdateValueDisplay();
 
-            Dispatcher.BeginInvoke(new Action(() => {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
                 UpdateValueTrack();
                 UpdateValueTextPosition();
             }), System.Windows.Threading.DispatcherPriority.Loaded);

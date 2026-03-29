@@ -201,7 +201,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
                     XMLogging.WriteLine(
                         $"[UPnP MAP] {m.Protocol} {m.PublicPort} -> {m.PrivateIP}:{m.PrivatePort}"
                     );
-                }                
+                }
                 return true;
             }
             catch (Exception ex)
@@ -241,10 +241,10 @@ namespace eft_dma_radar.Tarkov.WebRadar
         {
             while (!ct.IsCancellationRequested)
             {
-                    bool hasLocal   = Memory?.LocalPlayer is not null;
-                    bool handsValid = hasLocal &&
-                                      Memory!.LocalPlayer!.Firearm.HandsController.Item1.IsValidVirtualAddress();
-                if(!handsValid)
+                bool hasLocal = Memory?.LocalPlayer is not null;
+                bool handsValid = hasLocal &&
+                                  Memory!.LocalPlayer!.Firearm.HandsController.Item1.IsValidVirtualAddress();
+                if (!handsValid)
                 {
                     _latest = new WebRadarUpdate();
                     Thread.Sleep(_tickRate);
@@ -252,12 +252,12 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 }
                 try
                 {
-                    _latest.InGame   = Memory!.InRaid;
-                    _latest.InRaid   = Memory!.InRaid;
-                    _latest.MapID    = Memory!.MapID;
+                    _latest.InGame = Memory!.InRaid;
+                    _latest.InRaid = Memory!.InRaid;
+                    _latest.MapID = Memory!.MapID;
                     _latest.SendTime = DateTime.UtcNow;
                     _latest.Version++;
-        
+
                     // =========================
                     // MAP (geometry only)
                     // =========================
@@ -265,22 +265,22 @@ namespace eft_dma_radar.Tarkov.WebRadar
                     _latest.Map = map != null
                         ? WebRadarMapConverter.Convert(map.Config)
                         : null;
-        
+
                     // =========================
                     // EXFILS (world entities)
                     // =========================
                     var exitManager = Memory?.Game?.Exits;
-        
+
                     _latest.Exfils = exitManager?
                         .OfType<eft_dma_radar.Tarkov.GameWorld.Exits.Exfil>() // 👈 important
                         .Select(WebRadarExfil.CreateFromExfil)
                         .ToArray();
-        
+
                     _latest.Transits = exitManager?
                         .OfType<eft_dma_radar.Tarkov.GameWorld.Exits.TransitPoint>() // 👈 important
                         .Select(WebRadarTransit.CreateFromTransit)
                         .ToArray();
-        
+
                     // =========================
                     // PLAYERS
                     // =========================
@@ -288,14 +288,14 @@ namespace eft_dma_radar.Tarkov.WebRadar
                         .Where(p => p != null)
                         .Select(WebRadarPlayer.CreateFromPlayer)
                         .ToArray();
-        
+
                     // =========================
                     // LOOT
                     // =========================
                     _latest.Loot = Memory?.Loot?.UnfilteredLoot?
                         .Select(WebRadarLoot.CreateFromLoot)
                         .ToArray();
-        
+
                     // =========================
                     // DOORS
                     // =========================
@@ -307,7 +307,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 {
                     XMLogging.WriteLine($"[WebRadar] Worker error: {ex}");
                 }
-        
+
                 Thread.Sleep(_tickRate);
             }
         }
@@ -427,7 +427,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 XMLogging.WriteLine($"[GetLocalIP] Error: {ex.Message}");
                 return null;
             }
-        }  
+        }
         /// <summary>
         /// Lookup the External IP Address via UPnP.
         /// </summary>
@@ -456,7 +456,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 return true;
 
             return false;
-        }  
+        }
         /// <summary>
         /// Get the Nat Device for the local UPnP Service.
         /// </summary>
@@ -466,12 +466,12 @@ namespace eft_dma_radar.Tarkov.WebRadar
             var dsc = new NatDiscoverer();
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             return await dsc.DiscoverDeviceAsync(PortMapper.Upnp, cts);
-        }                
+        }
         public static void OverridePassword(string password)
         {
             if (!string.IsNullOrWhiteSpace(password))
                 _password = password;
-        }                
+        }
     }
 
 }

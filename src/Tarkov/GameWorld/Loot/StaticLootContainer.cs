@@ -98,10 +98,10 @@ namespace eft_dma_radar.Tarkov.Loot
         public override void DrawESP(SKCanvas canvas, LocalPlayer localPlayer)
         {
             var dist = Vector3.Distance(localPlayer.Position, Position);
-            
+
             if (dist > ESPSettings.RenderDistance)
                 return;
-            
+
             if (!CameraManagerBase.WorldToScreen(ref Position, out var scrPos))
                 return;
 

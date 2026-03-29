@@ -151,11 +151,11 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                     string value = raw switch
                     {
-                        uint[] arr  => arr.Length > 0 ? arr[0].ToString() : null,
-                        uint u      => u.ToString(),
-                        ulong ul    => ul.ToString(),
-                        int i       => i.ToString(),
-                        _           => null,
+                        uint[] arr => arr.Length > 0 ? arr[0].ToString() : null,
+                        uint u => u.ToString(),
+                        ulong ul => ul.ToString(),
+                        int i => i.ToString(),
+                        _ => null,
                     };
 
                     if (value is not null)
@@ -181,7 +181,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 if (dot < 0) continue;
 
                 var structName = key[..dot];
-                var fieldName  = key[(dot + 1)..];
+                var fieldName = key[(dot + 1)..];
 
                 var nested = offsetsType.GetNestedType(structName, BindingFlags.Public | BindingFlags.NonPublic);
                 if (nested is null) continue;

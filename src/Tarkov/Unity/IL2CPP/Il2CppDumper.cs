@@ -12,14 +12,14 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
     public static partial class Il2CppDumper
     {
         // ── IL2CPP struct field offsets ──────────────────────────────────────────
-        private const uint K_Name        = 0x10;   // char*    Il2CppClass::name
-        private const uint K_Fields      = 0x80;   // FieldInfo*  (direct array)
-        private const uint K_Methods     = 0x98;   // MethodInfo** (array of pointers)
+        private const uint K_Name = 0x10;   // char*    Il2CppClass::name
+        private const uint K_Fields = 0x80;   // FieldInfo*  (direct array)
+        private const uint K_Methods = 0x98;   // MethodInfo** (array of pointers)
         private const uint K_MethodCount = 0x120;  // uint16
-        private const uint K_FieldCount  = 0x124;  // uint16
+        private const uint K_FieldCount = 0x124;  // uint16
 
-        private const int  MaxClasses    = 80_000;
-        private const int  MaxNameLen    = 256;
+        private const int MaxClasses = 80_000;
+        private const int MaxNameLen = 256;
 
         // ── Scatter-read raw structs ─────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         private struct RawFieldInfo
         {
             [FieldOffset(0x00)] public ulong NamePtr; // char* name
-            [FieldOffset(0x18)] public int   Offset;  // int32 offset (signed!)
+            [FieldOffset(0x18)] public int Offset;  // int32 offset (signed!)
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 return;
             }
 
-            var nameLookup  = new Dictionary<string, ulong>(classes.Count * 2, StringComparer.Ordinal);
+            var nameLookup = new Dictionary<string, ulong>(classes.Count * 2, StringComparer.Ordinal);
             var nameToIndex = new Dictionary<string, int>(classes.Count * 2, StringComparer.Ordinal);
 
             // Dedup numbering: when multiple classes share the same sanitized base name,
@@ -279,7 +279,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     continue;
                 }
 
-                var fieldMap  = ReadClassFields(klassPtr);
+                var fieldMap = ReadClassFields(klassPtr);
                 var methodMap = sc.Fields.Any(sf => sf.Kind == FieldKind.MethodRva)
                     ? ReadClassMethods(klassPtr, gaBase)
                     : null;
@@ -472,7 +472,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             // Step 3: Scatter read all name and namespace strings in one batch.
             var nameEntries = new ScatterReadEntry<UTF8String>[validIndices.Count];
-            var nsEntries   = new ScatterReadEntry<UTF8String>[validIndices.Count];
+            var nsEntries = new ScatterReadEntry<UTF8String>[validIndices.Count];
             var stringBatch = new List<IScatterEntry>(validIndices.Count * 2);
 
             for (int j = 0; j < validIndices.Count; j++)
@@ -521,7 +521,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private static Dictionary<string, int> ReadClassFields(ulong klassPtr)
         {
-            var result     = new Dictionary<string, int>(StringComparer.Ordinal);
+            var result = new Dictionary<string, int>(StringComparer.Ordinal);
             var fieldCount = Memory.ReadValue<ushort>(klassPtr + K_FieldCount, false);
             if (fieldCount == 0 || fieldCount > 4096) return result;
 
@@ -565,7 +565,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
         private static Dictionary<string, ulong> ReadClassMethods(ulong klassPtr, ulong gaBase)
         {
-            var result      = new Dictionary<string, ulong>(StringComparer.Ordinal);
+            var result = new Dictionary<string, ulong>(StringComparer.Ordinal);
             var methodCount = Memory.ReadValue<ushort>(klassPtr + K_MethodCount, false);
             if (methodCount == 0 || methodCount > 4096) return result;
 
@@ -687,5 +687,5 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             return new string(sb);
         }
 
-            }
-        }
+    }
+}

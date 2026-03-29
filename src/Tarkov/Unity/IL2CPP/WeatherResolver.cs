@@ -42,7 +42,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 // 2) TypeIndex �� klass*
                 var index = (ulong)Offsets.Special.WeatherController_TypeIndex;
-                var slot  = typeInfoTablePtr + index * (ulong)IntPtr.Size;
+                var slot = typeInfoTablePtr + index * (ulong)IntPtr.Size;
 
                 var klassPtr = SafeReadPtr(slot, useCache: false);
                 if (!Utils.IsValidVirtualAddress(klassPtr))
@@ -81,7 +81,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 try
                 {
                     var namePtr = SafeReadPtr(klassPtr + Offsets.Il2CppClass.Name, useCache: false);
-                    var nsPtr   = SafeReadPtr(klassPtr + Offsets.Il2CppClass.Namespace, useCache: false);
+                    var nsPtr = SafeReadPtr(klassPtr + Offsets.Il2CppClass.Namespace, useCache: false);
 
                     var name = Utils.IsValidVirtualAddress(namePtr)
                         ? Memory.ReadString(namePtr, 64, useCache: false)

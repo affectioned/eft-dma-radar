@@ -180,9 +180,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 var stats = Profile?.PmcStats;
                 if (stats is not null)
                 {
-                    int? runnerObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x => 
-                        x.Key?.Contains("ExitStatus") == true && 
-                        x.Key?.Contains("Runner") == true && 
+                    int? runnerObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x =>
+                        x.Key?.Contains("ExitStatus") == true &&
+                        x.Key?.Contains("Runner") == true &&
                         x.Key?.Contains("Pmc") == true)?.Value;
                     if (runnerObj is int runner)
                         return _runThroughCount = runner;
@@ -204,8 +204,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 var stats = Profile?.ScavStats;
                 if (stats is not null)
                 {
-                    int? scavSessionsObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x => 
-                        x.Key?.Contains("Sessions") == true && 
+                    int? scavSessionsObj = stats.Counters?.OverallCounters?.Items?.FirstOrDefault(x =>
+                        x.Key?.Contains("Sessions") == true &&
                         x.Key?.Contains("Scav") == true)?.Value;
                     if (scavSessionsObj is int scavSessionsResult)
                         return _scavSessions = scavSessionsResult;

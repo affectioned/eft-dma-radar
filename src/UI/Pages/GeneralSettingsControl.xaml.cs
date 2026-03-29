@@ -24,7 +24,6 @@ using eft_dma_radar.Common.Misc.Data.EFT;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.LowLevel;
-using eft_dma_radar.Common.Unity.LowLevel.PhysX;
 using HandyControl.Controls;
 using HandyControl.Data;
 using HandyControl.Themes;
@@ -1147,9 +1146,9 @@ namespace eft_dma_radar.UI.Pages
                     }
 
                     var sortedItems = QuestItems.OrderBy(q => q.Name, StringComparer.OrdinalIgnoreCase).ToList();
-                    
+
                     QuestItems.Clear();
-                    
+
                     foreach (var item in sortedItems)
                     {
                         QuestItems.Add(item);
@@ -2378,7 +2377,7 @@ namespace eft_dma_radar.UI.Pages
             var registeredCount = 0;
             var allHotkeys = GetAllHotkeys().ToList();
             XMLogging.WriteLine($"[Hotkeys] Found {allHotkeys.Count} total hotkey entries in config");
-            
+
             foreach (var (actionKey, entry) in allHotkeys)
             {
                 if (entry.Enabled && entry.Key != -1)
@@ -2671,28 +2670,28 @@ namespace eft_dma_radar.UI.Pages
             {
                 #region Testing
                 //case nameof(HotkeyConfig.TestAction):
-                    //XMLogging.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
-                    //break;
+                //XMLogging.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
+                //break;
                 //case nameof(HotkeyConfig.TestAction2):
-                  // try
-                  // {
-                  //     var from = Memory.LocalPlayer.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
-                  //     foreach (var player in Memory.Players)
-                  //     {
-                  //         var to = player.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
-                  //         bool visible = PhysXManager.IsVisible(from, to);
-                  //         if (visible)
-                  //             NotificationsShared.Info($"Player {player.Name} is visible from the local player's head.");
-                  //         else
-                  //             NotificationsShared.Info($"Player {player.Name} is NOT visible from the local player's head. {to}");
-                  //     }
-                  //     NotificationsShared.Info("Test action executed!");
-                  // }
-                  // catch (Exception ex)
-                  // {
-                  //     NotificationsShared.Error($"Error executing test action: {ex.Message}");
-                  // }
-                    //break;
+                // try
+                // {
+                //     var from = Memory.LocalPlayer.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
+                //     foreach (var player in Memory.Players)
+                //     {
+                //         var to = player.Skeleton.Bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position;
+                //         bool visible = PhysXManager.IsVisible(from, to);
+                //         if (visible)
+                //             NotificationsShared.Info($"Player {player.Name} is visible from the local player's head.");
+                //         else
+                //             NotificationsShared.Info($"Player {player.Name} is NOT visible from the local player's head. {to}");
+                //     }
+                //     NotificationsShared.Info("Test action executed!");
+                // }
+                // catch (Exception ex)
+                // {
+                //     NotificationsShared.Error($"Error executing test action: {ex.Message}");
+                // }
+                //break;
                 #endregion
 
                 #region Loot
@@ -2777,7 +2776,7 @@ namespace eft_dma_radar.UI.Pages
                     break;
                 case nameof(HotkeyConfig.EngageLTW):
                     LootThroughWalls.ZoomEngaged = isActive;
-                    break;                    
+                    break;
                 case nameof(HotkeyConfig.EngageTeammate):
                     XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;
@@ -3060,25 +3059,25 @@ namespace eft_dma_radar.UI.Pages
             {
                 _ignoreConfigSelectionChanged = true;
                 cboConfigs.Items.Clear();
-        
+
                 var configs = ConfigManager.GetAvailableConfigs()
                     .OrderBy(c => c.ConfigName)
                     .ToList();
-        
+
                 var currentConfigNameWithoutExt = Path.GetFileNameWithoutExtension(ConfigManager.CurrentConfigName);
                 var selectedIndex = -1;
-        
+
                 foreach (var config in configs)
                 {
                     var displayName = Path.GetFileNameWithoutExtension(config.ConfigName);
                     cboConfigs.Items.Add(displayName);
-        
+
                     if (displayName.Equals(currentConfigNameWithoutExt, StringComparison.OrdinalIgnoreCase))
                         selectedIndex = cboConfigs.Items.Count - 1;
                 }
-        
+
                 cboConfigs.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
-        
+
                 txtCurrentConfig.Text = currentConfigNameWithoutExt;
             }
             finally
@@ -3102,13 +3101,13 @@ namespace eft_dma_radar.UI.Pages
 
             if (confirm != MessageBoxResult.Yes)
                 return;
-            
+
             try
             {
                 ESPForm.CloseESP();
 
                 ConfigManager.CurrentConfig.Save();
-                
+
                 var loaded = await Task.Run(() => ConfigManager.LoadConfig(configToLoad));
 
                 if (loaded)
@@ -3319,7 +3318,7 @@ namespace eft_dma_radar.UI.Pages
         private void BtnExportClipboard_Click(object sender, RoutedEventArgs e)
         {
             ExportConfigToClipboard();
-        }   
+        }
 
         private void ExportConfigToClipboard()
         {
@@ -3452,7 +3451,7 @@ namespace eft_dma_radar.UI.Pages
             {
                 btnImportClipboard.IsEnabled = true;
             }
-        }          
+        }
         #endregion
     }
 }

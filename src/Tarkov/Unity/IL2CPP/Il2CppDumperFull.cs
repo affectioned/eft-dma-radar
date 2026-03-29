@@ -19,7 +19,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         {
             [FieldOffset(0x00)] public ulong NamePtr;   // char* name
             [FieldOffset(0x08)] public ulong TypePtr;   // Il2CppType*
-            [FieldOffset(0x18)] public int   Offset;    // int32 offset (signed)
+            [FieldOffset(0x18)] public int Offset;    // int32 offset (signed)
         }
 
         // ── Il2CppType header ────────────────────────────────────────────────────
@@ -32,8 +32,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         private struct RawIl2CppType
         {
             [FieldOffset(0x00)] public ulong Data;      // union (see above)
-            [FieldOffset(0x08)] public uint  Attrs;     // field / param attribute flags
-            [FieldOffset(0x0C)] public byte  TypeEnum;  // Il2CppTypeEnum value
+            [FieldOffset(0x08)] public uint Attrs;     // field / param attribute flags
+            [FieldOffset(0x0C)] public byte TypeEnum;  // Il2CppTypeEnum value
         }
 
         // ── Il2CppTypeEnum → C# type name ────────────────────────────────────────
@@ -64,7 +64,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             0x1C => "object",
             0x1D => "[]",
             0x55 => "enum",        // resolved to class name when possible
-            _    => $"type_0x{t:X2}",
+            _ => $"type_0x{t:X2}",
         };
 
         // ── Type name resolution ─────────────────────────────────────────────────
@@ -84,7 +84,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         /// </summary>
         private static string ResolveClassTypeName(
             ulong data,
-            Dictionary<int, string>   indexToName,
+            Dictionary<int, string> indexToName,
             Dictionary<ulong, string> ptrToName,
             string fallback)
         {
@@ -110,7 +110,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         /// </summary>
         private static List<(string Name, int Offset, string TypeName)> ReadClassFieldsFull(
             ulong klassPtr,
-            Dictionary<int, string>   typeIndexToName,
+            Dictionary<int, string> typeIndexToName,
             Dictionary<ulong, string> typePtrToName)
         {
             var result = new List<(string, int, string)>();
@@ -128,7 +128,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // Single scatter round: name strings + Il2CppType structs together.
             var nameEntries = new ScatterReadEntry<UTF8String>[rawFields.Length];
             var typeEntries = new ScatterReadEntry<RawIl2CppType>[rawFields.Length];
-            var scatter     = new List<IScatterEntry>(rawFields.Length * 2);
+            var scatter = new List<IScatterEntry>(rawFields.Length * 2);
 
             for (int i = 0; i < rawFields.Length; i++)
             {
@@ -218,7 +218,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             // TypeDefinitionIndex (= position in typeInfos array) → full class name.
             // Il2CppClass* pointer                                 → full class name.
             var typeIndexToName = new Dictionary<int, string>(classes.Count);
-            var typePtrToName   = new Dictionary<ulong, string>(classes.Count);
+            var typePtrToName = new Dictionary<ulong, string>(classes.Count);
             foreach (var (name, ns, ptr, idx) in classes)
             {
                 var full = string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";

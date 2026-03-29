@@ -25,7 +25,7 @@ namespace eft_dma_radar.Web.ProfileApi
                 _cache[kv.Key] = new PlayerLookupResult
                 {
                     AccountId = kv.Value.AccountId,
-                    Nickname  = kv.Value.Nickname
+                    Nickname = kv.Value.Nickname
                 };
 
                 if (!string.IsNullOrEmpty(kv.Value.AccountId))

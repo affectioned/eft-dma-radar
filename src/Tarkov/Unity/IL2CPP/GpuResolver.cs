@@ -28,7 +28,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     return 0;
 
                 // 2. TypeIndex �� klass*
-                ulong slot = typeInfoTable + 
+                ulong slot = typeInfoTable +
                     (ulong)Offsets.Special.GPUInstancerManager_TypeIndex * (ulong)IntPtr.Size;
 
                 var klassPtr = Memory.ReadPtr(slot, false);

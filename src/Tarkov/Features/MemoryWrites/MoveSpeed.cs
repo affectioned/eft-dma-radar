@@ -72,7 +72,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 
                 float targetSpeed =
                     overweight ? BASE_SPEED :
-                    Enabled    ? configSpeed :
+                    Enabled ? configSpeed :
                                  BASE_SPEED;
 
                 float currentSpeed = Memory.ReadValue<float>(

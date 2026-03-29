@@ -41,7 +41,7 @@ namespace eft_dma_radar.Common.Misc.Data
         /// Trader lookup — BSG trader id mapped to display name.
         /// </summary>
         public static FrozenDictionary<string, string> AllTraders { get; private set; }
-        
+
         public static bool IsInitialized { get; set; } = false;
 
         #region Startup
@@ -88,7 +88,7 @@ namespace eft_dma_radar.Common.Misc.Data
                 MapData = data.Maps?
                     .Where(x => !string.IsNullOrEmpty(x.NameId))
                     .ToDictionary(k => k.NameId, v => v, StringComparer.OrdinalIgnoreCase)
-                    .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase) 
+                    .ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
                     ?? new Dictionary<string, MapElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
 
                 AllTraders = (data.Traders ?? [])
@@ -105,11 +105,11 @@ namespace eft_dma_radar.Common.Misc.Data
                 XMLogging.WriteLine($"Error processing data: {ex}");
                 loading.UpdateStatus("Error processing data. Using empty data structures.", loading.PercentComplete);
 
-                AllItems      = new Dictionary<string, TarkovMarketItem>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                AllItems = new Dictionary<string, TarkovMarketItem>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
                 AllContainers = new Dictionary<string, TarkovMarketItem>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
-                TaskData      = new Dictionary<string, TaskElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
-                MapData       = new Dictionary<string, MapElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
-                AllTraders    = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                TaskData = new Dictionary<string, TaskElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                MapData = new Dictionary<string, MapElement>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
+                AllTraders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
                 IsInitialized = true;
             }
         }

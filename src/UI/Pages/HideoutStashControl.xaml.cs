@@ -19,18 +19,18 @@ namespace eft_dma_radar.UI.Pages;
 /// </summary>
 public sealed class StashItemView
 {
-    public string Name         { get; init; } = string.Empty;
-    public string Id           { get; init; } = string.Empty;
-    public int    StackCount   { get; init; }
-    public string TraderFmt    { get; init; } = string.Empty;
-    public string TraderName   { get; init; } = string.Empty;
-    public string FleaFmt      { get; init; } = string.Empty;
-    public string BestFmt      { get; init; } = string.Empty;
-    public string SellOn       { get; init; } = string.Empty;
-    public bool   SellOnFlea   { get; init; }
-    public long   TraderRaw    { get; init; }
-    public long   FleaRaw      { get; init; }
-    public long   BestRaw      { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Id { get; init; } = string.Empty;
+    public int StackCount { get; init; }
+    public string TraderFmt { get; init; } = string.Empty;
+    public string TraderName { get; init; } = string.Empty;
+    public string FleaFmt { get; init; } = string.Empty;
+    public string BestFmt { get; init; } = string.Empty;
+    public string SellOn { get; init; } = string.Empty;
+    public bool SellOnFlea { get; init; }
+    public long TraderRaw { get; init; }
+    public long FleaRaw { get; init; }
+    public long BestRaw { get; init; }
 }
 
 /// <summary>
@@ -38,30 +38,30 @@ public sealed class StashItemView
 /// </summary>
 public sealed class AreaUpgradeView
 {
-    private static readonly System.Windows.Media.Brush _green  = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
+    private static readonly System.Windows.Media.Brush _green = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
     private static readonly System.Windows.Media.Brush _orange = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x98, 0x00));
-    private static readonly System.Windows.Media.Brush _grey   = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x9E, 0x9E, 0x9E));
-    private static readonly System.Windows.Media.Brush _slate  = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x78, 0x90, 0x9C));
+    private static readonly System.Windows.Media.Brush _grey = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x9E, 0x9E, 0x9E));
+    private static readonly System.Windows.Media.Brush _slate = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x78, 0x90, 0x9C));
 
-    public string                         AreaName               { get; }
-    public string                         LevelLabel             { get; }
-    public string                         StatusLabel            { get; }
-    public System.Windows.Media.Brush     StatusBrush            { get; }
-    public double                         RowOpacity             { get; }
-    public Visibility                     RequirementsVisibility { get; }
-    public IReadOnlyList<RequirementView> Requirements           { get; }
+    public string AreaName { get; }
+    public string LevelLabel { get; }
+    public string StatusLabel { get; }
+    public System.Windows.Media.Brush StatusBrush { get; }
+    public double RowOpacity { get; }
+    public Visibility RequirementsVisibility { get; }
+    public IReadOnlyList<RequirementView> Requirements { get; }
 
     public AreaUpgradeView(HideoutAreaInfo info)
     {
-        AreaName               = FormatName(info.AreaType.ToString());
+        AreaName = FormatName(info.AreaType.ToString());
         RequirementsVisibility = info.IsMaxLevel ? Visibility.Collapsed : Visibility.Visible;
-        RowOpacity             = info.IsMaxLevel ? 0.38 : 1.0;
-        StatusLabel            = FormatStatus(info.Status);
-        StatusBrush            = GetBrush(info.Status);
-        LevelLabel             = info.IsMaxLevel
+        RowOpacity = info.IsMaxLevel ? 0.38 : 1.0;
+        StatusLabel = FormatStatus(info.Status);
+        StatusBrush = GetBrush(info.Status);
+        LevelLabel = info.IsMaxLevel
             ? $"lv{info.CurrentLevel}"
             : $"lv{info.CurrentLevel} → {info.CurrentLevel + 1}";
-        Requirements           = info.NextLevelRequirements
+        Requirements = info.NextLevelRequirements
             .Select(r => new RequirementView(r))
             .ToList();
     }
@@ -71,16 +71,16 @@ public sealed class AreaUpgradeView
 
     private static string FormatStatus(EAreaStatus s) => s switch
     {
-        EAreaStatus.ReadyToConstruct                                    => "BUILD",
-        EAreaStatus.ReadyToUpgrade                                      => "UPGRADE",
+        EAreaStatus.ReadyToConstruct => "BUILD",
+        EAreaStatus.ReadyToUpgrade => "UPGRADE",
         EAreaStatus.ReadyToInstallConstruct or
-        EAreaStatus.ReadyToInstallUpgrade                               => "INSTALL",
-        EAreaStatus.Constructing                                        => "Building…",
-        EAreaStatus.Upgrading                                           => "Upgrading…",
-        EAreaStatus.AutoUpgrading                                       => "Auto",
-        EAreaStatus.LockedToConstruct or EAreaStatus.LockedToUpgrade    => "Locked",
-        EAreaStatus.NoFutureUpgrades                                    => "Max",
-        _                                                               => s.ToString()
+        EAreaStatus.ReadyToInstallUpgrade => "INSTALL",
+        EAreaStatus.Constructing => "Building…",
+        EAreaStatus.Upgrading => "Upgrading…",
+        EAreaStatus.AutoUpgrading => "Auto",
+        EAreaStatus.LockedToConstruct or EAreaStatus.LockedToUpgrade => "Locked",
+        EAreaStatus.NoFutureUpgrades => "Max",
+        _ => s.ToString()
     };
 
     private static System.Windows.Media.Brush GetBrush(EAreaStatus s) => s switch
@@ -88,9 +88,9 @@ public sealed class AreaUpgradeView
         EAreaStatus.ReadyToConstruct or EAreaStatus.ReadyToUpgrade or
         EAreaStatus.ReadyToInstallConstruct or EAreaStatus.ReadyToInstallUpgrade => _green,
         EAreaStatus.Constructing or EAreaStatus.Upgrading or
-        EAreaStatus.AutoUpgrading                                                 => _orange,
-        EAreaStatus.NoFutureUpgrades                                              => _slate,
-        _                                                                         => _grey
+        EAreaStatus.AutoUpgrading => _orange,
+        EAreaStatus.NoFutureUpgrades => _slate,
+        _ => _grey
     };
 }
 
@@ -100,17 +100,17 @@ public sealed class AreaUpgradeView
 public sealed class RequirementView
 {
     private static readonly System.Windows.Media.Brush _green = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
-    private static readonly System.Windows.Media.Brush _red   = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEF, 0x53, 0x50));
+    private static readonly System.Windows.Media.Brush _red = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEF, 0x53, 0x50));
 
-    public string                     Description    { get; }
+    public string Description { get; }
     public System.Windows.Media.Brush FulfilledBrush { get; }
-    public string                     FulfilledIcon  { get; }
+    public string FulfilledIcon { get; }
 
     public RequirementView(HideoutRequirement req)
     {
         FulfilledBrush = req.Fulfilled ? _green : _red;
-        FulfilledIcon  = req.Fulfilled ? "✓" : "✗";
-        Description    = req.Type switch
+        FulfilledIcon = req.Fulfilled ? "✓" : "✗";
+        Description = req.Type switch
         {
             ERequirementType.Item or ERequirementType.Tool when !req.Fulfilled
                 => $"{req.ItemName ?? req.ItemTemplateId ?? "?"} ×{req.RequiredCount}  ({req.CurrentCount}/{req.RequiredCount})",
@@ -122,9 +122,9 @@ public sealed class RequirementView
                 => $"{req.SkillName ?? "Skill"} lv{req.SkillLevel}",
             ERequirementType.TraderLoyalty
                 => $"{req.TraderName ?? req.TraderId ?? "Trader"} LL{req.LoyaltyLevel}",
-            ERequirementType.TraderUnlock   => "Trader unlock",
-            ERequirementType.QuestComplete  => "Quest complete",
-            _                               => req.Type.ToString()
+            ERequirementType.TraderUnlock => "Trader unlock",
+            ERequirementType.QuestComplete => "Quest complete",
+            _ => req.Type.ToString()
         };
     }
 }
@@ -136,16 +136,16 @@ public partial class HideoutStashControl : UserControl
 {
     private static Config Config => Program.Config;
 
-    public event EventHandler?                       CloseRequested;
-    public event EventHandler?                       BringToFrontRequested;
-    public event EventHandler<PanelDragEventArgs>?   DragRequested;
+    public event EventHandler? CloseRequested;
+    public event EventHandler? BringToFrontRequested;
+    public event EventHandler<PanelDragEventArgs>? DragRequested;
     public event EventHandler<PanelResizeEventArgs>? ResizeRequested;
 
-    private readonly ObservableCollection<StashItemView>   _items        = new();
-    private readonly ObservableCollection<StashItemView>   _groupedItems = new();
-    private readonly ObservableCollection<AreaUpgradeView> _areas        = new();
+    private readonly ObservableCollection<StashItemView> _items = new();
+    private readonly ObservableCollection<StashItemView> _groupedItems = new();
+    private readonly ObservableCollection<AreaUpgradeView> _areas = new();
     private readonly ICollectionView _view;
-    private bool  _isGrouped;
+    private bool _isGrouped;
     private Point _dragStart;
 
     public HideoutStashControl()
@@ -153,9 +153,9 @@ public partial class HideoutStashControl : UserControl
         InitializeComponent();
         _view = CollectionViewSource.GetDefaultView(_items);
         _view.Filter = FilterItem;
-        StashGrid.ItemsSource    = _view;
+        StashGrid.ItemsSource = _view;
         UpgradesList.ItemsSource = _areas;
-        ChkMarkInRaid.IsChecked  = Config.LootHideoutRequired;
+        ChkMarkInRaid.IsChecked = Config.LootHideoutRequired;
         IsVisibleChanged += OnVisibleChanged;
     }
 
@@ -192,26 +192,26 @@ public partial class HideoutStashControl : UserControl
             .GroupBy(i => i.Id)
             .OrderBy(g => g.First().Name))
         {
-            var first      = g.First();
-            var totalQty   = g.Sum(i => i.StackCount);
-            var traderRaw  = first.TraderRaw / Math.Max(1, first.StackCount) * totalQty;
-            var fleaRaw    = first.FleaRaw   / Math.Max(1, first.StackCount) * totalQty;
-            var bestRaw    = Math.Max(traderRaw, fleaRaw);
+            var first = g.First();
+            var totalQty = g.Sum(i => i.StackCount);
+            var traderRaw = first.TraderRaw / Math.Max(1, first.StackCount) * totalQty;
+            var fleaRaw = first.FleaRaw / Math.Max(1, first.StackCount) * totalQty;
+            var bestRaw = Math.Max(traderRaw, fleaRaw);
             var sellOnFlea = fleaRaw > traderRaw;
             _groupedItems.Add(new StashItemView
             {
-                Name       = first.Name,
-                Id         = first.Id,
+                Name = first.Name,
+                Id = first.Id,
                 StackCount = totalQty,
-                TraderFmt  = FormatPrice(traderRaw),
+                TraderFmt = FormatPrice(traderRaw),
                 TraderName = first.TraderName,
-                FleaFmt    = FormatPrice(fleaRaw),
-                BestFmt    = FormatPrice(bestRaw),
-                SellOn     = sellOnFlea ? "Flea" : "Trader",
+                FleaFmt = FormatPrice(fleaRaw),
+                BestFmt = FormatPrice(bestRaw),
+                SellOn = sellOnFlea ? "Flea" : "Trader",
                 SellOnFlea = sellOnFlea,
-                TraderRaw  = traderRaw,
-                FleaRaw    = fleaRaw,
-                BestRaw    = bestRaw,
+                TraderRaw = traderRaw,
+                FleaRaw = fleaRaw,
+                BestRaw = bestRaw,
             });
         }
     }
@@ -271,24 +271,24 @@ public partial class HideoutStashControl : UserControl
         {
             _items.Add(new StashItemView
             {
-                Name       = si.Name,
-                Id         = si.Id,
+                Name = si.Name,
+                Id = si.Id,
                 StackCount = si.StackCount,
-                TraderFmt  = FormatPrice(si.TraderPrice * si.StackCount),
+                TraderFmt = FormatPrice(si.TraderPrice * si.StackCount),
                 TraderName = si.BestTraderName,
-                FleaFmt    = FormatPrice(si.FleaPrice   * si.StackCount),
-                BestFmt    = FormatPrice(si.BestPrice),
-                SellOn     = si.SellOnFlea ? "Flea" : "Trader",
+                FleaFmt = FormatPrice(si.FleaPrice * si.StackCount),
+                BestFmt = FormatPrice(si.BestPrice),
+                SellOn = si.SellOnFlea ? "Flea" : "Trader",
                 SellOnFlea = si.SellOnFlea,
-                TraderRaw  = si.TraderPrice * si.StackCount,
-                FleaRaw    = si.FleaPrice   * si.StackCount,
-                BestRaw    = si.BestPrice,
+                TraderRaw = si.TraderPrice * si.StackCount,
+                FleaRaw = si.FleaPrice * si.StackCount,
+                BestRaw = si.BestPrice,
             });
         }
 
         TxtTraderTotal.Text = FormatPrice(hideout.TotalTraderValue);
-        TxtFleaTotal.Text   = FormatPrice(hideout.TotalFleaValue);
-        TxtBestTotal.Text   = FormatPrice(hideout.TotalBestValue);
+        TxtFleaTotal.Text = FormatPrice(hideout.TotalFleaValue);
+        TxtBestTotal.Text = FormatPrice(hideout.TotalBestValue);
         if (_isGrouped)
             RebuildGrouped();
         _view.Refresh();
@@ -314,10 +314,10 @@ public partial class HideoutStashControl : UserControl
             _areas.Add(new AreaUpgradeView(area));
         }
 
-        var ready       = hideout.Areas.Count(a =>
+        var ready = hideout.Areas.Count(a =>
             a.Status is EAreaStatus.ReadyToUpgrade or EAreaStatus.ReadyToConstruct);
         var upgradeable = hideout.Areas.Count(a => !a.IsMaxLevel);
-        var maxed       = hideout.Areas.Count - upgradeable;
+        var maxed = hideout.Areas.Count - upgradeable;
 
         TxtUpgradeCount.Text =
             $"{ready} ready  ·  {upgradeable} upgradeable  ·  {maxed} maxed";
@@ -325,12 +325,12 @@ public partial class HideoutStashControl : UserControl
 
     private static int GetStatusPriority(EAreaStatus s) => s switch
     {
-        EAreaStatus.ReadyToUpgrade or EAreaStatus.ReadyToConstruct                  => 0,
-        EAreaStatus.ReadyToInstallUpgrade or EAreaStatus.ReadyToInstallConstruct    => 1,
-        EAreaStatus.Upgrading or EAreaStatus.Constructing                           => 2,
-        EAreaStatus.AutoUpgrading                                                   => 3,
-        EAreaStatus.LockedToUpgrade or EAreaStatus.LockedToConstruct                => 4,
-        _                                                                           => 5
+        EAreaStatus.ReadyToUpgrade or EAreaStatus.ReadyToConstruct => 0,
+        EAreaStatus.ReadyToInstallUpgrade or EAreaStatus.ReadyToInstallConstruct => 1,
+        EAreaStatus.Upgrading or EAreaStatus.Constructing => 2,
+        EAreaStatus.AutoUpgrading => 3,
+        EAreaStatus.LockedToUpgrade or EAreaStatus.LockedToConstruct => 4,
+        _ => 5
     };
 
     // ── Helpers ──────────────────────────────────────────────────────────
@@ -338,8 +338,8 @@ public partial class HideoutStashControl : UserControl
     private static string FormatPrice(long price) => price switch
     {
         >= 1_000_000 => $"{price / 1_000_000.0:0.##}M ₽",
-        >= 1_000     => $"{price / 1_000.0:0}K ₽",
-        _            => $"{price} ₽",
+        >= 1_000 => $"{price / 1_000.0:0}K ₽",
+        _ => $"{price} ₽",
     };
 
     // ── Close ────────────────────────────────────────────────────────────
@@ -369,8 +369,8 @@ public partial class HideoutStashControl : UserControl
         BringToFrontRequested?.Invoke(this, EventArgs.Empty);
         DragHandle.CaptureMouse();
         _dragStart = e.GetPosition(this);
-        DragHandle.MouseMove          += DragHandle_MouseMove;
-        DragHandle.MouseLeftButtonUp  += DragHandle_MouseLeftButtonUp;
+        DragHandle.MouseMove += DragHandle_MouseMove;
+        DragHandle.MouseLeftButtonUp += DragHandle_MouseLeftButtonUp;
     }
 
     private void DragHandle_MouseMove(object sender, MouseEventArgs e)
@@ -385,7 +385,7 @@ public partial class HideoutStashControl : UserControl
     private void DragHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         DragHandle.ReleaseMouseCapture();
-        DragHandle.MouseMove         -= DragHandle_MouseMove;
+        DragHandle.MouseMove -= DragHandle_MouseMove;
         DragHandle.MouseLeftButtonUp -= DragHandle_MouseLeftButtonUp;
     }
 
@@ -395,7 +395,7 @@ public partial class HideoutStashControl : UserControl
     {
         ((UIElement)sender).CaptureMouse();
         _dragStart = e.GetPosition(this);
-        ((UIElement)sender).MouseMove         += ResizeHandle_MouseMove;
+        ((UIElement)sender).MouseMove += ResizeHandle_MouseMove;
         ((UIElement)sender).MouseLeftButtonUp += ResizeHandle_MouseLeftButtonUp;
     }
 
@@ -403,7 +403,7 @@ public partial class HideoutStashControl : UserControl
     {
         if (e.LeftButton == MouseButtonState.Pressed)
         {
-            var pos   = e.GetPosition(this);
+            var pos = e.GetPosition(this);
             var delta = pos - _dragStart;
             ResizeRequested?.Invoke(this, new PanelResizeEventArgs(delta.X, delta.Y));
             _dragStart = pos;
@@ -412,7 +412,7 @@ public partial class HideoutStashControl : UserControl
 
     private void ResizeHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        ((UIElement)sender).MouseMove         -= ResizeHandle_MouseMove;
+        ((UIElement)sender).MouseMove -= ResizeHandle_MouseMove;
         ((UIElement)sender).MouseLeftButtonUp -= ResizeHandle_MouseLeftButtonUp;
         ((UIElement)sender).ReleaseMouseCapture();
     }

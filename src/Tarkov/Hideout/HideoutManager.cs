@@ -18,34 +18,34 @@ namespace eft_dma_radar.Tarkov.Hideout
     /// </summary>
     public enum EAreaType
     {
-        Vents                = 0,
-        Security             = 1,
-        WaterCloset          = 2,
-        Stash                = 3,
-        Generator            = 4,
-        Heating              = 5,
-        WaterCollector       = 6,
-        MedStation           = 7,
-        Kitchen              = 8,
-        RestSpace            = 9,
-        Workbench            = 10,
-        IntelligenceCenter   = 11,
-        ShootingRange        = 12,
-        Library              = 13,
-        ScavCase             = 14,
-        Illumination         = 15,
-        PlaceOfFame          = 16,
-        AirFilteringUnit     = 17,
-        SolarPower           = 18,
-        BoozeGenerator       = 19,
-        BitcoinFarm          = 20,
-        ChristmasIllumination= 21,
-        EmergencyWall        = 22,
-        Gym                  = 23,
-        WeaponStand          = 24,
+        Vents = 0,
+        Security = 1,
+        WaterCloset = 2,
+        Stash = 3,
+        Generator = 4,
+        Heating = 5,
+        WaterCollector = 6,
+        MedStation = 7,
+        Kitchen = 8,
+        RestSpace = 9,
+        Workbench = 10,
+        IntelligenceCenter = 11,
+        ShootingRange = 12,
+        Library = 13,
+        ScavCase = 14,
+        Illumination = 15,
+        PlaceOfFame = 16,
+        AirFilteringUnit = 17,
+        SolarPower = 18,
+        BoozeGenerator = 19,
+        BitcoinFarm = 20,
+        ChristmasIllumination = 21,
+        EmergencyWall = 22,
+        Gym = 23,
+        WeaponStand = 24,
         WeaponStandSecondary = 25,
-        EquipmentPresetsStand= 26,
-        CircleOfCultists     = 27,
+        EquipmentPresetsStand = 26,
+        CircleOfCultists = 27,
     }
 
     /// <summary>
@@ -53,17 +53,17 @@ namespace eft_dma_radar.Tarkov.Hideout
     /// </summary>
     public enum EAreaStatus
     {
-        NotSet                  = 0,
-        LockedToConstruct       = 1,
-        ReadyToConstruct        = 2,
-        Constructing            = 3,
+        NotSet = 0,
+        LockedToConstruct = 1,
+        ReadyToConstruct = 2,
+        Constructing = 3,
         ReadyToInstallConstruct = 4,
-        LockedToUpgrade         = 5,
-        ReadyToUpgrade          = 6,
-        Upgrading               = 7,
-        ReadyToInstallUpgrade   = 8,
-        NoFutureUpgrades        = 9,
-        AutoUpgrading           = 10,
+        LockedToUpgrade = 5,
+        ReadyToUpgrade = 6,
+        Upgrading = 7,
+        ReadyToInstallUpgrade = 8,
+        NoFutureUpgrades = 9,
+        AutoUpgrading = 10,
     }
 
     /// <summary>
@@ -71,17 +71,17 @@ namespace eft_dma_radar.Tarkov.Hideout
     /// </summary>
     public enum ERequirementType
     {
-        Area           = 0,
-        Item           = 1,
-        TraderUnlock   = 2,
-        TraderLoyalty  = 3,
-        Skill          = 4,
-        Resource       = 5,
-        Tool           = 6,
-        QuestComplete  = 7,
-        Health         = 8,
-        BodyPartBuff   = 9,
-        GameVersion    = 10,
+        Area = 0,
+        Item = 1,
+        TraderUnlock = 2,
+        TraderLoyalty = 3,
+        Skill = 4,
+        Resource = 5,
+        Tool = 6,
+        QuestComplete = 7,
+        Health = 8,
+        BodyPartBuff = 9,
+        GameVersion = 10,
     }
 
     /// <summary>
@@ -90,29 +90,29 @@ namespace eft_dma_radar.Tarkov.Hideout
     /// </summary>
     public sealed record HideoutRequirement(
         ERequirementType Type,
-        bool             Fulfilled,
+        bool Fulfilled,
         /// <summary>Item BSG template id (only when <see cref="Type"/> is Item or Tool).</summary>
-        string           ItemTemplateId  = null,
+        string ItemTemplateId = null,
         /// <summary>Resolved item name from market data (only when <see cref="Type"/> is Item or Tool).</summary>
-        string           ItemName        = null,
+        string ItemName = null,
         /// <summary>Number of items required (only when <see cref="Type"/> is Item or Tool).</summary>
-        int              RequiredCount   = 0,
+        int RequiredCount = 0,
         /// <summary>Number of matching items the player currently has in stash (only when <see cref="Type"/> is Item or Tool).</summary>
-        int              CurrentCount    = 0,
+        int CurrentCount = 0,
         /// <summary>Required area type (only when <see cref="Type"/> is Area).</summary>
-        EAreaType        RequiredArea    = default,
+        EAreaType RequiredArea = default,
         /// <summary>Required area level (only when <see cref="Type"/> is Area).</summary>
-        int              RequiredLevel   = 0,
+        int RequiredLevel = 0,
         /// <summary>Skill name, e.g. "Strength" (only when <see cref="Type"/> is Skill).</summary>
-        string           SkillName       = null,
+        string SkillName = null,
         /// <summary>Required skill level (only when <see cref="Type"/> is Skill).</summary>
-        int              SkillLevel      = 0,
+        int SkillLevel = 0,
         /// <summary>Trader BSG id (only when <see cref="Type"/> is TraderLoyalty).</summary>
-        string           TraderId        = null,
+        string TraderId = null,
         /// <summary>Resolved trader display name (only when <see cref="Type"/> is TraderLoyalty).</summary>
-        string           TraderName      = null,
+        string TraderName = null,
         /// <summary>Required loyalty level (only when <see cref="Type"/> is TraderLoyalty).</summary>
-        int              LoyaltyLevel    = 0)
+        int LoyaltyLevel = 0)
     {
         /// <summary>How many more items are still needed (only meaningful for Item/Tool).</summary>
         public int StillNeeded => Math.Max(0, RequiredCount - CurrentCount);
@@ -122,9 +122,9 @@ namespace eft_dma_radar.Tarkov.Hideout
     /// Current level snapshot for one hideout area read from memory.
     /// </summary>
     public sealed record HideoutAreaInfo(
-        EAreaType                         AreaType,
-        int                               CurrentLevel,
-        EAreaStatus                       Status,
+        EAreaType AreaType,
+        int CurrentLevel,
+        EAreaStatus Status,
         IReadOnlyList<HideoutRequirement> NextLevelRequirements)
     {
         /// <summary>True when the area has no further upgrades available.</summary>
@@ -137,13 +137,13 @@ namespace eft_dma_radar.Tarkov.Hideout
     public sealed record StashItem(
         string Id,
         string Name,
-        long   TraderPrice,
+        long TraderPrice,
         string BestTraderName,
-        long   FleaPrice,
-        int    StackCount)
+        long FleaPrice,
+        int StackCount)
     {
         /// <summary>Best sell value for this stack (max of trader vs flea × stack count).</summary>
-        public long BestPrice  => Math.Max(TraderPrice, FleaPrice) * StackCount;
+        public long BestPrice => Math.Max(TraderPrice, FleaPrice) * StackCount;
         /// <summary>True when flea beats trader for this item.</summary>
         public bool SellOnFlea => FleaPrice > TraderPrice;
     }
@@ -155,35 +155,35 @@ namespace eft_dma_radar.Tarkov.Hideout
     /// </summary>
     public sealed class HideoutManager
     {
-        private const string HideoutAreaClassName       = "HideoutArea";
-        private const string HideoutControllerClassName  = "HideoutController";
+        private const string HideoutAreaClassName = "HideoutArea";
+        private const string HideoutControllerClassName = "HideoutController";
 
         // ── Stash pointer-chain ───────────────────────────────────────────────────────────
         // HideoutArea(+0xA8) → HideoutAreaStashController(+0x10)
         //   → OfflineInventoryController(+0x100) → Inventory(+0x20) → Grid[](+0x78)
         private const uint OffStashCtrl = 0xA8;  // HideoutArea.<StashController>
-        private const uint OffInvCtrl   = 0x10;  // HideoutAreaStashController → OfflineInventoryController
+        private const uint OffInvCtrl = 0x10;  // HideoutAreaStashController → OfflineInventoryController
         private const uint OffInventory = 0x100; // OfflineInventoryController._Inventory
-        private const uint OffStash     = 0x20;  // Inventory.Stash (CompoundItem)
-        private const uint OffGrids     = 0x78;  // CompoundItem.Grids (Grid[])
+        private const uint OffStash = 0x20;  // Inventory.Stash (CompoundItem)
+        private const uint OffGrids = 0x78;  // CompoundItem.Grids (Grid[])
 
         // ── HideoutController._areas Dictionary<EAreaType, HideoutArea> ──────────────────
-        private const uint  OffAreas       = 0x80; // HideoutController._areas
-        private const uint  DictCountOff   = 0x20; // Dictionary.count
-        private const uint  DictEntriesOff = 0x18; // Dictionary.entries (Entry[])
-        private const ulong DictDataOff    = 0x20; // Entry[] data start
-        private const int   DictEntrySize  = 24;   // sizeof(Entry<int,ulong>)
-        private const uint  DictValueOff   = 16;   // Entry.value offset
+        private const uint OffAreas = 0x80; // HideoutController._areas
+        private const uint DictCountOff = 0x20; // Dictionary.count
+        private const uint DictEntriesOff = 0x18; // Dictionary.entries (Entry[])
+        private const ulong DictDataOff = 0x20; // Entry[] data start
+        private const int DictEntrySize = 24;   // sizeof(Entry<int,ulong>)
+        private const uint DictValueOff = 16;   // Entry.value offset
 
         // ── HideoutArea fields ────────────────────────────────────────────────────────────
-        private const uint OffAreaData    = 0x70; // HideoutArea._data (AreaData)
-        private const uint OffAreaLevels  = 0x48; // HideoutArea._areaLevels (HideoutAreaLevel[])
+        private const uint OffAreaData = 0x70; // HideoutArea._data (AreaData)
+        private const uint OffAreaLevels = 0x48; // HideoutArea._areaLevels (HideoutAreaLevel[])
         // HideoutArea._currentLevel (+0x78) is the CURRENT built level — NOT the next one.
         // Do NOT use it for requirement lookups; always index _areaLevels[currentLevel + 1].
 
         // ── AreaData fields ───────────────────────────────────────────────────────────────
         private const uint OffCurLevel = 0xA8; // AreaData._currentLevel (int)
-        private const uint OffStatus   = 0xC8; // AreaData._status (EAreaStatus, int)
+        private const uint OffStatus = 0xC8; // AreaData._status (EAreaStatus, int)
 
         // ── HideoutAreaLevel._stage ───────────────────────────────────────────────────────
         // SerializedMonoBehaviour user fields start at 0x60; _stage is at 0xA0
@@ -236,13 +236,13 @@ namespace eft_dma_radar.Tarkov.Hideout
         public FrozenDictionary<string, int> NeededItemCounts { get; private set; } = FrozenDictionary<string, int>.Empty;
 
         /// <summary>Sum of the best sell price (trader vs flea) for every item in the stash.</summary>
-        public long TotalBestValue   => Items.Sum(i => i.BestPrice);
+        public long TotalBestValue => Items.Sum(i => i.BestPrice);
         /// <summary>Sum of trader prices for every item in the stash.</summary>
         public long TotalTraderValue => Items.Sum(i => i.TraderPrice * i.StackCount);
         /// <summary>Sum of flea prices for every item in the stash.</summary>
-        public long TotalFleaValue   => Items.Sum(i => i.FleaPrice   * i.StackCount);
+        public long TotalFleaValue => Items.Sum(i => i.FleaPrice * i.StackCount);
 
-        public bool IsValid      => Base.IsValidVirtualAddress() && StashGridPtr.IsValidVirtualAddress();
+        public bool IsValid => Base.IsValidVirtualAddress() && StashGridPtr.IsValidVirtualAddress();
         public bool IsAreasValid => AreasControllerBase.IsValidVirtualAddress();
 
         /// <summary>
@@ -265,7 +265,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                 if (!gomAddr.IsValidVirtualAddress())
                     return false;
 
-                var gom     = GameObjectManager.Get(gomAddr);
+                var gom = GameObjectManager.Get(gomAddr);
 
                 var behaviour = gom.FindBehaviourByClassName(HideoutAreaClassName);
                 if (!behaviour.IsValidVirtualAddress())
@@ -278,7 +278,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                     [OffStashCtrl, OffInvCtrl, OffInventory, OffStash, OffGrids]);
                 if (!gridsPtr.IsValidVirtualAddress()) return false;
 
-                Base         = behaviour;
+                Base = behaviour;
                 StashGridPtr = gridsPtr;
 
                 // Also locate HideoutController for area-level reading
@@ -378,7 +378,7 @@ namespace eft_dma_radar.Tarkov.Hideout
 
                 // ── Round 3 – per-entry: areaType + areaPtr ───────────────────────────────
                 var areaTypes = new int[count];
-                var areaPtrs  = new ulong[count];
+                var areaPtrs = new ulong[count];
                 using (var r3 = ScatterReadRound.Get(false))
                 {
                     for (int i = 0; i < count; i++)
@@ -398,7 +398,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                 // ── Round 4 – per-area: dataPtr + arrayPtr (_areaLevels) [merged R4+R6] ───
                 // Both fields live on areaPtrs[i] and neither depends on the other,
                 // so they are read in a single DMA round, saving one full round-trip.
-                var dataPtrs  = new ulong[count];
+                var dataPtrs = new ulong[count];
                 var arrayPtrs = new ulong[count];
                 using (var r4 = ScatterReadRound.Get(false))
                 {
@@ -417,7 +417,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                 }
 
                 // ── Round 5 – per-area: level + status ────────────────────────────────────
-                var levels   = new int[count];
+                var levels = new int[count];
                 var statuses = new int[count];
                 using (var r5 = ScatterReadRound.Get(false))
                 {
@@ -443,7 +443,7 @@ namespace eft_dma_radar.Tarkov.Hideout
 
                 // ── Round 6 – arrayCount + levelObjPtr per upgradeable area ───────────────
                 // (arrayPtrs already populated in Round 4 for all areas)
-                var arrayCounts  = new int[count];
+                var arrayCounts = new int[count];
                 var levelObjPtrs = new ulong[count];
                 using (var r6 = ScatterReadRound.Get(false))
                 {
@@ -497,7 +497,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                 }
 
                 // ── Round 8 – reqCount + itemsArrPtr per area ──────────────────────────────
-                var reqCounts    = new int[count];
+                var reqCounts = new int[count];
                 var itemsArrPtrs = new ulong[count];
                 using (var r11 = ScatterReadRound.Get(false))
                 {
@@ -526,10 +526,10 @@ namespace eft_dma_radar.Tarkov.Hideout
                 }
 
                 int flat = flatMap.Count;
-                var reqPtrs    = new ulong[flat];
-                var fulfilled  = new bool[flat];
+                var reqPtrs = new ulong[flat];
+                var fulfilled = new bool[flat];
                 var vtablePtrs = new ulong[flat];
-                var namePtrs   = new ulong[flat];
+                var namePtrs = new ulong[flat];
 
                 // ── Round 9 – reqPtr per flat requirement ──────────────────────────────────────
                 using (var r9 = ScatterReadRound.Get(false))
@@ -537,7 +537,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                     for (int k = 0; k < flat; k++)
                     {
                         var (ai, slot) = flatMap[k];
-                        var dataStart  = itemsArrPtrs[ai] + MemList<ulong>.ArrStartOffset;
+                        var dataStart = itemsArrPtrs[ai] + MemList<ulong>.ArrStartOffset;
                         r9[0].AddEntry<ulong>(k, dataStart + (ulong)(slot * (int)UnityOffsets.ManagedArray.ElementSize));
                     }
                     r9.Run();
@@ -587,13 +587,13 @@ namespace eft_dma_radar.Tarkov.Hideout
                 // r[4] = reqLevel  @ 0x3C (int: Area requirement)
                 // r[5] = skillName @ 0x38 (ptr: Skill)
                 // r[6] = skillLevel / loyaltyLevel @ 0x40 (int)
-                var field48Ptrs   = new ulong[flat];
-                var baseCounts    = new int[flat];
-                var userCounts    = new int[flat];
-                var areaTypeVals  = new int[flat];
-                var reqLevels     = new int[flat];
+                var field48Ptrs = new ulong[flat];
+                var baseCounts = new int[flat];
+                var userCounts = new int[flat];
+                var areaTypeVals = new int[flat];
+                var reqLevels = new int[flat];
                 var skillNamePtrs = new ulong[flat];
-                var intAt40       = new int[flat];
+                var intAt40 = new int[flat];
 
                 using (var r12 = ScatterReadRound.Get(false))
                 {
@@ -643,7 +643,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                 // r[1] = skillName at ptr + 0x14
                 const int StringCB = 128;
                 var tplOrTraderIds = new string[flat];
-                var skillNames     = new string[flat];
+                var skillNames = new string[flat];
 
                 using (var r13 = ScatterReadRound.Get(false))
                 {
@@ -669,7 +669,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                     for (int k = 0; k < flat; k++)
                     {
                         if (r13[0].TryGetResult<UnicodeString>(k, out var s0)) tplOrTraderIds[k] = s0;
-                        if (r13[1].TryGetResult<UnicodeString>(k, out var s1)) skillNames[k]     = s1;
+                        if (r13[1].TryGetResult<UnicodeString>(k, out var s1)) skillNames[k] = s1;
                     }
                 }
 
@@ -712,7 +712,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                     }
                     else if (cn.Contains("Loyalty", StringComparison.OrdinalIgnoreCase))
                     {
-                        string traderId   = tplOrTraderIds[k];
+                        string traderId = tplOrTraderIds[k];
                         string traderName = null;
                         if (traderId is not null)
                             EftDataManager.AllTraders.TryGetValue(traderId, out traderName);
@@ -792,9 +792,9 @@ namespace eft_dma_radar.Tarkov.Hideout
                 itemName = entry.ShortName;
             return new HideoutRequirement(type, fulfilled,
                 ItemTemplateId: tplId,
-                ItemName:       itemName,
-                RequiredCount:  required,
-                CurrentCount:   current);
+                ItemName: itemName,
+                RequiredCount: required,
+                CurrentCount: current);
         }
 
         /// <summary>Formats the subtype-specific fields of a requirement for debug logging.</summary>
@@ -871,7 +871,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                 try
                 {
                     var containedItems = Memory.ReadPtr(grid + Grids.ContainedItems);
-                    var itemListPtr    = Memory.ReadPtr(containedItems + GridContainedItems.Items);
+                    var itemListPtr = Memory.ReadPtr(containedItems + GridContainedItems.Items);
                     using var itemList = MemList<ulong>.Get(itemListPtr);
 
                     int itemCount = itemList.Count;
@@ -892,8 +892,8 @@ namespace eft_dma_radar.Tarkov.Hideout
                     // r[0] = MongoID (value type, reads struct at templatePtr + ItemTemplate._id)
                     // r[1] = stackCount (int at item + StackObjectsCount)
                     // r[2] = childGridsPtr (ulong at item + LootItemMod.Grids)
-                    var mongoIds       = new SDK.Types.MongoID[itemCount];
-                    var stackCounts    = new int[itemCount];
+                    var mongoIds = new SDK.Types.MongoID[itemCount];
+                    var stackCounts = new int[itemCount];
                     var childGridsPtrs = new ulong[itemCount];
                     using (var rB = ScatterReadRound.Get(false))
                     {
@@ -939,12 +939,12 @@ namespace eft_dma_radar.Tarkov.Hideout
                             if (EftDataManager.AllItems.TryGetValue(id, out var entry))
                             {
                                 results.Add(new StashItem(
-                                    Id:             entry.BsgId,
-                                    Name:           entry.Name,
-                                    TraderPrice:    entry.TraderPrice,
+                                    Id: entry.BsgId,
+                                    Name: entry.Name,
+                                    TraderPrice: entry.TraderPrice,
                                     BestTraderName: entry.BestTraderName,
-                                    FleaPrice:      entry.FleaPrice,
-                                    StackCount:     Math.Max(1, stackCounts[k])));
+                                    FleaPrice: entry.FleaPrice,
+                                    StackCount: Math.Max(1, stackCounts[k])));
                             }
 
                             // Recurse into nested containers (bags, cases, etc.)
@@ -962,13 +962,13 @@ namespace eft_dma_radar.Tarkov.Hideout
         /// </summary>
         public void Reset()
         {
-            Base                = 0;
-            StashGridPtr        = 0;
+            Base = 0;
+            StashGridPtr = 0;
             AreasControllerBase = 0;
-            Items               = [];
-            Areas               = [];
-            NeededItemIds       = FrozenSet<string>.Empty;
-            NeededItemCounts    = FrozenDictionary<string, int>.Empty;
+            Items = [];
+            Areas = [];
+            NeededItemIds = FrozenSet<string>.Empty;
+            NeededItemCounts = FrozenDictionary<string, int>.Empty;
         }
 
         /// <summary>
@@ -988,13 +988,13 @@ namespace eft_dma_radar.Tarkov.Hideout
                         return;
                     }
 
-                    var gom     = GameObjectManager.Get(gomAddr);
+                    var gom = GameObjectManager.Get(gomAddr);
 
-                    var sb    = new System.Text.StringBuilder();
+                    var sb = new System.Text.StringBuilder();
                     int goIdx = 0;
 
                     var current = Memory.ReadValue<LinkedListObject>(gom.ActiveNodes);
-                    var last    = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
+                    var last = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
 
                     sb.AppendLine("[GOM Dump] ============================================================");
 

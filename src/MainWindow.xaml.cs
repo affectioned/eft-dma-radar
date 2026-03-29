@@ -71,12 +71,12 @@ namespace eft_dma_radar
         private Vector2 _mapPanPosition;
 
         private const float ZOOM_TO_MOUSE_STRENGTH = 5f; // Controls how much zoom moves toward mouse cursor
-                                                           // 0.0 = Always zoom to center (like old-school map zoom)
-                                                           // 0.5 = Zoom halfway toward mouse
-                                                           // 0.7 = Nice balanced feel (recommended)
-                                                           // 1.0 = Mouse stays at same world position
-                                                           // 1.5 = Overshoot toward mouse (aggressive zoom)
-                                                           // 2.0 = Heavy overshoot (might feel too aggressive)
+                                                         // 0.0 = Always zoom to center (like old-school map zoom)
+                                                         // 0.5 = Zoom halfway toward mouse
+                                                         // 0.7 = Nice balanced feel (recommended)
+                                                         // 1.0 = Mouse stays at same world position
+                                                         // 1.5 = Overshoot toward mouse (aggressive zoom)
+                                                         // 2.0 = Heavy overshoot (might feel too aggressive)
 
         private const int ZOOM_STEP = 5; // How much zoom changes per scroll step (1-50 typical range)
 
@@ -359,92 +359,92 @@ namespace eft_dma_radar
         /// </summary>
         private void DrawRadarCanvas(SKCanvas canvas, SKSize canvasSize)
         {
-            var isStarting  = Starting;
-            var isReady     = Ready;
-            var inRaid      = InRaid;
+            var isStarting = Starting;
+            var isReady = Ready;
+            var inRaid = InRaid;
             var localPlayer = LocalPlayer;
 
             try
             {
                 SkiaResourceTracker.TrackMainWindowFrame();
-        
+
                 SetFPS(inRaid, canvas);
-        
+
                 var mapID = MapID;
                 if (string.IsNullOrWhiteSpace(mapID))
                     return;
-        
+
                 if (!mapID.Equals(XMMapManager.Map?.ID, StringComparison.OrdinalIgnoreCase))
                 {
                     XMMapManager.LoadMap(mapID);
                     UpdateSwitches();
                 }
-        
+
                 canvas.Clear(InterfaceColorOptions.RadarBackgroundColor);
-        
+
                 if (inRaid && localPlayer is not null)
                 {
                     var map = XMMapManager.Map;
                     ArgumentNullException.ThrowIfNull(map);
-        
+
                     var closestToMouse = _mouseOverItem;
-        
-                    var localPlayerPos     = localPlayer.Position;
-                    var localPlayerMapPos  = localPlayerPos.ToMapPos(map.Config);
-        
+
+                    var localPlayerPos = localPlayer.Position;
+                    var localPlayerMapPos = localPlayerPos.ToMapPos(map.Config);
+
                     XMMapParams mapParams;
                     if (_freeMode)
                         mapParams = map.GetParameters(canvasSize, _zoom, ref _mapPanPosition);
                     else
                         mapParams = map.GetParameters(canvasSize, _zoom, ref localPlayerMapPos);
-        
+
                     if (GeneralSettingsControl.chkMapSetup.IsChecked == true)
                         MapSetupControl.UpdatePlayerPosition(localPlayer);
-        
+
                     var mapCanvasBounds = new SKRect
                     {
-                        Left   = 0,
-                        Right  = (float)ActiveCanvas.ActualWidth,
-                        Top    = 0,
+                        Left = 0,
+                        Right = (float)ActiveCanvas.ActualWidth,
+                        Top = 0,
                         Bottom = (float)ActiveCanvas.ActualHeight
                     };
-        
+
                     var centerX = (mapCanvasBounds.Left + mapCanvasBounds.Right) / 2;
                     var centerY = (mapCanvasBounds.Top + mapCanvasBounds.Bottom) / 2;
-        
+
                     canvas.RotateDegrees(_rotationDegrees, centerX, centerY);
-        
+
                     map.Draw(canvas, localPlayer.Position.Y, mapParams.Bounds, mapCanvasBounds);
-        
+
                     SKPaints.UpdatePulsingAsteriskColor();
-        
+
                     localPlayer.Draw(canvas, mapParams, localPlayer);
-        
+
                     // -----------------------------
                     // SNAPSHOT ALL COLLECTIONS ONCE
                     // -----------------------------
                     var allPlayersSnapshot = AllPlayers?.ToList();
-                    var lootSnapshot       = Loot?.ToList();
+                    var lootSnapshot = Loot?.ToList();
                     var containersSnapshot = Containers?.ToList();
                     var explosivesSnapshot = Explosives?.ToList();
-                    var exitsSnapshot      = Exits?.ToList();
-                    var switchesSnapshot   = Switches?.ToList();
-                    var doorsSnapshot      = Memory.Game?.Interactables._Doors?.ToList();
-        
+                    var exitsSnapshot = Exits?.ToList();
+                    var switchesSnapshot = Switches?.ToList();
+                    var doorsSnapshot = Memory.Game?.Interactables._Doors?.ToList();
+
                     var allPlayers = allPlayersSnapshot?
                         .Where(x => !x.HasExfild)
                         .ToList();
-        
+
                     var btrs = allPlayers?
                         .OfType<BtrOperator>()
                         .ToList();
-        
+
                     var normalPlayers = allPlayers?
                         .Where(p => p is not BtrOperator)
                         .ToList();
-        
+
                     var battleMode = Config.BattleMode;
-        
+
                     // -----------------------------
                     // GROUP CONNECTORS (BOTTOM)
                     // -----------------------------
@@ -479,7 +479,7 @@ namespace eft_dma_radar
                                     SKPaints.PaintConnectorGroup);
                             }
                         }
-                    }                  
+                    }
                     if (Config.PlayersOnTop && Config.ConnectGroups)
                     {
                         var groupedPlayers = allPlayers?.Where(x => x.IsHumanHostileActive && x.SpawnGroupID != -1);
@@ -505,9 +505,9 @@ namespace eft_dma_radar
                                 }
                             }
                         }
-                    }    
+                    }
 
-        
+
                     // -----------------------------
                     // PLAYERS (BOTTOM)
                     // -----------------------------
@@ -517,17 +517,17 @@ namespace eft_dma_radar
                             .Where(p => p != localPlayer)
                             .OrderBy(p => DrawPriority(p.Type))
                             .ToList();
-        
+
                         foreach (var player in ordered)
                             player.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     if (btrs is not null)
                     {
                         foreach (var btr in btrs)
                             btr.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     // -----------------------------
                     // CONTAINERS
                     // -----------------------------
@@ -539,15 +539,15 @@ namespace eft_dma_radar
                             {
                                 if (!LootSettingsControl.ContainerIsTracked(container.ID ?? "NULL"))
                                     continue;
-        
+
                                 if (Config.Containers.HideSearched && container.Searched)
                                     continue;
-        
+
                                 container.Draw(canvas, mapParams, localPlayer);
                             }
                         }
                     }
-        
+
                     // -----------------------------
                     // LOOT
                     // -----------------------------
@@ -561,20 +561,20 @@ namespace eft_dma_radar
                             .Where(x => x is not QuestItem)
                             .Reverse()
                             .ToList();
-        
+
                         if (loot is not null)
                         {
                             foreach (var item in loot)
                             {
                                 if (!LootItem.CorpseSettings.Enabled && item is LootCorpse)
                                     continue;
-        
+
                                 item.CheckNotify();
                                 item.Draw(canvas, mapParams, localPlayer);
                             }
                         }
                     }
-        
+
                     // -----------------------------
                     // QUEST ITEMS & LOCATIONS
                     // -----------------------------
@@ -585,12 +585,12 @@ namespace eft_dma_radar
                             var questItems = lootSnapshot?
                                 .Where(x => x is QuestItem)
                                 .ToList();
-        
+
                             if (questItems is not null)
                                 foreach (var item in questItems)
                                     item.Draw(canvas, mapParams, localPlayer);
                         }
-        
+
                         if (QuestManager.Settings.Enabled)
                         {
                             var questLocations = Memory.QuestManager?.LocationConditions?.ToList();
@@ -599,29 +599,29 @@ namespace eft_dma_radar
                                     loc.Draw(canvas, mapParams, localPlayer);
                         }
                     }
-        
+
                     // -----------------------------
                     // EXPLOSIVES / EXITS / SWITCHES
                     // -----------------------------
                     if (explosivesSnapshot is not null)
                         foreach (var explosive in explosivesSnapshot)
                             explosive.Draw(canvas, mapParams, localPlayer);
-        
+
                     if (!battleMode && exitsSnapshot is not null)
                     {
                         foreach (var exit in exitsSnapshot)
                         {
                             if (exit is Exfil ex && !localPlayer.IsPmc && ex.Status is Exfil.EStatus.Closed)
                                 continue;
-        
+
                             exit.Draw(canvas, mapParams, localPlayer);
                         }
                     }
-        
+
                     if (!battleMode && Switch.Settings.Enabled && switchesSnapshot is not null)
                         foreach (var sw in switchesSnapshot)
                             sw.Draw(canvas, mapParams, localPlayer);
-        
+
                     // -----------------------------
                     // PLAYERS ON TOP
                     // -----------------------------
@@ -631,11 +631,11 @@ namespace eft_dma_radar
                             .Where(p => p != localPlayer)
                             .OrderBy(p => DrawPriority(p.Type))
                             .ToList();
-        
+
                         foreach (var player in ordered)
                             player.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     closestToMouse?.DrawMouseover(canvas, mapParams, localPlayer);
                     // -----------------------------
                     // DOORS
@@ -644,14 +644,14 @@ namespace eft_dma_radar
                     {
                         foreach (var door in doorsSnapshot)
                             door.Draw(canvas, mapParams, localPlayer);
-                    }          
+                    }
                     // -----------------------------
                     // PINGS
                     // -----------------------------
                     if (_activePings.Count > 0)
                     {
                         var now = DateTime.UtcNow;
-        
+
                         foreach (var ping in _activePings.ToList())
                         {
                             var elapsed = (float)(now - ping.StartTime).TotalSeconds;
@@ -660,37 +660,37 @@ namespace eft_dma_radar
                                 _activePings.Remove(ping);
                                 continue;
                             }
-        
+
                             float progress = elapsed / ping.DurationSeconds;
-                            float radius   = 10 + 50 * progress;
-                            float alpha    = 1f - progress;
-        
+                            float radius = 10 + 50 * progress;
+                            float alpha = 1f - progress;
+
                             var center = ping.Position.ToMapPos(map.Config).ToZoomedPos(mapParams);
-        
+
                             using var paint = new SKPaint
                             {
-                                Style        = SKPaintStyle.Stroke,
-                                StrokeWidth  = 4,
-                                Color        = new SKColor(0, 255, 255, (byte)(alpha * 255)),
-                                IsAntialias  = true
+                                Style = SKPaintStyle.Stroke,
+                                StrokeWidth = 4,
+                                Color = new SKColor(0, 255, 255, (byte)(alpha * 255)),
+                                IsAntialias = true
                             };
-        
+
                             canvas.DrawCircle(center.X, center.Y, radius, paint);
                         }
                     }
-        
+
                     if (allPlayers is not null && Config.ShowInfoTab)
                         _playerInfo?.Draw(canvas, localPlayer, allPlayers);
-        
+
                     if (Config.AimviewWidgetEnabled)
                         _aimview?.Draw(canvas);
-        
+
                     if (Config.ShowDebugWidget)
                         _debugInfo?.Draw(canvas);
-        
+
                     if (Config.ShowLootInfoWidget)
                         _lootInfo?.Draw(canvas, UnfilteredLoot);
-        
+
                     if (Config.ShowQuestInfoWidget)
                         _questInfo?.Draw(canvas);
 
@@ -705,7 +705,7 @@ namespace eft_dma_radar
                     else if (!inRaid)
                         WaitingForRaidStatus(canvas);
                 }
-        
+
                 SetStatusText(canvas);
                 canvas.Flush();
             }
@@ -720,10 +720,10 @@ namespace eft_dma_radar
             PlayerType.SpecialPlayer => 7,
             PlayerType.USEC or PlayerType.BEAR => 5,
             PlayerType.PScav => 4,
-            PlayerType.AIBoss=> 3,
+            PlayerType.AIBoss => 3,
             PlayerType.AIRaider => 2,
-            _                 => 1
-            
+            _ => 1
+
         };
         public static void PingItem(string itemName)
         {
@@ -910,7 +910,7 @@ namespace eft_dma_radar
             int zoomChange = e.Delta > 0 ? -ZOOM_STEP : ZOOM_STEP;
             var newZoom = Math.Max(1, Math.Min(200, _zoom + zoomChange));
 
-            if (newZoom == _zoom) 
+            if (newZoom == _zoom)
                 return;
 
             if (_freeMode && zoomChange < 0)
@@ -1041,7 +1041,7 @@ namespace eft_dma_radar
                 var aimEnabled = Aimbot.Config.Enabled;
                 var mode = Aimbot.Config.TargetingMode;
                 string? label = null;
-                
+
                 if (memWritesEnabled && Config.MemWrites.RageMode)
                     label = MemWriteFeature<Aimbot>.Instance.Enabled ? $"{mode.GetDescription()}: RAGE MODE" : "RAGE MODE";
 
@@ -1964,7 +1964,8 @@ namespace eft_dma_radar
 
         private void OnAllPanelsReady(object? sender, EventArgs e)
         {
-            Dispatcher.Invoke(() => {
+            Dispatcher.Invoke(() =>
+            {
                 InitializeToolbar();
                 InitializePanelsCollection();
 
@@ -1984,7 +1985,8 @@ namespace eft_dma_radar
                 RestorePanelPositions();
                 AttachPanelEvents();
 
-                Dispatcher.BeginInvoke(new Action(() => {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
                     ValidateAndFixImportedToolbarPosition();
                     ValidateAndFixImportedPanelPositions();
                     EnsureAllPanelsInBounds();
@@ -2040,54 +2042,54 @@ namespace eft_dma_radar
                 bool needsSave = false;
 
                 if (_panels != null)
-                foreach (var panelKey in _panels.Keys)
-                {
-                    var propInfo = typeof(PanelPositionsConfig).GetProperty(panelKey);
-                    if (propInfo?.GetValue(Config.PanelPositions) is PanelPositionConfig posConfig)
+                    foreach (var panelKey in _panels.Keys)
                     {
-                        var originalLeft = posConfig.Left;
-                        var originalTop = posConfig.Top;
-                        var originalWidth = posConfig.Width;
-                        var originalHeight = posConfig.Height;
-
-                        var minWidth = GetMinimumPanelWidth(_panels![panelKey].Panel);
-                        var minHeight = GetMinimumPanelHeight(_panels![panelKey].Panel);
-
-                        if (posConfig.Width < minWidth)
+                        var propInfo = typeof(PanelPositionsConfig).GetProperty(panelKey);
+                        if (propInfo?.GetValue(Config.PanelPositions) is PanelPositionConfig posConfig)
                         {
-                            posConfig.Width = minWidth;
-                            needsSave = true;
-                        }
+                            var originalLeft = posConfig.Left;
+                            var originalTop = posConfig.Top;
+                            var originalWidth = posConfig.Width;
+                            var originalHeight = posConfig.Height;
 
-                        if (posConfig.Height < minHeight)
-                        {
-                            posConfig.Height = minHeight;
-                            needsSave = true;
-                        }
+                            var minWidth = GetMinimumPanelWidth(_panels![panelKey].Panel);
+                            var minHeight = GetMinimumPanelHeight(_panels![panelKey].Panel);
 
-                        var maxLeft = windowWidth - posConfig.Width - 10;
-                        var maxTop = windowHeight - posConfig.Height - 10;
+                            if (posConfig.Width < minWidth)
+                            {
+                                posConfig.Width = minWidth;
+                                needsSave = true;
+                            }
 
-                        if (posConfig.Left < 0 || posConfig.Left > maxLeft)
-                        {
-                            posConfig.Left = Math.Max(10, Math.Min(posConfig.Left, maxLeft));
-                            needsSave = true;
-                        }
+                            if (posConfig.Height < minHeight)
+                            {
+                                posConfig.Height = minHeight;
+                                needsSave = true;
+                            }
 
-                        if (posConfig.Top < 0 || posConfig.Top > maxTop)
-                        {
-                            posConfig.Top = Math.Max(10, Math.Min(posConfig.Top, maxTop));
-                            needsSave = true;
-                        }
+                            var maxLeft = windowWidth - posConfig.Width - 10;
+                            var maxTop = windowHeight - posConfig.Height - 10;
 
-                        if (needsSave)
-                        {
-                            XMLogging.WriteLine($"[PANELS] Fixed imported position for {panelKey}: " +
-                                $"({originalLeft},{originalTop},{originalWidth},{originalHeight}) -> " +
-                                $"({posConfig.Left},{posConfig.Top},{posConfig.Width},{posConfig.Height})");
+                            if (posConfig.Left < 0 || posConfig.Left > maxLeft)
+                            {
+                                posConfig.Left = Math.Max(10, Math.Min(posConfig.Left, maxLeft));
+                                needsSave = true;
+                            }
+
+                            if (posConfig.Top < 0 || posConfig.Top > maxTop)
+                            {
+                                posConfig.Top = Math.Max(10, Math.Min(posConfig.Top, maxTop));
+                                needsSave = true;
+                            }
+
+                            if (needsSave)
+                            {
+                                XMLogging.WriteLine($"[PANELS] Fixed imported position for {panelKey}: " +
+                                    $"({originalLeft},{originalTop},{originalWidth},{originalHeight}) -> " +
+                                    $"({posConfig.Left},{posConfig.Top},{posConfig.Width},{posConfig.Height})");
+                            }
                         }
                     }
-                }
 
                 if (needsSave)
                 {
@@ -2281,7 +2283,8 @@ namespace eft_dma_radar
 
         private void AttachPreviewMouseDown(FrameworkElement panel, Canvas canvas)
         {
-            panel.PreviewMouseDown += (s, e) => {
+            panel.PreviewMouseDown += (s, e) =>
+            {
                 BringPanelToFront(canvas);
             };
         }
@@ -2445,10 +2448,10 @@ namespace eft_dma_radar
 
             MapSetupControl.DragRequested += sharedDragHandler;
             MapSetupControl.CloseRequested += sharedCloseHandler;
-            
-            SettingsSearchControl.DragRequested   += sharedDragHandler;
+
+            SettingsSearchControl.DragRequested += sharedDragHandler;
             SettingsSearchControl.ResizeRequested += sharedResizeHandler;
-            SettingsSearchControl.CloseRequested  += sharedCloseHandler;
+            SettingsSearchControl.CloseRequested += sharedCloseHandler;
 
             QuestPlannerControl.DragRequested += sharedDragHandler;
             QuestPlannerControl.ResizeRequested += sharedResizeHandler;
@@ -2614,7 +2617,7 @@ namespace eft_dma_radar
             if (e.Key == Key.Delete)
             {
                 LootFilterControl.HandleDeleteKey();
-                e.Handled = true; 
+                e.Handled = true;
             }
         }
         #endregion

@@ -84,8 +84,8 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 
         public override void OnRaidStart()
         {
-            _set = default;    
-        }         
+            _set = default;
+        }
 
         public enum EWideLeanDirection
         {

@@ -81,19 +81,19 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             if (IsPmc)
             {
                 try
-            {
-                var entryPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.EntryPoint);
-                EntryPoint = Memory.ReadUnityString(entryPtr);
+                {
+                    var entryPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.EntryPoint);
+                    EntryPoint = Memory.ReadUnityString(entryPtr);
                 }
                 catch { }
             }
             else if (IsScav)
             {
                 try
-            {
-                var profileIdPtr = Memory.ReadPtr(this.Profile + Offsets.Profile.Id);
-                ProfileId = Memory.ReadUnityString(profileIdPtr);
-            }
+                {
+                    var profileIdPtr = Memory.ReadPtr(this.Profile + Offsets.Profile.Id);
+                    ProfileId = Memory.ReadUnityString(profileIdPtr);
+                }
                 catch { }
             }
 
@@ -125,7 +125,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 _energyPtr = Memory.ReadPtr(_healthController + Offsets.HealthController.Energy, false);
                 _hydrationPtr = Memory.ReadPtr(_healthController + Offsets.HealthController.Hydration, false);
-                
+
                 if (_energyPtr.IsValidVirtualAddress() && _hydrationPtr.IsValidVirtualAddress())
                 {
                     LoggingEnhancements.Log(AppLogLevel.Debug, $"Health pointers initialized: Energy=0x{_energyPtr:X}, Hydration=0x{_hydrationPtr:X}", "LocalPlayer");

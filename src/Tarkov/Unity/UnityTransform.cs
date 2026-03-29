@@ -360,6 +360,6 @@ namespace eft_dma_radar.Common.Unity
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(this Quaternion q) =>
             float.IsFinite(q.X) && float.IsFinite(q.Y) &&
-            float.IsFinite(q.Z) && float.IsFinite(q.W);        
+            float.IsFinite(q.Z) && float.IsFinite(q.W);
     }
 }

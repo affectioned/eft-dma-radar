@@ -71,7 +71,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             lock (_lock)
             {
                 highWater = _highWaterStage;
-                elapsed   = _totalSw.Elapsed.TotalSeconds;
+                elapsed = _totalSw.Elapsed.TotalSeconds;
             }
 
             if (highWater != Enums.EMatchingStage.None)
@@ -95,8 +95,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             bool wasRunning;
             lock (_lock)
             {
-                highWater  = _highWaterStage;
-                elapsed    = _totalSw.Elapsed.TotalSeconds;
+                highWater = _highWaterStage;
+                elapsed = _totalSw.Elapsed.TotalSeconds;
                 wasRunning = _totalSw.IsRunning;
             }
 
@@ -114,17 +114,17 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             lock (_lock)
             {
                 _cachedMatchingProgress = 0;
-                _cachedViewObjectClass  = 0;
-                _cachedStage            = Enums.EMatchingStage.None;
-                _prevStage              = Enums.EMatchingStage.None;
-                _highWaterStage         = Enums.EMatchingStage.None;
+                _cachedViewObjectClass = 0;
+                _cachedStage = Enums.EMatchingStage.None;
+                _prevStage = Enums.EMatchingStage.None;
+                _highWaterStage = Enums.EMatchingStage.None;
                 _totalSw.Reset();
                 _stageSw.Reset();
             }
             Interlocked.Exchange(ref _consecutiveReadFailures, 0);
             _consecutiveGomFailures = 0;
-            _resolvingAsync         = 0;
-            _sessionSummaryLogged   = false;
+            _resolvingAsync = 0;
+            _sessionSummaryLogged = false;
             LoggingEnhancements.Log(AppLogLevel.Debug, "Cache invalidated.", "MatchingProgressResolver");
         }
 
@@ -192,7 +192,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 if (!gomAddr.IsValidVirtualAddress())
                     return 0;
 
-                var gom     = GameObjectManager.Get(gomAddr);
+                var gom = GameObjectManager.Get(gomAddr);
 
                 // FindBehaviourByClassName returns the objectClass ptr of the first
                 // component whose IL2CPP class name matches — exactly like AntiAfk does
@@ -228,7 +228,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 lock (_lock)
                 {
-                    _cachedViewObjectClass  = viewObjectClass;
+                    _cachedViewObjectClass = viewObjectClass;
                     _cachedMatchingProgress = mpPtr;
                 }
 
@@ -279,9 +279,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                     if (stage != _prevStage)
                     {
-                        prevForLog    = _prevStage;
-                        stageElapsed  = _stageSw.Elapsed.TotalSeconds;
-                        totalElapsed  = _totalSw.Elapsed.TotalSeconds;
+                        prevForLog = _prevStage;
+                        stageElapsed = _stageSw.Elapsed.TotalSeconds;
+                        totalElapsed = _totalSw.Elapsed.TotalSeconds;
                         needsSnapshot = stage >= Enums.EMatchingStage.LocalGameStarting;
                         didTransition = true;
 
@@ -294,8 +294,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     else
                     {
                         didTransition = false;
-                        prevForLog    = default;
-                        stageElapsed  = totalElapsed = 0;
+                        prevForLog = default;
+                        stageElapsed = totalElapsed = 0;
                         needsSnapshot = false;
                     }
                 }
@@ -359,13 +359,13 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                         lock (_lock)
                         {
-                            lastStage    = _prevStage;
-                            highWater    = _highWaterStage;
+                            lastStage = _prevStage;
+                            highWater = _highWaterStage;
                             totalElapsed = _totalSw.Elapsed.TotalSeconds;
-                            failures     = _consecutiveReadFailures;
+                            failures = _consecutiveReadFailures;
                             // Clear the stale pointer so the next re-queue can re-resolve.
                             _cachedMatchingProgress = 0;
-                            _cachedViewObjectClass  = 0;
+                            _cachedViewObjectClass = 0;
                         }
 
                         XMLogging.WriteLine(
@@ -424,11 +424,11 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             try
             {
-                var serversLimited  = Memory.ReadValue<bool>(view + Offsets.MatchingProgressView._serversLimited,              useCache: false);
-                var canUpdateStatus = Memory.ReadValue<bool>(view + Offsets.MatchingProgressView._canUpdateStatus,             useCache: false);
-                var maxMatchingTime = Memory.ReadValue<int> (view + Offsets.MatchingProgressView._maxMatchingTimeInSeconds,    useCache: false);
-                var warningHasValue = Memory.ReadValue<bool>(view + Offsets.MatchingProgressView._matchingWarningType_hasValue,useCache: false);
-                var warningRaw      = warningHasValue
+                var serversLimited = Memory.ReadValue<bool>(view + Offsets.MatchingProgressView._serversLimited, useCache: false);
+                var canUpdateStatus = Memory.ReadValue<bool>(view + Offsets.MatchingProgressView._canUpdateStatus, useCache: false);
+                var maxMatchingTime = Memory.ReadValue<int>(view + Offsets.MatchingProgressView._maxMatchingTimeInSeconds, useCache: false);
+                var warningHasValue = Memory.ReadValue<bool>(view + Offsets.MatchingProgressView._matchingWarningType_hasValue, useCache: false);
+                var warningRaw = warningHasValue
                     ? Memory.ReadValue<int>(view + Offsets.MatchingProgressView._matchingWarningType, useCache: false)
                     : (int?)null;
 
@@ -466,17 +466,17 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             try
             {
-                var currentStage        = (Enums.EMatchingStage)      Memory.ReadValue<int>  (mp + Offsets.MatchingProgress.CurrentStage,                      useCache: false);
-                var currentStageGroup   = (Enums.EMatchingStageGroup)  Memory.ReadValue<int>  (mp + Offsets.MatchingProgress.CurrentStageGroup,                 useCache: false);
-                var stageProgress       = Memory.ReadValue<float>(mp + Offsets.MatchingProgress.CurrentStageProgress,                                           useCache: false);
-                var estimateTime        = Memory.ReadValue<int>  (mp + Offsets.MatchingProgress.EstimateTime,                                                   useCache: false);
-                var isAbortAvailable    = Memory.ReadValue<bool> (mp + Offsets.MatchingProgress.IsAbortAvailable,                                               useCache: false);
-                var blockAbortDuration  = Memory.ReadValue<int>  (mp + Offsets.MatchingProgress.BlockAbortAbilityDurationSeconds,                               useCache: false);
-                var showAbortPopup      = Memory.ReadValue<bool> (mp + Offsets.MatchingProgress.ShowAbortConfirmationPopup,                                     useCache: false);
-                var abortRequested      = Memory.ReadValue<bool> (mp + Offsets.MatchingProgress.IsMatchingAbortRequested,                                       useCache: false);
-                var canProcessStages    = Memory.ReadValue<bool> (mp + Offsets.MatchingProgress.CanProcessServerStages,                                         useCache: false);
-                var lastDelayedStage    = (Enums.EMatchingStage)       Memory.ReadValue<int>  (mp + Offsets.MatchingProgress.LastMemorizedDelayedStage,         useCache: false);
-                var lastDelayedProgress = Memory.ReadValue<float>(mp + Offsets.MatchingProgress.LastMemorizedDelayedStageProgress,                              useCache: false);
+                var currentStage = (Enums.EMatchingStage)Memory.ReadValue<int>(mp + Offsets.MatchingProgress.CurrentStage, useCache: false);
+                var currentStageGroup = (Enums.EMatchingStageGroup)Memory.ReadValue<int>(mp + Offsets.MatchingProgress.CurrentStageGroup, useCache: false);
+                var stageProgress = Memory.ReadValue<float>(mp + Offsets.MatchingProgress.CurrentStageProgress, useCache: false);
+                var estimateTime = Memory.ReadValue<int>(mp + Offsets.MatchingProgress.EstimateTime, useCache: false);
+                var isAbortAvailable = Memory.ReadValue<bool>(mp + Offsets.MatchingProgress.IsAbortAvailable, useCache: false);
+                var blockAbortDuration = Memory.ReadValue<int>(mp + Offsets.MatchingProgress.BlockAbortAbilityDurationSeconds, useCache: false);
+                var showAbortPopup = Memory.ReadValue<bool>(mp + Offsets.MatchingProgress.ShowAbortConfirmationPopup, useCache: false);
+                var abortRequested = Memory.ReadValue<bool>(mp + Offsets.MatchingProgress.IsMatchingAbortRequested, useCache: false);
+                var canProcessStages = Memory.ReadValue<bool>(mp + Offsets.MatchingProgress.CanProcessServerStages, useCache: false);
+                var lastDelayedStage = (Enums.EMatchingStage)Memory.ReadValue<int>(mp + Offsets.MatchingProgress.LastMemorizedDelayedStage, useCache: false);
+                var lastDelayedProgress = Memory.ReadValue<float>(mp + Offsets.MatchingProgress.LastMemorizedDelayedStageProgress, useCache: false);
 
                 LoggingEnhancements.Log(AppLogLevel.Debug,
                     $"Snapshot @ 0x{mp:X} | " +

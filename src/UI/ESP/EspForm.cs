@@ -200,7 +200,7 @@ namespace eft_dma_radar.UI.ESP
                 skglControl_ESP.DoubleClick += ESPForm_DoubleClick;
             }
             _fpsSw.Start();
-        
+
             var allScreens = Screen.AllScreens;
             // Change SelectedScreen to EspTargetScreen
             if (ESPConfig.AutoFullscreen && ESPConfig.EspTargetScreen < allScreens.Length)
@@ -211,15 +211,15 @@ namespace eft_dma_radar.UI.ESP
                 Location = new Point(bounds.Left, bounds.Top);
                 Size = CameraManagerBase.Viewport.Size;
             }
-        
+
             LoadUIPositions();
             SetupESPWidgets();
             InitializeUIElements();
-        
+
             var interval = ESPConfig.FPSCap == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(1000d / ESPConfig.FPSCap);
-        
+
             _renderTimer = new PrecisionTimer(interval);
-        
+
             this.Shown += ESPForm_Shown;
         }
 
@@ -723,7 +723,7 @@ namespace eft_dma_radar.UI.ESP
 
                 if (drawExplosives)
                     DrawExplosives(canvas, localPlayer);
-                if(drawKillFeed)
+                if (drawKillFeed)
                 {
                     DrawKillfeed(canvas);
                 }
@@ -779,7 +779,7 @@ namespace eft_dma_radar.UI.ESP
                 {
                     UpdateTopLootCache(localPlayer);
                 }
-                
+
                 if (ESPConfig.ShowTopLoot)
                     DrawTopLoot(canvas, localPlayer);
 
@@ -805,27 +805,27 @@ namespace eft_dma_radar.UI.ESP
         {
             _topLootCache.Clear();
             _topLootCachedText = "";
-        
+
             var loot = Loot;
             if (loot == null)
                 return;
-        
+
             Vector3 localPos = localPlayer.Position;
-        
+
             Dictionary<string, TopLootEntry> map = new(32);
-        
+
             foreach (var item in loot)
             {
                 if (item is QuestItem)
                     continue;
-        
+
                 string name = item.Name;
                 if (string.IsNullOrEmpty(name))
                     continue;
-        
+
                 float distSq = Vector3.DistanceSquared(localPos, item.Position);
                 int price = item.Price;
-        
+
                 if (!map.TryGetValue(name, out var entry))
                 {
                     entry = new TopLootEntry
@@ -844,24 +844,24 @@ namespace eft_dma_radar.UI.ESP
                     if (price > entry.Value)
                         entry.Value = price;
                 }
-        
+
                 map[name] = entry;
             }
-        
+
             if (map.Count == 0)
                 return;
-        
+
             foreach (var kv in map)
                 InsertTopLoot(kv.Value);
-        
+
             for (int i = 0; i < _topLootCache.Count; i++)
             {
                 var e = _topLootCache[i];
                 float dist = MathF.Sqrt(e.ClosestDistSq);
-        
+
                 if (i > 0)
                     _topLootCachedText += "\n";
-        
+
                 _topLootCachedText +=
                     e.Count > 1
                         ? $"{e.Name} (x{e.Count}) ({dist:F0}m)"
@@ -882,7 +882,7 @@ namespace eft_dma_radar.UI.ESP
 
             if (_topLootCache.Count > 5)
                 _topLootCache.RemoveAt(5);
-        }     
+        }
         /// <summary>
         /// Draws a crosshair at the center of the screen based on selected style.
         /// </summary>
@@ -981,45 +981,45 @@ namespace eft_dma_radar.UI.ESP
         /// Draw fireport aim in front of player.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
-{
-    if (localPlayer.Firearm.FireportPosition is not Vector3 fireportPos)
-        return;
+        private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
+        {
+            if (localPlayer.Firearm.FireportPosition is not Vector3 fireportPos)
+                return;
 
-    if (!CameraManagerBase.WorldToScreen(ref fireportPos, out var fireportScr))
-        return;
+            if (!CameraManagerBase.WorldToScreen(ref fireportPos, out var fireportScr))
+                return;
 
-    Vector3 targetWorldPos;
+            Vector3 targetWorldPos;
 
-    var aimbotCache = MemWriteFeature<Aimbot>.Instance.Cache;
+            var aimbotCache = MemWriteFeature<Aimbot>.Instance.Cache;
 
-    // ?? AIM LOCK ACTIVE ? snap line to target
-    if (ESP.Config.ShowAimLock &&
-        aimbotCache?.AimbotLockedPlayer is Player locked &&
-        locked.IsAlive &&
-        aimbotCache.CurrentTargetBonePos is Vector3 lastPos)
-    {
-        targetWorldPos = lastPos;
-    }
-    else
-    {
-        // Free aim preview
-        if (localPlayer.Firearm.FireportRotation is not Quaternion rot)
-            return;
+            // ?? AIM LOCK ACTIVE ? snap line to target
+            if (ESP.Config.ShowAimLock &&
+                aimbotCache?.AimbotLockedPlayer is Player locked &&
+                locked.IsAlive &&
+                aimbotCache.CurrentTargetBonePos is Vector3 lastPos)
+            {
+                targetWorldPos = lastPos;
+            }
+            else
+            {
+                // Free aim preview
+                if (localPlayer.Firearm.FireportRotation is not Quaternion rot)
+                    return;
 
-        var forward = rot.Down();
-        targetWorldPos = fireportPos + forward * 1000f;
-    }
+                var forward = rot.Down();
+                targetWorldPos = fireportPos + forward * 1000f;
+            }
 
-    if (!CameraManagerBase.WorldToScreen(ref targetWorldPos, out var targetScr))
-        return;
+            if (!CameraManagerBase.WorldToScreen(ref targetWorldPos, out var targetScr))
+                return;
 
-    canvas.DrawLine(
-        fireportScr,
-        targetScr,
-        SKPaints.PaintFireportAimESP
-    );
-}
+            canvas.DrawLine(
+                fireportScr,
+                targetScr,
+                SKPaints.PaintFireportAimESP
+            );
+        }
 
         /// <summary>
         /// Draw player's Magazine/Ammo Count on ESP.
@@ -1781,314 +1781,314 @@ private static void DrawFireportAim(SKCanvas canvas, LocalPlayer localPlayer)
 
         #endregion
 
-#region Mini Radar (Optimized – Layer-Stable & Throttled)
+        #region Mini Radar (Optimized – Layer-Stable & Throttled)
 
-private static readonly SKPaint _radarBgPaint =
-    new SKPaint { Color = new SKColor(0, 0, 0, 180) };
+        private static readonly SKPaint _radarBgPaint =
+            new SKPaint { Color = new SKColor(0, 0, 0, 180) };
 
-private SKRect _radarRect = new SKRect(20, 20, 220, 220);
-private float _radarZoom;
-private bool _radarFreeMode = false;
-private Vector2 _radarPanPosition = SKPoint.Empty;
+        private SKRect _radarRect = new SKRect(20, 20, 220, 220);
+        private float _radarZoom;
+        private bool _radarFreeMode = false;
+        private Vector2 _radarPanPosition = SKPoint.Empty;
 
-private SKSurface _radarMapSurface;
-private XMMapParams _lastRadarParams;
-private float _lastRadarZoom = -1;
-private Vector2 _lastRadarCenter;
+        private SKSurface _radarMapSurface;
+        private XMMapParams _lastRadarParams;
+        private float _lastRadarZoom = -1;
+        private Vector2 _lastRadarCenter;
 
-private long _lastRadarRebuildMs;
-private const int RadarRebuildMinIntervalMs = 150; // ~6 Hz max
+        private long _lastRadarRebuildMs;
+        private const int RadarRebuildMinIntervalMs = 150; // ~6 Hz max
 
-private const float MinRadarSize = 100f;
-private const float MaxRadarSize = 400f;
-private const float HandleSize = 10f;
+        private const float MinRadarSize = 100f;
+        private const float MaxRadarSize = 400f;
+        private const float HandleSize = 10f;
 
-private void ClampRadarRect()
-{
-    var formW = Math.Max(Width, 100);
-    var formH = Math.Max(Height, 100);
-
-    var width = Math.Clamp(_radarRect.Width, MinRadarSize, Math.Min(MaxRadarSize, formW));
-    var height = Math.Clamp(_radarRect.Height, MinRadarSize, Math.Min(MaxRadarSize, formH));
-
-    var left = Math.Clamp(_radarRect.Left, 0, formW - width);
-    var top = Math.Clamp(_radarRect.Top, 0, formH - height);
-
-    _radarRect = new SKRect(left, top, left + width, top + height);
-}
-
-private static bool MapParamsEquivalent(XMMapParams a, XMMapParams b)
-{
-    const float eps = 0.01f;
-
-    return
-        Math.Abs(a.Bounds.Left   - b.Bounds.Left)   < eps &&
-        Math.Abs(a.Bounds.Top    - b.Bounds.Top)    < eps &&
-        Math.Abs(a.Bounds.Width  - b.Bounds.Width)  < eps &&
-        Math.Abs(a.Bounds.Height - b.Bounds.Height) < eps;
-}
-
-
-private void DrawRadar(SKCanvas canvas, LocalPlayer localPlayer)
-{
-    if (localPlayer == null || XMMapManager.Map == null)
-        return;
-
-    canvas.Save();
-    canvas.ClipRect(_radarRect);
-
-    _radarZoom = ESPConfig.RadarZoom;
-
-    canvas.DrawRect(_radarRect, _radarBgPaint);
-
-    var map = XMMapManager.Map;
-    var mapCfg = map.Config;
-
-    var playerPos = localPlayer.Position;
-    var playerMapPos = playerPos.ToMapPos(mapCfg);
-
-    var radarSize = new SKSize(_radarRect.Width, _radarRect.Height);
-    var center = _radarFreeMode ? _radarPanPosition : playerMapPos;
-
-    var mapParams = map.GetParametersE(radarSize, _radarZoom, ref center);
-
-    // ------------------------------------------------------------
-    // MAP CACHE — STABLE & FLOAT-SAFE
-    // ------------------------------------------------------------
-
-    long now = Environment.TickCount64;
-
-    bool centerMoved =
-        (_lastRadarCenter - center).LengthSquared() > 0.25f; // ~0.5px tolerance
-
-    bool needsRebuild =
-        _radarMapSurface == null ||
-        _radarZoom != _lastRadarZoom ||
-        centerMoved ||
-        !_lastRadarParams.Equals(default) &&
-        !MapParamsEquivalent(_lastRadarParams, mapParams);
-
-    if (needsRebuild && now - _lastRadarRebuildMs >= RadarRebuildMinIntervalMs)
-    {
-        _lastRadarRebuildMs = now;
-
-        _radarMapSurface?.Dispose();
-
-        var info = new SKImageInfo(
-            (int)_radarRect.Width,
-            (int)_radarRect.Height,
-            SKColorType.Rgba8888,
-            SKAlphaType.Premul);
-
-        _radarMapSurface = SKSurface.Create(info);
-
-        var mapCanvas = _radarMapSurface.Canvas;
-        mapCanvas.Clear(SKColors.Transparent);
-
-        // Draw into surface-local space
-        mapCanvas.Translate(-_radarRect.Left, -_radarRect.Top);
-
-        map.Draw(
-            mapCanvas,
-            playerPos.Y,          // <-- KEEP EXACT LOGIC
-            mapParams.Bounds,
-            _radarRect);
-
-        _lastRadarZoom = _radarZoom;
-        _lastRadarCenter = center;
-        _lastRadarParams = mapParams;
-    }
-
-    if (_radarMapSurface != null)
-    {
-        canvas.DrawSurface(
-            _radarMapSurface,
-            _radarRect.Left,
-            _radarRect.Top);
-    }
-
-    // ------------------------------------------------------------
-    // DYNAMIC OVERLAYS
-    // ------------------------------------------------------------
-
-    if (ESPConfig.MiniRadar.ShowLoot)
-        DrawRadarLoot(canvas, mapParams, mapCfg);
-
-    DrawRadarPlayers(canvas, localPlayer, mapParams, mapCfg);
-    DrawLocalPlayerIndicator(canvas, localPlayer);
-    DrawRadarBorder(canvas);
-    DrawRadarResizeHandle(canvas);
-    DrawRadarInfo(canvas);
-
-    canvas.Restore();
-}
-
-
-private void DrawRadarPlayers(
-    SKCanvas canvas,
-    LocalPlayer localPlayer,
-    XMMapParams mapParams,
-    XMMapConfig mapCfg)
-{
-    var players = AllPlayers;
-    if (players == null)
-        return;
-
-    float scale = ESPConfig.MiniRadar.Scale;
-    float radius = RADAR_PLAYER_SIZE * scale;
-    float lineLen = RADAR_AIMLINE_LENGTH * scale;
-    float lineWidth = RADAR_AIMLINE_WIDTH * scale;
-
-    float left = _radarRect.Left;
-    float top = _radarRect.Top;
-    float w = _radarRect.Width;
-    float h = _radarRect.Height;
-
-    foreach (var player in players)
-    {
-        if (player == localPlayer)
-            continue;
-
-        if (!player.IsHostileActive && !player.IsFriendlyActive)
-            continue;
-
-        var mapPos = player.Position.ToMapPos(mapCfg);
-        if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
-            continue;
-
-        float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
-        float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
-
-        var paint = player.GetMiniRadarPaint();
-        canvas.DrawCircle(sx, sy, radius, paint);
-
-        if (player.MapRotation != 0)
+        private void ClampRadarRect()
         {
-            paint.StrokeWidth = lineWidth;
-            float r = player.MapRotation.ToRadians();
-            canvas.DrawLine(
-                sx, sy,
-                sx + lineLen * MathF.Cos(r),
-                sy + lineLen * MathF.Sin(r),
-                paint);
-        }
-    }
-}
+            var formW = Math.Max(Width, 100);
+            var formH = Math.Max(Height, 100);
 
-private void DrawLocalPlayerIndicator(SKCanvas canvas, LocalPlayer localPlayer)
-{
-    float scale = ESPConfig.MiniRadar.Scale;
-    float radius = RADAR_PLAYER_SIZE * scale;
-    float lineLen = RADAR_AIMLINE_LENGTH * scale;
-    float lineWidth = RADAR_AIMLINE_WIDTH * scale;
+            var width = Math.Clamp(_radarRect.Width, MinRadarSize, Math.Min(MaxRadarSize, formW));
+            var height = Math.Clamp(_radarRect.Height, MinRadarSize, Math.Min(MaxRadarSize, formH));
 
-    float cx = _radarRect.MidX;
-    float cy = _radarRect.MidY;
+            var left = Math.Clamp(_radarRect.Left, 0, formW - width);
+            var top = Math.Clamp(_radarRect.Top, 0, formH - height);
 
-    var paint = localPlayer.GetMiniRadarPaint();
-    canvas.DrawCircle(cx, cy, radius, paint);
-
-    if (localPlayer.MapRotation != 0)
-    {
-        paint.StrokeWidth = lineWidth;
-        float r = localPlayer.MapRotation.ToRadians();
-        canvas.DrawLine(
-            cx, cy,
-            cx + lineLen * MathF.Cos(r),
-            cy + lineLen * MathF.Sin(r),
-            paint);
-    }
-}
-
-private void DrawRadarLoot(
-    SKCanvas canvas,
-    XMMapParams mapParams,
-    XMMapConfig mapCfg)
-{
-    if (Config.BattleMode || !Config.ProcessLoot || Loot == null)
-        return;
-
-    float scale = ESPConfig.MiniRadar.Scale;
-    float size = RADAR_LOOT_SIZE * scale;
-
-    float left = _radarRect.Left;
-    float top = _radarRect.Top;
-    float w = _radarRect.Width;
-    float h = _radarRect.Height;
-
-    foreach (var item in Loot)
-    {
-        bool isQuest = item is QuestItem;
-        bool isCorpse = item is LootCorpse;
-
-        if (isQuest && !LootItem.QuestItemSettings.Enabled)
-            continue;
-
-        if (!isQuest)
-        {
-            if (isCorpse && !LootItem.CorpseSettings.Enabled)
-                continue;
-
-            if (!LootItem.CorpseSettings.Enabled &&
-                !LootItem.LootSettings.Enabled &&
-                !LootItem.ImportantLootSettings.Enabled)
-                continue;
+            _radarRect = new SKRect(left, top, left + width, top + height);
         }
 
-        var mapPos = item.Position.ToMapPos(mapCfg);
-        if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
-            continue;
+        private static bool MapParamsEquivalent(XMMapParams a, XMMapParams b)
+        {
+            const float eps = 0.01f;
 
-        float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
-        float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
+            return
+                Math.Abs(a.Bounds.Left - b.Bounds.Left) < eps &&
+                Math.Abs(a.Bounds.Top - b.Bounds.Top) < eps &&
+                Math.Abs(a.Bounds.Width - b.Bounds.Width) < eps &&
+                Math.Abs(a.Bounds.Height - b.Bounds.Height) < eps;
+        }
 
-        if (!_radarRect.Contains(sx, sy))
-            continue;
 
-        var paint = item.GetMiniRadarPaint();
-        canvas.DrawRect(
-            new SKRect(sx - size, sy - size, sx + size, sy + size),
-            paint);
-    }
-}
+        private void DrawRadar(SKCanvas canvas, LocalPlayer localPlayer)
+        {
+            if (localPlayer == null || XMMapManager.Map == null)
+                return;
 
-private void DrawRadarBorder(SKCanvas canvas)
-{
-    canvas.DrawRect(_radarRect, SKPaints.PaintMiniRadarOutlineESP);
-}
+            canvas.Save();
+            canvas.ClipRect(_radarRect);
 
-private void DrawRadarResizeHandle(SKCanvas canvas)
-{
-    var path = GetPath();
+            _radarZoom = ESPConfig.RadarZoom;
 
-    path.MoveTo(_radarRect.Right, _radarRect.Bottom - HandleSize);
-    path.LineTo(_radarRect.Right, _radarRect.Bottom);
-    path.LineTo(_radarRect.Right - HandleSize, _radarRect.Bottom);
-    path.Close();
+            canvas.DrawRect(_radarRect, _radarBgPaint);
 
-    canvas.DrawPath(path, SKPaints.PaintMiniRadarResizeHandleESP);
-    ReturnPath(path);
-}
+            var map = XMMapManager.Map;
+            var mapCfg = map.Config;
 
-private void DrawRadarInfo(SKCanvas canvas)
-{
-    using var textPaint = new SKPaint
-    {
-        Color = SKColors.White,
-        IsAntialias = true
-    };
+            var playerPos = localPlayer.Position;
+            var playerMapPos = playerPos.ToMapPos(mapCfg);
 
-    string mode = _radarFreeMode ? "FREE" : "LOCKED";
-    canvas.DrawText(
-        $"RADAR [{mode}] Zoom: {_radarZoom:F1}x",
-        _radarRect.Left + 5,
-        _radarRect.Top + 15,
-        SKTextAlign.Left,
-        SKPaints.ESPFontMedium12,
-        textPaint);
-}
+            var radarSize = new SKSize(_radarRect.Width, _radarRect.Height);
+            var center = _radarFreeMode ? _radarPanPosition : playerMapPos;
 
-#endregion
+            var mapParams = map.GetParametersE(radarSize, _radarZoom, ref center);
+
+            // ------------------------------------------------------------
+            // MAP CACHE — STABLE & FLOAT-SAFE
+            // ------------------------------------------------------------
+
+            long now = Environment.TickCount64;
+
+            bool centerMoved =
+                (_lastRadarCenter - center).LengthSquared() > 0.25f; // ~0.5px tolerance
+
+            bool needsRebuild =
+                _radarMapSurface == null ||
+                _radarZoom != _lastRadarZoom ||
+                centerMoved ||
+                !_lastRadarParams.Equals(default) &&
+                !MapParamsEquivalent(_lastRadarParams, mapParams);
+
+            if (needsRebuild && now - _lastRadarRebuildMs >= RadarRebuildMinIntervalMs)
+            {
+                _lastRadarRebuildMs = now;
+
+                _radarMapSurface?.Dispose();
+
+                var info = new SKImageInfo(
+                    (int)_radarRect.Width,
+                    (int)_radarRect.Height,
+                    SKColorType.Rgba8888,
+                    SKAlphaType.Premul);
+
+                _radarMapSurface = SKSurface.Create(info);
+
+                var mapCanvas = _radarMapSurface.Canvas;
+                mapCanvas.Clear(SKColors.Transparent);
+
+                // Draw into surface-local space
+                mapCanvas.Translate(-_radarRect.Left, -_radarRect.Top);
+
+                map.Draw(
+                    mapCanvas,
+                    playerPos.Y,          // <-- KEEP EXACT LOGIC
+                    mapParams.Bounds,
+                    _radarRect);
+
+                _lastRadarZoom = _radarZoom;
+                _lastRadarCenter = center;
+                _lastRadarParams = mapParams;
+            }
+
+            if (_radarMapSurface != null)
+            {
+                canvas.DrawSurface(
+                    _radarMapSurface,
+                    _radarRect.Left,
+                    _radarRect.Top);
+            }
+
+            // ------------------------------------------------------------
+            // DYNAMIC OVERLAYS
+            // ------------------------------------------------------------
+
+            if (ESPConfig.MiniRadar.ShowLoot)
+                DrawRadarLoot(canvas, mapParams, mapCfg);
+
+            DrawRadarPlayers(canvas, localPlayer, mapParams, mapCfg);
+            DrawLocalPlayerIndicator(canvas, localPlayer);
+            DrawRadarBorder(canvas);
+            DrawRadarResizeHandle(canvas);
+            DrawRadarInfo(canvas);
+
+            canvas.Restore();
+        }
+
+
+        private void DrawRadarPlayers(
+            SKCanvas canvas,
+            LocalPlayer localPlayer,
+            XMMapParams mapParams,
+            XMMapConfig mapCfg)
+        {
+            var players = AllPlayers;
+            if (players == null)
+                return;
+
+            float scale = ESPConfig.MiniRadar.Scale;
+            float radius = RADAR_PLAYER_SIZE * scale;
+            float lineLen = RADAR_AIMLINE_LENGTH * scale;
+            float lineWidth = RADAR_AIMLINE_WIDTH * scale;
+
+            float left = _radarRect.Left;
+            float top = _radarRect.Top;
+            float w = _radarRect.Width;
+            float h = _radarRect.Height;
+
+            foreach (var player in players)
+            {
+                if (player == localPlayer)
+                    continue;
+
+                if (!player.IsHostileActive && !player.IsFriendlyActive)
+                    continue;
+
+                var mapPos = player.Position.ToMapPos(mapCfg);
+                if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
+                    continue;
+
+                float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
+                float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
+
+                var paint = player.GetMiniRadarPaint();
+                canvas.DrawCircle(sx, sy, radius, paint);
+
+                if (player.MapRotation != 0)
+                {
+                    paint.StrokeWidth = lineWidth;
+                    float r = player.MapRotation.ToRadians();
+                    canvas.DrawLine(
+                        sx, sy,
+                        sx + lineLen * MathF.Cos(r),
+                        sy + lineLen * MathF.Sin(r),
+                        paint);
+                }
+            }
+        }
+
+        private void DrawLocalPlayerIndicator(SKCanvas canvas, LocalPlayer localPlayer)
+        {
+            float scale = ESPConfig.MiniRadar.Scale;
+            float radius = RADAR_PLAYER_SIZE * scale;
+            float lineLen = RADAR_AIMLINE_LENGTH * scale;
+            float lineWidth = RADAR_AIMLINE_WIDTH * scale;
+
+            float cx = _radarRect.MidX;
+            float cy = _radarRect.MidY;
+
+            var paint = localPlayer.GetMiniRadarPaint();
+            canvas.DrawCircle(cx, cy, radius, paint);
+
+            if (localPlayer.MapRotation != 0)
+            {
+                paint.StrokeWidth = lineWidth;
+                float r = localPlayer.MapRotation.ToRadians();
+                canvas.DrawLine(
+                    cx, cy,
+                    cx + lineLen * MathF.Cos(r),
+                    cy + lineLen * MathF.Sin(r),
+                    paint);
+            }
+        }
+
+        private void DrawRadarLoot(
+            SKCanvas canvas,
+            XMMapParams mapParams,
+            XMMapConfig mapCfg)
+        {
+            if (Config.BattleMode || !Config.ProcessLoot || Loot == null)
+                return;
+
+            float scale = ESPConfig.MiniRadar.Scale;
+            float size = RADAR_LOOT_SIZE * scale;
+
+            float left = _radarRect.Left;
+            float top = _radarRect.Top;
+            float w = _radarRect.Width;
+            float h = _radarRect.Height;
+
+            foreach (var item in Loot)
+            {
+                bool isQuest = item is QuestItem;
+                bool isCorpse = item is LootCorpse;
+
+                if (isQuest && !LootItem.QuestItemSettings.Enabled)
+                    continue;
+
+                if (!isQuest)
+                {
+                    if (isCorpse && !LootItem.CorpseSettings.Enabled)
+                        continue;
+
+                    if (!LootItem.CorpseSettings.Enabled &&
+                        !LootItem.LootSettings.Enabled &&
+                        !LootItem.ImportantLootSettings.Enabled)
+                        continue;
+                }
+
+                var mapPos = item.Position.ToMapPos(mapCfg);
+                if (!mapParams.Bounds.Contains(mapPos.X, mapPos.Y))
+                    continue;
+
+                float sx = left + w * (mapPos.X - mapParams.Bounds.Left) / mapParams.Bounds.Width;
+                float sy = top + h * (mapPos.Y - mapParams.Bounds.Top) / mapParams.Bounds.Height;
+
+                if (!_radarRect.Contains(sx, sy))
+                    continue;
+
+                var paint = item.GetMiniRadarPaint();
+                canvas.DrawRect(
+                    new SKRect(sx - size, sy - size, sx + size, sy + size),
+                    paint);
+            }
+        }
+
+        private void DrawRadarBorder(SKCanvas canvas)
+        {
+            canvas.DrawRect(_radarRect, SKPaints.PaintMiniRadarOutlineESP);
+        }
+
+        private void DrawRadarResizeHandle(SKCanvas canvas)
+        {
+            var path = GetPath();
+
+            path.MoveTo(_radarRect.Right, _radarRect.Bottom - HandleSize);
+            path.LineTo(_radarRect.Right, _radarRect.Bottom);
+            path.LineTo(_radarRect.Right - HandleSize, _radarRect.Bottom);
+            path.Close();
+
+            canvas.DrawPath(path, SKPaints.PaintMiniRadarResizeHandleESP);
+            ReturnPath(path);
+        }
+
+        private void DrawRadarInfo(SKCanvas canvas)
+        {
+            using var textPaint = new SKPaint
+            {
+                Color = SKColors.White,
+                IsAntialias = true
+            };
+
+            string mode = _radarFreeMode ? "FREE" : "LOCKED";
+            canvas.DrawText(
+                $"RADAR [{mode}] Zoom: {_radarZoom:F1}x",
+                _radarRect.Left + 5,
+                _radarRect.Top + 15,
+                SKTextAlign.Left,
+                SKPaints.ESPFontMedium12,
+                textPaint);
+        }
+
+        #endregion
 
 
 
@@ -2102,7 +2102,8 @@ private void DrawRadarInfo(SKCanvas canvas)
                 GetCurrentText = GetCurrentMagazineText,
                 CalculateBounds = CalculateMagazineBounds,
                 CalculateBaseBounds = CalculateMagazineBaseBounds,
-                SetOffset = offset => {
+                SetOffset = offset =>
+                {
                     _magazineOffset = offset;
                     var info = _uiElements[UIElement.Magazine];
                     info.Offset = offset;
@@ -2116,7 +2117,8 @@ private void DrawRadarInfo(SKCanvas canvas)
                 GetCurrentText = () => "StatusBars",
                 CalculateBounds = CalculateStatusBarsBounds,
                 CalculateBaseBounds = CalculateStatusBarsBaseBounds,
-                SetOffset = offset => {
+                SetOffset = offset =>
+                {
                     _statusBarOffset = offset;
                     var info = _uiElements[UIElement.StatusBars];
                     info.Offset = offset;
@@ -2130,7 +2132,8 @@ private void DrawRadarInfo(SKCanvas canvas)
                 GetCurrentText = () => "RaidStats",
                 CalculateBounds = CalculateRaidStatsBounds,
                 CalculateBaseBounds = CalculateRaidStatsBaseBounds,
-                SetOffset = offset => {
+                SetOffset = offset =>
+                {
                     _raidStatsOffset = offset;
                     var info = _uiElements[UIElement.RaidStats];
                     info.Offset = offset;
@@ -2144,7 +2147,8 @@ private void DrawRadarInfo(SKCanvas canvas)
                 GetCurrentText = GetCurrentStatusText,
                 CalculateBounds = CalculateStatusTextBounds,
                 CalculateBaseBounds = CalculateStatusTextBaseBounds,
-                SetOffset = offset => {
+                SetOffset = offset =>
+                {
                     _statusTextOffset = offset;
                     var info = _uiElements[UIElement.StatusText];
                     info.Offset = offset;
@@ -2158,7 +2162,8 @@ private void DrawRadarInfo(SKCanvas canvas)
                 GetCurrentText = GetCurrentFPSText,
                 CalculateBounds = CalculateFPSBounds,
                 CalculateBaseBounds = CalculateFPSBaseBounds,
-                SetOffset = offset => {
+                SetOffset = offset =>
+                {
                     _fpsOffset = offset;
                     var info = _uiElements[UIElement.FPS];
                     info.Offset = offset;
@@ -2172,7 +2177,8 @@ private void DrawRadarInfo(SKCanvas canvas)
                 GetCurrentText = GetCurrentClosestPlayerText,
                 CalculateBounds = CalculateClosestPlayerBounds,
                 CalculateBaseBounds = CalculateClosestPlayerBaseBounds,
-                SetOffset = offset => {
+                SetOffset = offset =>
+                {
                     _closestPlayerOffset = offset;
                     var info = _uiElements[UIElement.ClosestPlayer];
                     info.Offset = offset;
@@ -2186,7 +2192,8 @@ private void DrawRadarInfo(SKCanvas canvas)
                 GetCurrentText = GetCurrentTopLootText,
                 CalculateBounds = CalculateTopLootBounds,
                 CalculateBaseBounds = CalculateTopLootBaseBounds,
-                SetOffset = offset => {
+                SetOffset = offset =>
+                {
                     _topLootOffset = offset;
                     var info = _uiElements[UIElement.TopLoot];
                     info.Offset = offset;
@@ -2209,7 +2216,7 @@ private void DrawRadarInfo(SKCanvas canvas)
                     _killfeedOffset = offset;
                     ESPConfig.KillfeedOffset = new PointFSer(offset.X, offset.Y);
                 }
-            }; 
+            };
         }
 
         private void InvalidateBoundsCache()
@@ -2553,10 +2560,10 @@ private void DrawRadarInfo(SKCanvas canvas)
             for (int i = 0; i < entries.Count; i++)
             {
                 var e = entries[i];
-            
+
                 float y = anchorY + i * lineH;
                 byte alpha = GetFadeAlpha(i);
-            
+
                 // Clone paint with fade
                 using var paint = new SKPaint
                 {
@@ -2639,31 +2646,31 @@ private void DrawRadarInfo(SKCanvas canvas)
         private SKRect CalculateKillfeedBounds()
         {
             var entries = KillfeedManager.Entries;
-        
+
             if (entries.Count == 0)
                 return CalculateKillfeedBaseBounds();
-        
+
             float scale = ESPConfig.FontScale;
             float lineH = SKPaints.ESPFontMedium13.Spacing;
-        
+
             float maxW = 0;
             foreach (var e in entries)
                 maxW = Math.Max(
                     maxW,
                     SKPaints.ESPFontMedium13.MeasureText(
                         $"{e.Killer} ? {e.Victim} [{e.Weapon}]"));
-        
+
             float x =
                 CameraManagerBase.Viewport.Right -
                 25f * scale +
                 _killfeedOffset.X -
                 maxW;
-        
+
             float y =
                 CameraManagerBase.Viewport.Top +
                 150f * scale +
                 _killfeedOffset.Y;
-        
+
             return new SKRect(
                 x,
                 y - SKPaints.ESPFontMedium13.Size,

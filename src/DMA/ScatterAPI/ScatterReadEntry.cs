@@ -179,7 +179,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
             Address = default;
             CB = default;
             IsFailed = default;
-        
+
             ActionOnComplete = null;
         }
     }

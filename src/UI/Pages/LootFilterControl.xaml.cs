@@ -1016,7 +1016,7 @@ namespace eft_dma_radar.UI.Pages
 
             return false;
         }
-        
+
         private void SearchForItem()
         {
             var query = txtItemSearch.Text.ToLowerInvariant();

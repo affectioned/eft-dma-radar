@@ -303,7 +303,7 @@ namespace eft_dma_radar.Common.DMA
             if (!allowPartialRead && buffer.Length == 0)
                 throw new VmmException("Memory Read Failed!");
         }
-         /// <summary>
+        /// <summary>
         /// Read an array of type <typeparamref name="T"/> from memory.
         /// The first element begins reading at 0x0 and the array is assumed to be contiguous.
         /// IMPORTANT: You must call <see cref="IDisposable.Dispose"/> on the returned SharedArray when done."/>
@@ -341,7 +341,7 @@ namespace eft_dma_radar.Common.DMA
             {
                 throw new Exception($"[DMA] ERROR reading buffer at 0x{addr:X}", ex);
             }
-        }        
+        }
         /// <summary>
         /// Read memory into a Buffer of type <typeparamref name="T"/> and ensure the read is correct.
         /// </summary>
@@ -386,7 +386,7 @@ namespace eft_dma_radar.Common.DMA
         public static unsafe byte[] ReadBufferEnsureE(ulong addr, int size)
         {
             const int ValidationCount = 3;
-        
+
             try
             {
                 if (BaseMemoryHolder.MemoryBase == null)
@@ -407,7 +407,7 @@ namespace eft_dma_radar.Common.DMA
                     if (bytesRead != size)
                         throw new Exception($"Incomplete memory read ({bytesRead}/{size}) at 0x{addr:X}");
                 }
-        
+
                 // Validation: ensure all reads match
                 for (int i = 1; i < ValidationCount; i++)
                 {
@@ -417,7 +417,7 @@ namespace eft_dma_radar.Common.DMA
                         return null;
                     }
                 }
-        
+
                 return buffers[0];
             }
             catch (Exception ex)
@@ -474,7 +474,7 @@ namespace eft_dma_radar.Common.DMA
             var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
             return _hVMM.MemReadString(ProcessPID, addr, cb, Encoding.UTF8, flags) ??
                 throw new VmmException("Memory Read Failed!");
-        }        
+        }
         /// <summary>
         /// Read value type/struct from specified address.
         /// </summary>
@@ -487,7 +487,7 @@ namespace eft_dma_radar.Common.DMA
             var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
             return _hVMM.MemReadValue<T>(ProcessPID, addr, flags);
         }
-        
+
         public ulong FindDataXref(
             ulong targetAddress,
             string moduleName = "UnityPlayer.dll",
@@ -500,11 +500,11 @@ namespace eft_dma_radar.Common.DMA
             ulong moduleBase = _hVMM.ProcessGetModuleBase(ProcessPID, moduleName);
             if (moduleBase == 0 || moduleBase == ulong.MaxValue)
                 return 0;
-        
+
             // Scan forward from the string location
             ulong scanStart = targetAddress & ~0xFFFUL; // page-align
-            ulong scanEnd   = scanStart + (ulong)searchRange;
-        
+            ulong scanEnd = scanStart + (ulong)searchRange;
+
             byte[] buffer;
             try
             {
@@ -531,7 +531,7 @@ namespace eft_dma_radar.Common.DMA
                     return scanStart + (ulong)i;
                 }
             }
-        
+
             return 0;
         }
 

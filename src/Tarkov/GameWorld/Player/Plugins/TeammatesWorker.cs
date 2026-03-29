@@ -226,9 +226,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 
         private static void Tick(LocalGameWorld game)
         {
-            #pragma warning disable CS0420 // Reference to volatile field is valid for Volatile.Read
-                        bool engaged = Volatile.Read(ref Engaged);
-            #pragma warning restore CS0420
+#pragma warning disable CS0420 // Reference to volatile field is valid for Volatile.Read
+            bool engaged = Volatile.Read(ref Engaged);
+#pragma warning restore CS0420
 
             // Always enforce teammate flag
             AutoFlagPlayers(game);
@@ -300,12 +300,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             var players = game.Players;
             if (players == null)
                 return;
-        
+
             foreach (var p in players)
             {
                 if (p == null || p.VoipId <= 0)
                     continue;
-        
+
                 // CASE 1: Latched teammate ¡ú force Teammate
                 if (_teammates.TryGetValue(p.VoipId, out var entry))
                 {
@@ -315,7 +315,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                     }
                     continue;
                 }
-        
+
                 // CASE 2: Previously latched but now removed ¡ú restore
                 if (p.Type == PlayerType.Teammate)
                 {
@@ -429,9 +429,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 
         private static bool IsActuallyInRaid()
         {
-            bool ready      = Memory.Ready;
-            bool inRaid     = Memory.InRaid;
-            bool hasLocal   = Memory.LocalPlayer is not null;
+            bool ready = Memory.Ready;
+            bool inRaid = Memory.InRaid;
+            bool hasLocal = Memory.LocalPlayer is not null;
             bool handsValid = hasLocal &&
                               Memory.LocalPlayer!.Firearm.HandsController.Item1
                                   .IsValidVirtualAddress();

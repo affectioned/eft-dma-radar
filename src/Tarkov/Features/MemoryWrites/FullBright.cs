@@ -11,7 +11,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {
     public sealed class FullBright : MemWriteFeature<FullBright>
     {
-        private bool  _lastEnabledState;
+        private bool _lastEnabledState;
         private float _lastBrightness;
 
         // Make the pointer global for the process; it¡¯s global game state anyway
@@ -37,23 +37,23 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         public override void TryApply(ScatterWriteHandle writes)
         {
             try
-            {          
+            {
                 // No writes at all if memwrites disabled globally
                 if (!MemWrites.Enabled)
                     return;
                 if (Memory.Game is not LocalGameWorld game)
-                    return;      
+                    return;
                 if (ExcludedMaps.Contains(game.MapID))
                     return;
 
-                var config           = MemWrites.Config.FullBright;
+                var config = MemWrites.Config.FullBright;
 
-                if(!config.Enabled)
+                if (!config.Enabled)
                     return;
-                    
+
                 var configBrightness = config.Intensity;
 
-                var stateChanged      = Enabled != _lastEnabledState;
+                var stateChanged = Enabled != _lastEnabledState;
                 var brightnessChanged = Math.Abs(configBrightness - _lastBrightness) > 0.001f;
 
                 // Nothing to do this tick
@@ -93,7 +93,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 writes.Callbacks += () =>
                 {
                     _lastEnabledState = Enabled;
-                    _lastBrightness   = configBrightness;
+                    _lastBrightness = configBrightness;
 
                     if (Enabled)
                         XMLogging.WriteLine($"[FullBright] Enabled (Intensity: {configBrightness:F2})");
@@ -162,7 +162,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 writes.AddValueEntry(levelSettings + Offsets.LevelSettings.AmbientMode, (int)AmbientMode.Trilight);
 
                 var equatorColor = new UnityColor(brightness, brightness, brightness);
-                var groundColor  = new UnityColor(0f, 0f, 0f);
+                var groundColor = new UnityColor(0f, 0f, 0f);
 
                 writes.AddValueEntry(levelSettings + Offsets.LevelSettings.EquatorColor, ref equatorColor);
                 writes.AddValueEntry(levelSettings + Offsets.LevelSettings.GroundColor, ref groundColor);
@@ -176,10 +176,10 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 
         public override void OnRaidStart()
         {
-            _lastEnabledState    = default;
-            _lastBrightness      = default;
+            _lastEnabledState = default;
+            _lastBrightness = default;
             _cachedLevelSettings = default;
-            _resolving           = false;
+            _resolving = false;
 
             // Let resolver forget stale pointers at raid start only,
             // not every time memwrites tick.

@@ -21,10 +21,10 @@ namespace eft_dma_radar.Common.Misc
         private static readonly ConcurrentDictionary<string, DateTime> _rateLimitCache = new();
         private static readonly ConcurrentDictionary<string, (int count, DateTime firstOccurrence)> _repeatedMessages = new();
         private static readonly Lock _consolidationLock = new();
-        
+
         public static AppLogLevel MinimumLogLevel { get; set; } = AppLogLevel.Info;
         public static bool EnableDebugLogging { get; set; } = false;
-        
+
         /// <summary>
         /// Logs a message with the specified log level
         /// </summary>
@@ -70,13 +70,13 @@ namespace eft_dma_radar.Common.Misc
         public static void LogRateLimited(AppLogLevel level, string key, TimeSpan interval, string message, string category = "")
         {
             var now = DateTime.UtcNow;
-            
+
             if (_rateLimitCache.TryGetValue(key, out var lastLogged))
             {
                 if (now - lastLogged < interval)
                     return; // Skip - too soon
             }
-            
+
             _rateLimitCache[key] = now;
             Log(level, message, category);
         }
@@ -90,7 +90,7 @@ namespace eft_dma_radar.Common.Misc
             lock (_consolidationLock)
             {
                 var now = DateTime.UtcNow;
-                
+
                 if (_repeatedMessages.TryGetValue(key, out var existing))
                 {
                     _repeatedMessages[key] = (existing.count + 1, existing.firstOccurrence);
@@ -113,11 +113,11 @@ namespace eft_dma_radar.Common.Misc
             {
                 var now = DateTime.UtcNow;
                 var threshold = maxAge ?? TimeSpan.FromSeconds(5);
-                
+
                 foreach (var kvp in _repeatedMessages.ToArray())
                 {
                     var (count, firstTime) = kvp.Value;
-                    
+
                     // Only flush if old enough and repeated
                     if (count > 1 && now - firstTime >= threshold)
                     {
@@ -140,7 +140,7 @@ namespace eft_dma_radar.Common.Misc
         {
             if (_rateLimitCache.ContainsKey(key))
                 return;
-                
+
             _rateLimitCache[key] = DateTime.UtcNow;
             Log(level, message, category);
         }

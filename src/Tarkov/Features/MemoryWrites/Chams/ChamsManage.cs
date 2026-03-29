@@ -384,38 +384,38 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
         {
             //Cache.ChamsMaterialCache.Clear();
             //var chamsConfig = SharedProgram.Config.ChamsConfig;
-//
+            //
             //var unityObjects = GetUnityObjects();
             //if (!unityObjects.HasValue)
             //    return false;
-//
+            //
             //var unityObjectsValue = unityObjects.Value;
             //using var visibleColorMem = VisibleColorStr.ToRemoteBytes();
             //using var invisibleColorMem = InvisibleColorStr.ToRemoteBytes();
             //using var chamsColorMem = new RemoteBytes(SizeChecker<UnityColor>.Size);
-//
+            //
             //var allCombos = BundleMapping.Keys.ToList();
             //var failedCombos = ProcessMaterialBundles(allCombos, unityObjectsValue, chamsConfig,
             //    visibleColorMem, invisibleColorMem, chamsColorMem);
-//
+            //
             //if (failedCombos.Count > 0)
             //{
             //    var successCount = allCombos.Count - failedCombos.Count;
-//
+            //
             //    foreach (var (mode, playerType) in failedCombos)
             //    {
             //        _failedMaterials[(mode, playerType)] = DateTime.Now;
             //    }
-//
+            //
             //    XMLogging.WriteLine($"[CHAMS] Initial load: {successCount}/{allCombos.Count} materials loaded successfully");
             //    NotificationsShared.Warning($"[CHAMS] Initial load: {successCount}/{allCombos.Count} materials loaded. {failedCombos.Count} materials failed.");
             //    NotificationsShared.Info("[CHAMS] Use 'Refresh Materials' button to retry failed materials.");
-//
+            //
             //    foreach (var (mode, type) in failedCombos.Take(5))
             //    {
             //        XMLogging.WriteLine($"[CHAMS] Failed to load: {mode} - {type}");
             //    }
-//
+            //
             //    if (failedCombos.Count > 5)
             //        XMLogging.WriteLine($"[CHAMS] ... and {failedCombos.Count - 5} more failed materials");
             //}
@@ -424,16 +424,16 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
             //    NotificationsShared.Success("[CHAMS] All materials successfully loaded!");
             //    XMLogging.WriteLine("[CHAMS] All materials loaded successfully on first attempt");
             //}
-//
+            //
             //if (_materials.Count > 0)
             //{
             //    CacheMaterialIds();
             //    XMLogging.WriteLine("[CHAMS] Materials created successfully - notifying managers for color application");
             //    NotifyMaterialsUpdated();
             //}
-//
+            //
             //XMLogging.WriteLine($"[CHAMS MANAGER] Initialize() -> Completed with {_materials.Count}/{allCombos.Count} materials");
-//
+            //
             return _materials.Count > 0;
         }
 
@@ -464,7 +464,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
                 //ulong codeCave = 0x0;
                 //if (!codeCave.IsValidVirtualAddress())
                 //    return false;
-//
+                //
                 //var cache = Cache.ChamsMaterialCache;
                 //if (Cache.CodeCave == codeCave && !cache.IsEmpty)
                 //{
@@ -474,12 +474,12 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
                 //    var invisibleColorId = AssetFactoryIL2CPP.ShaderPropertyToID(invisibleColorMem);
                 //    var expectedCapacity = Math.Max(cache.Count, BundleMapping.Count);
                 //    var tempMaterials = new Dictionary<(ChamsMode, ChamsEntityType), ChamsMaterial>(expectedCapacity);
-//
+                //
                 //    foreach (var kvp in cache)
                 //    {
                 //        var (mode, ptype) = ParseCachedKey(kvp.Key);
                 //        var cached = kvp.Value;
-//
+                //
                 //        var mat = new ChamsMaterial
                 //        {
                 //            Address = cached.Address,
@@ -487,15 +487,15 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
                 //            ColorVisible = visibleColorId,
                 //            ColorInvisible = invisibleColorId
                 //        };
-//
+                //
                 //        tempMaterials[(mode, ptype)] = mat;
                 //    }
-//
+                //
                 //    foreach (var kvp in tempMaterials)
                 //    {
                 //        _materials[kvp.Key] = kvp.Value;
                 //    }
-//
+                //
                 //    XMLogging.WriteLine("[CHAMS MANAGER] TryInitializeFromCache() -> OK");
                 //    XMLogging.WriteLine($"[CHAMS CACHE] Loaded {_materials.Count} materials from cache");
                 //    NotificationsShared.Info($"[CHAMS CACHE] Loaded {_materials.Count} materials from cache");
@@ -509,14 +509,6 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
             }
 
             return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (ChamsMode, ChamsEntityType) ParseCachedKey(int combinedKey)
-        {
-            var mode = combinedKey & 0xFF;
-            var ptype = (combinedKey >> 8) & 0xFF;
-            return ((ChamsMode)mode, (ChamsEntityType)ptype);
         }
 
         private static void CacheMaterialIds()
@@ -560,7 +552,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
             //var materialAddress = AssetFactoryIL2CPP.CreateMaterial();
             //if (materialAddress == 0x0)
             //    throw new Exception("CreateChamsMaterial() -> Failed to create the material from shader!");
-//
+            //
             //var sw = Stopwatch.StartNew();
             //while (sw.Elapsed.TotalSeconds < MaterialCreationTimeoutSeconds)
             //{
@@ -568,12 +560,12 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Chams
             //    {
             //        ulong materialInstance = Memory.ReadValueEnsure<ulong>(materialAddress + ObjectClass.MonoBehaviourOffset);
             //        materialInstance.ThrowIfInvalidVirtualAddress();
-//
+            //
             //        int instanceID = Memory.ReadValueEnsure<int>(materialInstance + MonoBehaviour.InstanceIDOffset);
             //        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(instanceID, 0);
-//
+            //
             //        XMLogging.WriteLine("[CHAMS MANAGER]: Created material instance: " + instanceID);
-//
+            //
             //        return new()
             //        {
             //            Address = materialAddress,

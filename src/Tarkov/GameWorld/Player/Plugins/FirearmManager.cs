@@ -208,24 +208,24 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         /// </summary>
         /// <param name="vertices">Fireport transform vertices.</param>
         private int _fireportStallTicks;
-        
+
         private void UpdateFireport(SharedArray<UnityTransform.TrsX> vertices)
         {
             try
             {
                 var pos = FireportTransform?.UpdatePosition(vertices);
-        
+
                 if (pos == FireportPosition)
                     _fireportStallTicks++;
                 else
                     _fireportStallTicks = 0;
-        
+
                 if (_fireportStallTicks > 30)
                 {
                     ResetFireport();
                     return;
                 }
-        
+
                 FireportPosition = pos;
                 FireportRotation = FireportTransform?.GetRotation(vertices);
             }
@@ -414,10 +414,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 Count = currentCount;
                 MaxCount = maxCount;
 
-                if (_ammo     != null) _lastValidAmmo     = _ammo;
+                if (_ammo != null) _lastValidAmmo = _ammo;
                 if (_fireType != null) _lastValidFireType = _fireType;
-                if (currentCount > 0)  _lastValidCount    = currentCount;
-                if (maxCount     > 0)  _lastValidMaxCount = maxCount;
+                if (currentCount > 0) _lastValidCount = currentCount;
+                if (maxCount > 0) _lastValidMaxCount = maxCount;
             }
 
             /// <summary>

@@ -59,7 +59,7 @@ namespace eft_dma_radar.Common.Misc
                         // Redirect standard output to the console with UTF-8 encoding
                         Console.SetOut(new StreamWriter(Console.OpenStandardOutput(), Encoding.UTF8) { AutoFlush = true });
                         Console.SetError(new StreamWriter(Console.OpenStandardError(), Encoding.UTF8) { AutoFlush = true });
-                        
+
                         Console.Title = "WPF-RADAR Debug Console - IL2CPP Migration";
                         Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.WriteLine("================================================================");
@@ -67,7 +67,7 @@ namespace eft_dma_radar.Common.Misc
                         Console.WriteLine("================================================================");
                         Console.ResetColor();
                         Console.WriteLine();
-                        
+
                         _consoleAllocated = true;
                     }
                 }

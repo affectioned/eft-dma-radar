@@ -13,7 +13,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         private ulong _cachedFrostbiteEffect;
 
         private const float FROSTBITE_DISABLED = 0.0f;
-        private const float FROSTBITE_ENABLED  = 1.0f;
+        private const float FROSTBITE_ENABLED = 1.0f;
 
         public override bool Enabled
         {

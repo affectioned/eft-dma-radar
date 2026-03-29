@@ -1,4 +1,4 @@
-﻿﻿using eft_dma_radar.Tarkov.EFTPlayer;
+﻿using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity.LowLevel;
@@ -351,7 +351,8 @@ namespace eft_dma_radar.UI.Pages
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.Invoke(() => {
+                Dispatcher.Invoke(() =>
+                {
                     RefreshDataGrid();
                     RefreshSorting();
                 });

@@ -9,10 +9,10 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {
     public sealed class FastLoadUnload : MemWriteFeature<FastLoadUnload>
     {
-        private const float FAST_LOAD_SPEED   = 85f;
+        private const float FAST_LOAD_SPEED = 85f;
         private const float FAST_UNLOAD_SPEED = 60f;
 
-        private const float NORMAL_LOAD_SPEED   = 25f;
+        private const float NORMAL_LOAD_SPEED = 25f;
         private const float NORMAL_UNLOAD_SPEED = 15f;
 
         private bool _lastEnabledState;
@@ -58,12 +58,12 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     !unloadSkillPtr.IsValidVirtualAddress())
                     return;
 
-                var loadValueAddr   = loadSkillPtr   + Offsets.SkillValueContainer.Value;
+                var loadValueAddr = loadSkillPtr + Offsets.SkillValueContainer.Value;
                 var unloadValueAddr = unloadSkillPtr + Offsets.SkillValueContainer.Value;
 
                 if (Enabled)
                 {
-                    writes.AddValueEntry(loadValueAddr,   FAST_LOAD_SPEED);
+                    writes.AddValueEntry(loadValueAddr, FAST_LOAD_SPEED);
                     writes.AddValueEntry(unloadValueAddr, FAST_UNLOAD_SPEED);
 
                     writes.Callbacks += () =>
@@ -75,7 +75,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 }
                 else
                 {
-                    writes.AddValueEntry(loadValueAddr,   NORMAL_LOAD_SPEED);
+                    writes.AddValueEntry(loadValueAddr, NORMAL_LOAD_SPEED);
                     writes.AddValueEntry(unloadValueAddr, NORMAL_UNLOAD_SPEED);
 
                     writes.Callbacks += () =>
@@ -100,13 +100,13 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         public override void OnRaidStart()
         {
             _lastEnabledState = default;
-            _appliedThisRaid  = false;
+            _appliedThisRaid = false;
         }
 
         public override void OnGameStop()
         {
             _lastEnabledState = default;
-            _appliedThisRaid  = false;
+            _appliedThisRaid = false;
         }
     }
 }
