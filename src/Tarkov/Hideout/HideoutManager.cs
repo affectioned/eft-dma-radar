@@ -825,8 +825,11 @@ namespace eft_dma_radar.Tarkov.Hideout
                     ? "[HideoutManager] Market data updated."
                     : "[HideoutManager] Market data update skipped/failed — using cached prices.");
 
-                // 2. Re-validate pointer chain (game might have reloaded)
-                if (!IsValid && !TryFind())
+                // 2. Re-validate pointer chain (game might have reloaded).
+                // Always retry TryFind when either the stash or the areas controller
+                // pointer is missing — HideoutController may not have been present the
+                // first time TryFind ran even though the stash was already located.
+                if ((!IsValid || !IsAreasValid) && !TryFind())
                     return "Stash not found — are you in the hideout?";
 
                 // 3. Re-read all stash items with the (possibly refreshed) prices
@@ -835,8 +838,7 @@ namespace eft_dma_radar.Tarkov.Hideout
                 // 4. Re-read hideout area levels from memory
                 ReadAreas();
 
-                return
-                       (marketUpdated ? " (prices updated)" : " (cached prices)");
+                return $"{Items.Count} items" + (marketUpdated ? " (prices updated)" : " (cached prices)");
             }
             catch (Exception ex)
             {

@@ -104,7 +104,7 @@ namespace eft_dma_radar
         private const int MIN_QUEST_PLANNER_PANEL_WIDTH = 300;
         private const int MIN_QUEST_PLANNER_PANEL_HEIGHT = 300;
         private const int MIN_HIDEOUT_STASH_PANEL_WIDTH = 340;
-        private const int MIN_HIDEOUT_STASH_PANEL_HEIGHT = 240;
+        private const int MIN_HIDEOUT_STASH_PANEL_HEIGHT = 300;
         private const int MIN_WATCHLIST_PANEL_WIDTH = 200;
         private const int MIN_WATCHLIST_PANEL_HEIGHT = 200;
         private const int MIN_PLAYERHISTORY_PANEL_WIDTH = 350;
@@ -323,7 +323,6 @@ namespace eft_dma_radar
 
             InitializePanels();
             InitializeUIActivityMonitoring();
-            InitilizeTelemetry();
         }
 
         private void btnDebug_Click(object sender, RoutedEventArgs e)
@@ -1899,16 +1898,6 @@ namespace eft_dma_radar
                 _uiActivityTimer.Stop();
             };
         }
-        private void InitilizeTelemetry()
-        {
-            bool sendUsage = Config?.SendAnonymousUsage ?? true;
-            if (!sendUsage)
-                    return;
-                    
-            Telemetry.Start(appVersion: Program.Version, true);
-            Telemetry.BeatNow(Program.Version);
-        }
-
         private void NotifyUIActivity()
         {
             _uiInteractionActive = true;
@@ -2234,6 +2223,7 @@ namespace eft_dma_radar
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_WIDTH,
                 "MapSetupPanel" => 300,
                 "QuestPlannerPanel" => MIN_QUEST_PLANNER_PANEL_WIDTH,
+                "HideoutStashPanel" => MIN_HIDEOUT_STASH_PANEL_WIDTH,
                 "WatchlistPanel" => MIN_WATCHLIST_PANEL_WIDTH,
                 "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_WIDTH,
                 _ => 200
@@ -2251,6 +2241,7 @@ namespace eft_dma_radar
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_HEIGHT,
                 "MapSetupPanel" => 300,
                 "QuestPlannerPanel" => MIN_QUEST_PLANNER_PANEL_HEIGHT,
+                "HideoutStashPanel" => MIN_HIDEOUT_STASH_PANEL_HEIGHT,
                 "WatchlistPanel" => MIN_WATCHLIST_PANEL_HEIGHT,
                 "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_HEIGHT,
                 _ => 200

@@ -6,7 +6,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d"
              d:DesignHeight="560" d:DesignWidth="540"
-             MinWidth="340" MinHeight="260">
+             MinWidth="340" MinHeight="300">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
