@@ -178,6 +178,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             // Phase 2: Wait for LocalPlayer to be valid (RegisteredPlayers list populated)
             const int maxPlayerAttempts = 60; // 30 seconds max wait
             int attempts = 0;
+            bool alreadyMidRaid = false;
             while (attempts++ < maxPlayerAttempts)
             {
                 ct.ThrowIfCancellationRequested();
@@ -187,6 +188,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     if (IsLocalPlayerInRaid())
                     {
                         XMLogging.WriteLine("[Raid] LocalPlayer confirmed in raid!");
+                        // attempts == 1 means we succeeded on the very first try with no sleep,
+                        // i.e. the radar was launched / restarted while already mid-raid.
+                        alreadyMidRaid = attempts == 1;
                         break;
                     }
                 }
@@ -201,6 +205,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             if (attempts >= maxPlayerAttempts)
                 XMLogging.WriteLine("[Raid] Timeout waiting for raid confirmation, proceeding anyway...");
+
+            // When launched or restarted mid-raid the camera is already initialised by EFT,
+            // so skip the 20 s initial delay and let RefreshCameraManager attempt immediately.
+            if (alreadyMidRaid)
+            {
+                _cameraRetryAfter = 0;
+                XMLogging.WriteLine("[Raid] Mid-raid entry detected, skipping camera init delay.");
+            }
 
             InitializeGameData(ct);
             XMLogging.WriteLine("[Raid] Waiting for real raid start...");
