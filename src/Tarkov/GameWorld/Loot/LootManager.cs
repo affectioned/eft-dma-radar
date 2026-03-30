@@ -30,9 +30,8 @@ namespace eft_dma_radar.Tarkov.Loot
         private readonly CancellationToken _ct;
         private readonly Lock _filterSync = new();
 
-        // Loot refresh caching - only refresh every X seconds
-        private const int LOOT_REFRESH_INTERVAL_MS = 5000; // 5 seconds
-        private DateTime _lastLootRefresh = DateTime.MinValue;
+        // Loot refresh caching - only refresh every 5 seconds
+        private RateLimiter _lootRefreshLimit = new(TimeSpan.FromMilliseconds(5000));
         private bool _initialRefreshDone = false;
 
         // ============================================
@@ -121,16 +120,14 @@ namespace eft_dma_radar.Tarkov.Loot
         {
             try
             {
-                // Only refresh loot every LOOT_REFRESH_INTERVAL_MS to reduce CPU/memory load
-                var now = DateTime.UtcNow;
-                if (_initialRefreshDone && (now - _lastLootRefresh).TotalMilliseconds < LOOT_REFRESH_INTERVAL_MS)
+                // Only refresh loot every 5 seconds to reduce CPU/memory load
+                if (_initialRefreshDone && !_lootRefreshLimit.TryEnter())
                 {
                     // Just refresh the filter (fast operation) without re-reading all loot
                     RefreshFilter();
                     return;
                 }
 
-                _lastLootRefresh = now;
                 GetLoot();
                 RefreshFilter();
 

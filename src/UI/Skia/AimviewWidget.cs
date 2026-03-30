@@ -167,11 +167,13 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             foreach (var player in allPlayers)
             {
-                if (player.Skeleton.UpdateESPWidgetBuffer(scaleX, scaleY))
+                var skeleton = player.Skeleton;
+                if (skeleton is null) continue;
+                if (skeleton.UpdateESPWidgetBuffer(scaleX, scaleY))
                 {
                     _aimviewCanvas.DrawPoints(
                         SKPointMode.Lines,
-                        player.Skeleton.ESPWidgetBuffer.ToArray(),
+                        skeleton.ESPWidgetBuffer.ToArray(),
                         GetPlayerPaint(player)
                     );
                 }

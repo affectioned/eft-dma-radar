@@ -72,6 +72,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         public static implicit operator ulong(Player x) => x.Base;
         private static readonly ConcurrentDictionary<ulong, Stopwatch> _rateLimit = new();
         private static readonly TimeSpan s_skeletonFixInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_rateLimitInterval30s = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan s_btrFixRateLimitInterval = TimeSpan.FromSeconds(5);
         protected static readonly GroupManager _groups = new();
         protected static int _playerScavNumber = 0;
         public virtual int VoipId { get; }
@@ -164,11 +166,11 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             ArgumentOutOfRangeException.ThrowIfZero(playerBase, nameof(playerBase));
             Base = playerBase;
-            // Pre-build rate-limit keys once per player to avoid per-tick string interpolation
-            RateLimitKeyRealtimeNre = $"realtime_nre_{playerBase:X}";
-            RateLimitKeyValidateNre = $"validate_nre_{playerBase:X}";
-            RateLimitKeySkeletonFix = $"skeleton_fix_{playerBase:X}";
-            RateLimitKeyBtrFix = $"btr_fix_{playerBase:X}";
+            // Per-player rate limiters — initialized once, zero allocation on every TryEnter()
+            RealtimeNreLimit = new RateLimiter(s_rateLimitInterval30s);
+            ValidateNreLimit = new RateLimiter(s_rateLimitInterval30s);
+            SkeletonFixLimit = new RateLimiter(s_skeletonFixInterval);
+            BtrFixLimit = new RateLimiter(s_btrFixRateLimitInterval);
         }
         public void SoftResetRuntimeState()
         {
@@ -252,12 +254,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         public ulong Base { get; }
 
         /// <summary>
-        /// Pre-built rate-limit keys to avoid per-tick string allocations.
+        /// Per-player rate limiters — zero allocation, Stopwatch-based.
         /// </summary>
-        internal string RateLimitKeyRealtimeNre { get; }
-        internal string RateLimitKeyValidateNre { get; }
-        internal string RateLimitKeySkeletonFix { get; }
-        internal string RateLimitKeyBtrFix { get; }
+        internal RateLimiter RealtimeNreLimit;
+        internal RateLimiter ValidateNreLimit;
+        internal RateLimiter SkeletonFixLimit;
+        internal RateLimiter BtrFixLimit;
 
         /// <summary>
         /// True if the Player is Active (in the player list).
@@ -764,21 +766,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             // Stuck recovery (ONE-SHOT)
             // -------------------------
             if (Skeleton.IsLikelyStuck &&
-                ErrorTimer.ElapsedMilliseconds > 800)
+                ErrorTimer.ElapsedMilliseconds > 800 &&
+                SkeletonFixLimit.TryEnter())
             {
-                // Rate limit skeleton fix messages to prevent spam (max once per 10 seconds per player)
-                Log.WriteRateLimited(
-                    AppLogLevel.Warning,
-                    RateLimitKeySkeletonFix,
-                    s_skeletonFixInterval,
-                    $"{Name} skeleton frozen — soft reset",
-                    "SKELETON FIX");
+                Log.Write(AppLogLevel.Warning, $"{Name} skeleton frozen — soft reset", "SKELETON FIX");
 
-                SoftResetRuntimeState();
-                Skeleton.ResetESPCacheAndTransforms();
-
-                // Explicitly clear stuck state
-                Skeleton.IsLikelyStuck = false;
+                var stuckSkeleton = Skeleton; // capture before null-out
+                SoftResetRuntimeState();      // sets Skeleton = null
+                stuckSkeleton?.ResetESPCacheAndTransforms();
             }
         }
 
@@ -2095,7 +2090,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             if (this == localPlayer || !IsActive || !IsAlive)
                 return;
 
-            if (!Skeleton.HasValidPosition)
+            var skeleton = Skeleton; // snapshot once — memory thread may null this any time
+            if (skeleton is null || !skeleton.HasValidPosition)
                 return;
 
             var espSettings = ESP.Config.PlayerTypeESPSettings
@@ -2123,7 +2119,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
 
             // ---------------- BOX ----------------
-            var box = Skeleton.GetESPBox(baseScreen);
+            var box = skeleton.GetESPBox(baseScreen);
             if (box == null)
                 return;
 
@@ -2133,7 +2129,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             // ---------------- SKELETON ----------------
             if (renderMode == ESPPlayerRenderMode.Bones)
             {
-                if (!Skeleton.UpdateESPBuffer())
+                if (!skeleton.UpdateESPBuffer())
                     return;
 
                 for (int i = 0; i < SkeletonSegments.Length; i++)
@@ -2145,7 +2141,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     var p0 = Skeleton.ESPBuffer[idx];
                     var p1 = Skeleton.ESPBuffer[idx + 1];
 
-                    // HARD GUARD ¡ú prevents long diagonal lines
+                    // HARD GUARD → prevents long diagonal lines
                     if (!p0.IsFinite() || !p1.IsFinite())
                         continue;
 
@@ -2168,7 +2164,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             else if (renderMode == ESPPlayerRenderMode.HeadDot)
             {
                 if (CameraManagerBase.WorldToScreen(
-                        ref Skeleton.Bones[Bones.HumanHead].Position,
+                        ref skeleton.Bones[Bones.HumanHead].Position,
                         out var headScreen, true, true))
                 {
                     canvas.DrawCircle(headScreen, 1.5f * ESP.Config.FontScale, paints.Item1);

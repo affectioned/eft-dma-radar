@@ -90,12 +90,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
         // Pre-allocated TimeSpans to avoid per-tick allocations in hot paths
         private static readonly TimeSpan s_rateLimitInterval1ms = TimeSpan.FromMilliseconds(1);
-        private static readonly TimeSpan s_rateLimitInterval10s = TimeSpan.FromSeconds(10);
-        private static readonly TimeSpan s_rateLimitInterval30s = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan s_miscSleepTarget = TimeSpan.FromMilliseconds(50);
         private static readonly TimeSpan s_grenadeSleepTarget = TimeSpan.FromMilliseconds(10);
         private static readonly TimeSpan s_fastSleepTarget = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan s_interactablesSleepTarget = TimeSpan.FromMilliseconds(750);
+        // Static rate limiters for loop-wide exceptions (shared across all raid instances)
+        private static RateLimiter s_realtimeLoopExLimit = new(TimeSpan.FromSeconds(10));
+        private static RateLimiter s_validateLoopExLimit = new(TimeSpan.FromSeconds(10));
 
         public bool InRaid => !_disposed;
         public IReadOnlyCollection<Player> Players => _rgtPlayers;
@@ -835,12 +836,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     }
                     catch (NullReferenceException nre)
                     {
-                        Log.WriteRateLimited(
-                            AppLogLevel.Warning,
-                            p.RateLimitKeyRealtimeNre,
-                            s_rateLimitInterval30s,
-                            $"[{p.Name} @ 0x{p.Base:X}] OnRealtimeLoop NRE (transient allocation race): {nre.Message}",
-                            "RealtimeLoop");
+                        if (p.RealtimeNreLimit.TryEnter())
+                            Log.Write(AppLogLevel.Warning,
+                                $"[{p.Name} @ 0x{p.Base:X}] OnRealtimeLoop NRE (transient allocation race): {nre.Message}",
+                                "RealtimeLoop");
                     }
                 }
 
@@ -852,12 +851,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                Log.WriteRateLimited(
-                    AppLogLevel.Warning,
-                    "realtime_loop_ex",
-                    s_rateLimitInterval10s,
-                    $"UpdatePlayers Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
-                    "RealtimeLoop");
+                if (s_realtimeLoopExLimit.TryEnter())
+                    Log.Write(AppLogLevel.Warning,
+                        $"UpdatePlayers Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
+                        "RealtimeLoop");
             }
         }
 
@@ -999,12 +996,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         }
                         catch (NullReferenceException nre)
                         {
-                            Log.WriteRateLimited(
-                                AppLogLevel.Warning,
-                                p.RateLimitKeyValidateNre,
-                                s_rateLimitInterval30s,
-                                $"[{p.Name} @ 0x{p.Base:X}] OnValidateTransforms NRE (transient allocation race): {nre.Message}",
-                                "ValidateTransforms");
+                            if (p.ValidateNreLimit.TryEnter())
+                                Log.Write(AppLogLevel.Warning,
+                                    $"[{p.Name} @ 0x{p.Base:X}] OnValidateTransforms NRE (transient allocation race): {nre.Message}",
+                                    "ValidateTransforms");
                         }
                     }
                     scatterMap.Execute(); // execute scatter read
@@ -1016,12 +1011,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                Log.WriteRateLimited(
-                    AppLogLevel.Warning,
-                    "validate_transforms_ex",
-                    s_rateLimitInterval10s,
-                    $"ValidatePlayerTransforms Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
-                    "ValidateTransforms");
+                if (s_validateLoopExLimit.TryEnter())
+                    Log.Write(AppLogLevel.Warning,
+                        $"ValidatePlayerTransforms Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
+                        "ValidateTransforms");
             }
         }
 

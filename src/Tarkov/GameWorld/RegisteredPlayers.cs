@@ -123,7 +123,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 Log.WriteLine($"CRITICAL ERROR - RegisteredPlayers Loop FAILED: {ex}");
             }
         }
-        private static readonly TimeSpan s_btrRateLimitInterval = TimeSpan.FromSeconds(5);
+        private static RateLimiter s_btrFixLocalLimit = new(TimeSpan.FromSeconds(5));
         /// <summary>
         /// Scratch list reused by HandleBtrStickiness to avoid per-call allocation.
         /// </summary>
@@ -207,21 +207,17 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     if (isLocal)
                     {
-                        Log.WriteRateLimited(
-                            AppLogLevel.Warning,
-                            "btr_fix_local",
-                            s_btrRateLimitInterval,
-                            "LocalPlayer stuck to BTR with rotating view — soft reset",
-                            "BTR FIX");
+                        if (s_btrFixLocalLimit.TryEnter())
+                            Log.Write(AppLogLevel.Warning,
+                                "LocalPlayer stuck to BTR with rotating view — soft reset",
+                                "BTR FIX");
                     }
                     else
                     {
-                        Log.WriteRateLimited(
-                            AppLogLevel.Warning,
-                            player.RateLimitKeyBtrFix,
-                            s_btrRateLimitInterval,
-                            $"Stuck player {player.Name} rotating at BTR — soft reset",
-                            "BTR FIX");
+                        if (player.BtrFixLimit.TryEnter())
+                            Log.Write(AppLogLevel.Warning,
+                                $"Stuck player {player.Name} rotating at BTR — soft reset",
+                                "BTR FIX");
                     }
 
                     player.BtrStickTicks = 0;

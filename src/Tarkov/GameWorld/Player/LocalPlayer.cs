@@ -24,8 +24,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         private float _cachedEnergy = 0f;
         private float _cachedHydration = 0f;
-        private DateTime _lastEnergyHydrationRead = DateTime.MinValue;
-        private readonly TimeSpan _energyHydrationCacheTime = TimeSpan.FromSeconds(3);
+        private RateLimiter _energyHydrationRefreshLimit = new(TimeSpan.FromSeconds(3));
+        private RateLimiter _energyHydrationErrLimit = new(TimeSpan.FromSeconds(30));
         private Action<ScatterReadIndex> _localRealtimeCallback;
 
         /// <summary>
@@ -229,7 +229,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (_energyPtr == 0)
                     return 100f; // Default if not available
 
-                if (DateTime.UtcNow - _lastEnergyHydrationRead >= _energyHydrationCacheTime)
+                if (_energyHydrationRefreshLimit.TryEnter())
                     UpdateEnergyHydrationCache();
 
                 return _cachedEnergy;
@@ -252,7 +252,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (_hydrationPtr == 0)
                     return 100f; // Default if not available
 
-                if (DateTime.UtcNow - _lastEnergyHydrationRead >= _energyHydrationCacheTime)
+                if (_energyHydrationRefreshLimit.TryEnter())
                     UpdateEnergyHydrationCache();
 
                 return _cachedHydration;
@@ -285,17 +285,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 _cachedEnergy = energyStruct.Current;
                 _cachedHydration = hydrationStruct.Current;
-                _lastEnergyHydrationRead = DateTime.UtcNow;
             }
             catch (Exception ex)
             {
                 // Rate limit this error message
-                Log.WriteRateLimited(
-                    AppLogLevel.Error,
-                    "update_energy_hydration",
-                    TimeSpan.FromSeconds(30),
-                    $"UpdateEnergyHydrationCache failed: {ex.Message}",
-                    "LocalPlayer");
+                if (_energyHydrationErrLimit.TryEnter())
+                    Log.Write(AppLogLevel.Error,
+                        $"UpdateEnergyHydrationCache failed: {ex.Message}",
+                        "LocalPlayer");
             }
         }
     }
