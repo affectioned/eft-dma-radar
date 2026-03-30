@@ -108,8 +108,12 @@ namespace eft_dma_radar.Common.Misc
         {
             try
             {
+                // Disarm the timer first, then close the kernel object.
+                // CloseHandle is required: without it the kernel object leaks and any
+                // WaitForSingleObject blocked on this handle will never wake up after
+                // CancelWaitableTimer disarms it.
                 CancelWaitableTimer(handle);
-                return true;
+                return CloseHandle(handle);
             }
             catch (Exception ex)
             {
@@ -123,5 +127,8 @@ namespace eft_dma_radar.Common.Misc
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CancelWaitableTimer(nint hTimer);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(nint hObject);
     }
 }

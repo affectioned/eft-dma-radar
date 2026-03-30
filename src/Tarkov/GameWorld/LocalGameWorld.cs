@@ -814,8 +814,24 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     cm.OnRealtimeLoop(round1[-1], localPlayer);
                 }
 
-                for (int i = 0; i < _activeScratch.Count; i++)
-                    _activeScratch[i].OnRealtimeLoop(round1[i]);
+                var count = _activeScratch.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var p = _activeScratch[i];
+                    try
+                    {
+                        p.OnRealtimeLoop(round1[i]);
+                    }
+                    catch (NullReferenceException nre)
+                    {
+                        LoggingEnhancements.LogRateLimited(
+                            AppLogLevel.Warning,
+                            $"realtime_nre_{p.Base:X}",
+                            TimeSpan.FromSeconds(30),
+                            $"[{p.Name} @ 0x{p.Base:X}] OnRealtimeLoop NRE (transient allocation race): {nre.Message}",
+                            "RealtimeLoop");
+                    }
+                }
 
                 scatterMap.Execute(); // Execute scatter read
             }
@@ -825,7 +841,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR - UpdatePlayers Loop FAILED: {ex}");
+                LoggingEnhancements.LogRateLimited(
+                    AppLogLevel.Warning,
+                    "realtime_loop_ex",
+                    TimeSpan.FromSeconds(10),
+                    $"UpdatePlayers Loop FAILED: {ex.GetType().Name}: {ex.Message}",
+                    "RealtimeLoop");
             }
         }
 
@@ -952,8 +973,24 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     using var scatterMap = ScatterReadMap.Get();
                     var round1 = scatterMap.AddRound();
                     var round2 = scatterMap.AddRound();
-                    for (int i = 0; i < _activeScratch.Count; i++)
-                        _activeScratch[i].OnValidateTransforms(round1[i], round2[i]);
+                    var count = _activeScratch.Count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        var p = _activeScratch[i];
+                        try
+                        {
+                            p.OnValidateTransforms(round1[i], round2[i]);
+                        }
+                        catch (NullReferenceException nre)
+                        {
+                            LoggingEnhancements.LogRateLimited(
+                                AppLogLevel.Warning,
+                                $"validate_nre_{p.Base:X}",
+                                TimeSpan.FromSeconds(30),
+                                $"[{p.Name} @ 0x{p.Base:X}] OnValidateTransforms NRE (transient allocation race): {nre.Message}",
+                                "ValidateTransforms");
+                        }
+                    }
                     scatterMap.Execute(); // execute scatter read
                 }
             }
@@ -963,7 +1000,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR - ValidatePlayerTransforms Loop FAILED: {ex}");
+                LoggingEnhancements.LogRateLimited(
+                    AppLogLevel.Warning,
+                    "validate_transforms_ex",
+                    TimeSpan.FromSeconds(10),
+                    $"ValidatePlayerTransforms Loop FAILED: {ex.GetType().Name}: {ex.Message}",
+                    "ValidateTransforms");
             }
         }
 

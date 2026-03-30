@@ -196,11 +196,22 @@ namespace eft_dma_radar.Tarkov
         {
             XMLogging.WriteLine("New Game Startup");
 
+            // Track time since last ForceFullRefresh to avoid hammering the DMA hardware
+            // (ForceFullRefresh drives PCIe DMA bus traffic; on systems where the DMA card
+            // is connected via USB4/Thunderbolt, back-to-back calls within 1 s can crash
+            // the USBXHCI kernel driver with KMODE_EXCEPTION_NOT_HANDLED).
+            var refreshCooldown = new Stopwatch();
+
             while (true) // Startup loop
             {
                 try
                 {
-                    FullRefresh();
+                    // Only refresh if enough time has passed since the last one.
+                    if (!refreshCooldown.IsRunning || refreshCooldown.ElapsedMilliseconds >= 3000)
+                    {
+                        FullRefresh();
+                        refreshCooldown.Restart();
+                    }
                     ResourceJanitor.Run();
                     LoadProcess();
 
@@ -210,6 +221,7 @@ namespace eft_dma_radar.Tarkov
                     XMLogging.WriteLine("[Startup] Process found, waiting for modules to load...");
                     Thread.Sleep(5000);
                     FullRefresh();
+                    refreshCooldown.Restart();
 
                     LoadModules();
 
