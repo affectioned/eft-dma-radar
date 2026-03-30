@@ -1,4 +1,4 @@
-﻿using eft_dma_radar.Common.DMA.ScatterAPI;
+using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using System.Diagnostics;
@@ -226,7 +226,7 @@ namespace eft_dma_radar.Common.DMA
 
         /// <summary>
         /// Performs multiple reads in one sequence using the native VmmScatter API.
-        /// Page deduplication and result extraction are handled at the native layer â€”
+        /// Page deduplication and result extraction are handled at the native layer —
         /// no managed HashSet, page array, or results dictionary is allocated.
         /// </summary>
         public void ReadScatter(IScatterEntry[] entries, bool useCache = true)

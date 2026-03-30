@@ -84,7 +84,8 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private bool _disposed;
         private bool _raidStarted;
         private int _mapCheckTick;
-        private readonly List<Player> _activeScratch = new(128);
+        private readonly List<Player> _realtimeScratch = new(128);
+        private readonly List<Player> _validateScratch = new(128);
 
         public bool InRaid => !_disposed;
         public IReadOnlyCollection<Player> Players => _rgtPlayers;
@@ -794,14 +795,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 var localPlayer = LocalPlayer;
 
                 // Single pass: collect active+alive players into pre-allocated scratch list
-                _activeScratch.Clear();
+                _realtimeScratch.Clear();
                 foreach (var p in _rgtPlayers)
                 {
                     if (p.IsActive && p.IsAlive)
-                        _activeScratch.Add(p);
+                        _realtimeScratch.Add(p);
                 }
 
-                if (_activeScratch.Count == 0)
+                if (_realtimeScratch.Count == 0)
                 {
                     Thread.Sleep(1);
                     return;
@@ -814,10 +815,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     cm.OnRealtimeLoop(round1[-1], localPlayer);
                 }
 
-                var count = _activeScratch.Count;
+                var count = _realtimeScratch.Count;
                 for (int i = 0; i < count; i++)
                 {
-                    var p = _activeScratch[i];
+                    var p = _realtimeScratch[i];
                     try
                     {
                         p.OnRealtimeLoop(round1[i]);
@@ -845,7 +846,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     AppLogLevel.Warning,
                     "realtime_loop_ex",
                     TimeSpan.FromSeconds(10),
-                    $"UpdatePlayers Loop FAILED: {ex.GetType().Name}: {ex.Message}",
+                    $"UpdatePlayers Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
                     "RealtimeLoop");
             }
         }
@@ -961,22 +962,22 @@ namespace eft_dma_radar.Tarkov.GameWorld
             try
             {
                 // Single pass: collect eligible players into pre-allocated scratch list
-                _activeScratch.Clear();
+                _validateScratch.Clear();
                 foreach (var p in _rgtPlayers)
                 {
                     if (p.IsActive && p.IsAlive && p is not BtrOperator)
-                        _activeScratch.Add(p);
+                        _validateScratch.Add(p);
                 }
 
-                if (_activeScratch.Count > 0)
+                if (_validateScratch.Count > 0)
                 {
                     using var scatterMap = ScatterReadMap.Get();
                     var round1 = scatterMap.AddRound();
                     var round2 = scatterMap.AddRound();
-                    var count = _activeScratch.Count;
+                    var count = _validateScratch.Count;
                     for (int i = 0; i < count; i++)
                     {
-                        var p = _activeScratch[i];
+                        var p = _validateScratch[i];
                         try
                         {
                             p.OnValidateTransforms(round1[i], round2[i]);
@@ -1004,7 +1005,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     AppLogLevel.Warning,
                     "validate_transforms_ex",
                     TimeSpan.FromSeconds(10),
-                    $"ValidatePlayerTransforms Loop FAILED: {ex.GetType().Name}: {ex.Message}",
+                    $"ValidatePlayerTransforms Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
                     "ValidateTransforms");
             }
         }

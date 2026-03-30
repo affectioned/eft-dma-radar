@@ -1,4 +1,4 @@
-﻿using static eft_dma_radar.Tarkov.MemoryInterface;
+using static eft_dma_radar.Tarkov.MemoryInterface;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
@@ -192,7 +192,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
                 if (dictPtr == 0)
                     return counters;
 
-                // Dictionary<MongoID, TaskConditionCounter> â€” value is a pointer to the counter object
+                // Dictionary<MongoID, TaskConditionCounter> — value is a pointer to the counter object
                 using var dict = MemDictionary<Types.MongoID, ulong>.Get(dictPtr);
 
                 foreach (var entry in dict)

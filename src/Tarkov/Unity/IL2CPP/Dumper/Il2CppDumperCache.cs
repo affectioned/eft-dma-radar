@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,18 +9,18 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 {
     public static partial class Il2CppDumper
     {
-        // â”€â”€ Cache file path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Cache file path ──────────────────────────────────────────────────────
 
         private static readonly string CacheFilePath =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "eft-dma-radar-public", "il2cpp_offsets.json");
 
-        // â”€â”€ Serialization model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Serialization model ──────────────────────────────────────────────────
 
         /// <summary>
         /// Root cache document. Versioned by the GameAssembly base address so that
         /// a cache written against one build of the game is automatically discarded
         /// when the game updates (base address changes with ASLR per-boot, but the
-        /// RVA embedded in the cache is what matters â€” we use the resolved
+        /// RVA embedded in the cache is what matters — we use the resolved
         /// TypeInfoTableRva as the version fingerprint since it is stable within a
         /// single game build and changes when the binary changes).
         /// </summary>
@@ -41,7 +41,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             public Dictionary<string, string> Fields { get; set; } = new();
         }
 
-        // â”€â”€ Persistence helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Persistence helpers ──────────────────────────────────────────────────
 
         private static readonly JsonSerializerOptions _jsonOpts = new()
         {
@@ -67,7 +67,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 var json = JsonSerializer.Serialize(cache, _jsonOpts);
                 Directory.CreateDirectory(Path.GetDirectoryName(CacheFilePath)!);
                 File.WriteAllText(CacheFilePath, json);
-                Log.WriteLine($"[Il2CppDumper] Cache saved â†’ {CacheFilePath}");
+                Log.WriteLine($"[Il2CppDumper] Cache saved → {CacheFilePath}");
             }
             catch (Exception ex)
             {
@@ -94,7 +94,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             {
                 if (!File.Exists(CacheFilePath))
                 {
-                    Log.WriteLine("[Il2CppDumper] No cache file found â€” will perform live dump.");
+                    Log.WriteLine("[Il2CppDumper] No cache file found — will perform live dump.");
                     return false;
                 }
 
@@ -103,7 +103,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 if (cache is null || cache.Fields.Count == 0)
                 {
-                    Log.WriteLine("[Il2CppDumper] Cache file is empty or corrupt â€” will perform live dump.");
+                    Log.WriteLine("[Il2CppDumper] Cache file is empty or corrupt — will perform live dump.");
                     return false;
                 }
 
@@ -111,28 +111,28 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 {
                     Log.WriteLine(
                         $"[Il2CppDumper] Cache RVA mismatch: cached=0x{cache.TypeInfoTableRva:X} " +
-                        $"current=0x{expectedRva:X} â€” cache is stale, performing live dump.");
+                        $"current=0x{expectedRva:X} — cache is stale, performing live dump.");
                     return false;
                 }
 
                 int applied = ApplyCachedFields(cache.Fields);
-                Log.WriteLine($"[Il2CppDumper] Cache loaded â€” {applied}/{cache.Fields.Count} fields applied.");
+                Log.WriteLine($"[Il2CppDumper] Cache loaded — {applied}/{cache.Fields.Count} fields applied.");
                 return applied > 0;
             }
             catch (Exception ex)
             {
-                Log.WriteLine($"[Il2CppDumper] Cache load FAILED: {ex.Message} â€” will perform live dump.");
+                Log.WriteLine($"[Il2CppDumper] Cache load FAILED: {ex.Message} — will perform live dump.");
                 return false;
             }
         }
 
-        // â”€â”€ Reflection over Offsets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Reflection over Offsets ──────────────────────────────────────────────
 
         private const BindingFlags _bf = BindingFlags.Public | BindingFlags.Static;
 
         /// <summary>
         /// Walks every public static non-const field of every nested struct inside
-        /// <see cref="Offsets"/> and returns them as "StructName.FieldName" â†’ value string.
+        /// <see cref="Offsets"/> and returns them as "StructName.FieldName" → value string.
         /// Handles uint, ulong, int, and uint[] (stores first element for deref chains).
         /// </summary>
         private static Dictionary<string, string> CollectAllFields()
@@ -167,7 +167,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         }
 
         /// <summary>
-        /// Applies a set of "StructName.FieldName" â†’ value-string entries back onto
+        /// Applies a set of "StructName.FieldName" → value-string entries back onto
         /// the static fields of the corresponding nested structs inside <see cref="Offsets"/>.
         /// </summary>
         private static int ApplyCachedFields(Dictionary<string, string> fields)

@@ -1,4 +1,4 @@
-﻿using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
+using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
 using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.Features.MemoryWrites;
@@ -436,7 +436,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             get
             {
-                // HARD GUARD Â¡Âª prevents ALL render crashes
+                // HARD GUARD ¡ª prevents ALL render crashes
                 if (Skeleton == null || Skeleton.Root == null)
                     return ref _cachedPosition;
 
@@ -718,7 +718,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         }
                         catch
                         {
-                            // Transform chain likely invalidated Â¡Ãº rebuild just this bone
+                            // Transform chain likely invalidated ¡ú rebuild just this bone
                             Skeleton.ResetTransform(tr.Key);
                             bonesOk = false;
                         }
@@ -753,7 +753,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         AppLogLevel.Warning,
                         $"skeleton_fix_{Base:X}",
                         TimeSpan.FromSeconds(10),
-                        $"{Name} skeleton frozen â†’ soft reset",
+                        $"{Name} skeleton frozen → soft reset",
                         "SKELETON FIX");
 
                     SoftResetRuntimeState();
@@ -784,7 +784,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 var rootVerts = skeleton.Root.VerticesAddr;
                 if (!_verticesOwner.TryAdd(rootVerts, this))
                 {
-                    // Already owned by someone else â€” stale Body pointer, retry later.
+                    // Already owned by someone else — stale Body pointer, retry later.
                     if (_verticesOwner.TryGetValue(rootVerts, out var owner) && owner != this)
                         throw new InvalidOperationException(
                             $"VerticesAddr 0x{rootVerts:X} already owned by player 0x{owner:X}");
@@ -798,7 +798,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 // Release any claim we might have registered before failing.
                 if (Skeleton == null && Body != 0)
                 {
-                    // Nothing was assigned yet â€” no claim to release.
+                    // Nothing was assigned yet — no claim to release.
                 }
                 Skeleton = null;
                 return false;
@@ -872,7 +872,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         {
                             Log.WriteLine($"ERROR rebuilding skeleton for '{Name}': {ex}");
                         }
-                        return; // Root changed â†’ all bones already reset, skip per-bone check
+                        return; // Root changed → all bones already reset, skip per-bone check
                     }
 
                     // Non-root bones
@@ -2127,7 +2127,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     var p0 = Skeleton.ESPBuffer[idx];
                     var p1 = Skeleton.ESPBuffer[idx + 1];
 
-                    // HARD GUARD Â¡Ãº prevents long diagonal lines
+                    // HARD GUARD ¡ú prevents long diagonal lines
                     if (!p0.IsFinite() || !p1.IsFinite())
                         continue;
 
