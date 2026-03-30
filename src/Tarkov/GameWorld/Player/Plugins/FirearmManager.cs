@@ -272,7 +272,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             private string _fireType;
             private string _ammo;
 
-            internal static bool DebugLogging = true;
+            internal static bool DebugLogging = false;
 
             private string _lastValidAmmo;
             private string _lastValidFireType;
