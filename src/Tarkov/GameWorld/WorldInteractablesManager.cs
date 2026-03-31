@@ -30,7 +30,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (!world.IsValidVirtualAddress())
                     return;
 
-                interactableArrayPtr = Memory.ReadPtr(world + Offsets.WorldController.Interactables, true);
+                interactableArrayPtr = Memory.ReadPtr(world + 0x30, true);
 
                 if (!interactableArrayPtr.IsValidVirtualAddress())
                     return;
