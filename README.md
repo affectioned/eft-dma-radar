@@ -2,7 +2,7 @@
 
 ## I will try to add some tweaks I find useful and push it to the main repo and pray that they add it. For now I started with the custom font uploader/remover button in the settings (gear icon)
 
-Please note that I am not a professional coder and will never claim to be. I just vibe code and read im able to read codes but not make it myself. Official improvement from the devs will be needed.
+Please note that I am not a professional coder and will never claim to be. I just vibe code and im able to read codes but not make it myself. Official improvement from the devs will be needed.
 
 ## How do I start using this?
 1. Download & extract the solution
