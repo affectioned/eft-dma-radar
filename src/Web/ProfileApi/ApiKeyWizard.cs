@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -38,7 +39,7 @@ namespace eft_dma_radar.Tarkov.API
             }
             catch { return false; }
         }
-        
+
         // OSC-8 hyperlink: ESC ] 8 ; ; <URL> ESC \ <TEXT> ESC ] 8 ; ; ESC \
         private static void SafeWriteHyperlink(string text, string url)
         {
@@ -49,7 +50,7 @@ namespace eft_dma_radar.Tarkov.API
             }
             catch { /* ignore */ }
         }
-        
+
         private static void OpenUrl(string url)
         {
             try
@@ -245,7 +246,7 @@ namespace eft_dma_radar.Tarkov.API
             try
             {
                 int height = Console.WindowHeight;
-                int width  = Console.WindowWidth;
+                int width = Console.WindowWidth;
                 int startTop = Math.Max(0, (height - lines.Length) / 2);
 
                 for (int i = 0; i < lines.Length; i++)

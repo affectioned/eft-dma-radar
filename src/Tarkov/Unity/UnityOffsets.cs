@@ -14,24 +14,24 @@ namespace eft_dma_radar.Common.Unity
         public readonly struct ObjectClass
         {
             public const uint MonoBehaviourOffset = 0x10;  // ObjectClass â†? MonoBehaviour
-            
+
             /// <summary>Chain to read class name from ObjectClass: [0x0, 0x10] â†? string pointer</summary>
             public static readonly uint[] ToNamePtr = [0x0, 0x10];
         }
         #endregion
-        
+
         #region Component (MonoBehaviour base)
         public readonly struct Component
         {
             public const uint Size = 0x58; // IL2CPP: 0x58, Mono was: 0x38
             public static readonly uint[] To_NativeClassName = new uint[] { 0x0, 0x10 }; // String
-            
+
             // IL2CPP Component offsets (from XM Dec 2025)
             public const uint ObjectClassOffset = 0x20; // IL2CPP: 0x30 - Component â†? ObjectClass (InteractiveClass)
             public const uint GameObject = 0x58;        // IL2CPP: 0x58 - Component â†? GameObject (Mono was: 0x30)
         }
         #endregion
-        
+
         #region GameObject
         public readonly struct GameObject
         {
@@ -39,16 +39,16 @@ namespace eft_dma_radar.Common.Unity
             public const uint ObjectClassOffset = 0x80;
             public const uint ComponentsOffset = 0x58;   // GameObject â†? ComponentArray
             public const uint NameOffset = 0x88;         // GameObject â†? Name string pointer
-        }        
+        }
         #endregion
-        
+
         #region ComponentArray
         public readonly struct ComponentArray
         {
             public const uint Items = 0x8;  // First component entry in array
         }
         #endregion
-        
+
         #region Transform
         public readonly struct Transform
         {
@@ -56,7 +56,7 @@ namespace eft_dma_radar.Common.Unity
             public const uint InternalOffset = 0x10;     // Final dereference â†? TransformInternal
         }
         #endregion
-        
+
         #region ModuleBase (UnityPlayer.dll offsets)
         public readonly struct ModuleBase
         {
@@ -64,10 +64,10 @@ namespace eft_dma_radar.Common.Unity
             // NOTE: GameObjectManager uses signature scanning with this as fallback
             // SIGNATURE: "48 89 05 ?? ?? ?? ?? 48 83 C4 ?? C3 33 C9"
             public const uint GameObjectManager = 0x1A233A0; // IL2CPP GOM (XM Dec 2025)
-            
+
             // Camera offsets (less frequently changed)
             public const uint AllCameras = 0x19F3080; // IL2CPP AllCameras (XM Dec 2025)
-            
+
             // Legacy/unused in IL2CPP mode
             public const uint InputManager = 0x1C91748;
             public const uint GfxDevice = 0x1CF9F48; // g_MainGfxDevice , Type GfxDeviceClient
@@ -87,7 +87,7 @@ namespace eft_dma_radar.Common.Unity
             // IL2CPP offsets (from XM Dec 2025)
             public const uint IndexOffset = 0x78; // IL2CPP: 0x78, Mono was different
             public const uint HierarchyOffset = 0x70; // IL2CPP: 0x70, Mono was different
-            
+
             // Legacy Mono names (kept for compatibility, but values updated to IL2CPP)
             public const uint Vertices = 0x68; // IL2CPP Hierarchy_VerticesOffset
             public const uint Indices = 0x40; // IL2CPP Hierarchy_IndicesOffset
@@ -101,12 +101,12 @@ namespace eft_dma_radar.Common.Unity
             public const uint Materials = 0x170; // m_Materials : dynamic_array<PPtr<Material>,0>
             public const uint Count = 0x180; // Extends from m_Materials type (0x20 length?)
             const int IL2CPP_ARRAY_LENGTH = 0x18;
-            const int IL2CPP_ARRAY_DATA   = 0x20;            
+            const int IL2CPP_ARRAY_DATA = 0x20;
         }
         public static class Il2CppArray
         {
             public const uint Length = 0x18;
-            public const uint Data   = 0x20;
+            public const uint Data = 0x20;
         }
         public readonly struct Behaviour
         {
@@ -115,11 +115,11 @@ namespace eft_dma_radar.Common.Unity
         }
         public readonly struct Camera
         {
-            // IL2CPP offsets (updated Dec 2025)
-            public const uint ViewMatrix = 0x128;      // IL2CPP: 0x128 (was 0x100 in Mono)
-            public const uint FOV = 0x1A8;             // IL2CPP: 0x1A8 (was 0x180 in Mono)
+            // IL2CPP offsets (updated Dec 2025) — resolved dynamically via sig scan, hardcoded as fallback
+            public static uint ViewMatrix = 0x128;      // IL2CPP: 0x128 (was 0x100 in Mono)
+            public static uint FOV = 0x1A8;             // IL2CPP: 0x1A8 (was 0x180 in Mono)
             public const uint LastPosition = 0x454;    // TODO: Verify for IL2CPP
-            public const uint AspectRatio = 0x518;     // IL2CPP: 0x518 (was 0x4F0 in Mono)
+            public static uint AspectRatio = 0x518;     // IL2CPP: 0x518 (was 0x4F0 in Mono)
             public const uint ZoomLevel = 0xE8;        // IL2CPP: Zoom level (used for scope detection)
             public const uint DerefIsAddedOffset = 0x35; // IL2CPP: IsAdded offset after +0x10 dereference (DEC 2025 from Camera-PWA)
             public const uint OcclusionCulling = 0x524; // bool, Camera::CopiableState -> m_OcclusionCulling
@@ -134,7 +134,7 @@ namespace eft_dma_radar.Common.Unity
                 Component.ObjectClassOffset
             ];
         }
-        
+
         public readonly struct GfxDeviceClient
         {
             public const uint Viewport = 0x25A0; // m_Viewport      RectT<int> ?
@@ -173,7 +173,7 @@ namespace eft_dma_radar.Common.Unity
         // These use IL2CPP offsets and should be updated when game updates.
         // VERIFIED WORKING: Dec 2025 (XM + Camera-PWA sources)
         // ============================================================
-        
+
         /// <summary>
         /// 6-element chain to get TransformInternal from any MonoBehaviour-derived object.
         /// Usage: Memory.ReadPtrChain(objectBase, TransformChain)
@@ -205,12 +205,12 @@ namespace eft_dma_radar.Common.Unity
             0x18,                           // Component entry
             Component.ObjectClassOffset     // 0x30
         ];
-       
+
         #endregion
 
         #region .NET Runtime Structures (Extremely Stable)
         // These are C# runtime internal structures - virtually never change
-        
+
         /// <summary>
         /// List&lt;T&gt; structure offsets (IL2CPP)
         /// </summary>
@@ -228,7 +228,7 @@ namespace eft_dma_radar.Common.Unity
             public const uint FirstElement = 0x20;  // First element (after header)
             public const uint ElementSize = 0x8;    // Size of pointer element
         }
-        
+
         /// <summary>
         /// MongoID struct offsets (UPDATED Dec 2025 from Camera-PWA)
         /// </summary>
@@ -238,7 +238,7 @@ namespace eft_dma_radar.Common.Unity
             public const uint Counter = 0x08;      // ulong
             public const uint StringID = 0x10;     // string pointer - CONFIRMED Dec 2025
         }
-        
+
         /// <summary>
         /// HashSet&lt;T&gt; structure offsets (IL2CPP with inline MongoID storage)
         /// Used for: CompletedConditions, quest tracking, etc.
@@ -248,7 +248,7 @@ namespace eft_dma_radar.Common.Unity
             public const uint BucketCount = 0x18;       // int - bucket/entry count (small prime: 3, 7, 17...)
             public const uint EntriesStart = 0x20;      // Entry[0] starts here (inline storage)
             public const int EntrySize = 0x20;          // 32 bytes per entry
-            
+
             /// <summary>
             /// HashSet Entry structure (inline MongoID):
             ///   +0x00: hashCode (int) + next (int)
@@ -270,11 +270,11 @@ namespace eft_dma_radar.Common.Unity
             public const uint Count = 0x1C;             // int - count (try 0x20 or 0x3C if this fails)
             public const int EntrySize = 0x20;          // 32 bytes per entry
             public const uint EntryValueOffset = 0x08;  // MongoID value starts here in entry
-            
+
             // Legacy aliases for compatibility
             public const uint BucketCount = Count;
             public const uint EntriesStart = 0x20;      // First element in entries array (after array header)
-            
+
             /// <summary>
             /// HashSet Entry structure (inline MongoID):
             ///   +0x00: hashCode (int) + next (int)
@@ -289,7 +289,7 @@ namespace eft_dma_radar.Common.Unity
                 public const uint Next = 0x04;          // int - next entry index
                 public const uint MongoIDValue = 0x08;  // MongoID struct inline
             }
-        }        
+        }
         /// <summary>
         /// Dictionary&lt;K,V&gt; structure offsets (IL2CPP)
         /// </summary>
@@ -315,6 +315,6 @@ namespace eft_dma_radar.Common.Unity
         public readonly struct TransformInfo
         {
             public const uint LocalAABB = 0x98; // AABB (localAABB)
-        }             
+        }
     }
 }

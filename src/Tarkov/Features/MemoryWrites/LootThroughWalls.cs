@@ -1,4 +1,4 @@
-using eft_dma_radar;
+﻿using eft_dma_radar;
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
@@ -7,7 +7,6 @@ using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.Tarkov.Unity.IL2CPP;
 using eft_dma_radar.UI.Misc;
-using eft_dma_shared.Common.Unity;
 
 namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 {
@@ -52,7 +51,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[LootThroughWalls]: {ex}");
+                Log.WriteLine($"[LootThroughWalls]: {ex}");
                 ClearCache();
             }
         }
@@ -61,7 +60,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         {
             try
             {
-                XMLogging.WriteLine("[LootThroughWalls] Initializing...");
+                Log.WriteLine("[LootThroughWalls] Initializing...");
                 if (Memory.Game is not LocalGameWorld game)
                     return;
                 var gameWorld = game.Base;
@@ -75,11 +74,11 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 Memory.WriteValueEnsure<int>(gameWorld + 0x18, 0);
 
                 _initialized = true;
-                XMLogging.WriteLine("[LootThroughWalls] Initialized successfully!");
+                Log.WriteLine("[LootThroughWalls] Initialized successfully!");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[LootThroughWalls] Initialization failed: {ex}");
+                Log.WriteLine($"[LootThroughWalls] Initialization failed: {ex}");
             }
         }
 
@@ -101,7 +100,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     _zoomEngaged = true;
                     _lastFovCompensatoryDist = configZoomAmount;
                     _lastFirearmController = firearmController;
-                    XMLogging.WriteLine($"[LootThroughWalls] Zoom Enabled (Amount: {configZoomAmount:F2})");
+                    Log.WriteLine($"[LootThroughWalls] Zoom Enabled (Amount: {configZoomAmount:F2})");
                 };
             }
             else if (!shouldEngage && _zoomEngaged)
@@ -113,7 +112,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 {
                     _zoomEngaged = false;
                     _lastFovCompensatoryDist = FOV_COMPENSATORY_DIST_ORIGINAL;
-                    XMLogging.WriteLine("[LootThroughWalls] Zoom Disabled");
+                    Log.WriteLine("[LootThroughWalls] Zoom Disabled");
                 };
             }
         }

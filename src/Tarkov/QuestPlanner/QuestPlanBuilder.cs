@@ -143,7 +143,7 @@ public static class QuestPlanBuilder
     private static string NormalizeMapId(string mapId) => mapId switch
     {
         "ground-zero-21" => "ground-zero",
-        "Sandbox_high"   => "Sandbox",
+        "Sandbox_high" => "Sandbox",
         _ => mapId
     };
 

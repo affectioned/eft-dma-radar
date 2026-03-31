@@ -1,4 +1,4 @@
-using eft_dma_radar.Common.DMA;
+ï»¿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.DMA.ScatterAPI;
@@ -11,8 +11,8 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         private bool _lastEnabledState;
         private ulong _cachedValuePtr;
 
-        private const float DEFAULT_VALUE   = 0.2f;
-        private const float DISABLED_VALUE  = 0f;
+        private const float DEFAULT_VALUE = 0.2f;
+        private const float DISABLED_VALUE = 0f;
 
         public override bool Enabled
         {
@@ -35,7 +35,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 if (!valuePtr.IsValidVirtualAddress())
                     return;
 
-                // If Enabled ¡ú set to 0, else ¡ú restore default
+                // If Enabled Â¡Ãº set to 0, else Â¡Ãº restore default
                 float targetValue = Enabled ? DISABLED_VALUE : DEFAULT_VALUE;
 
                 writes.AddValueEntry(valuePtr + Offsets.BSGGameSettingValueClass.Value, targetValue);
@@ -43,12 +43,12 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 writes.Callbacks += () =>
                 {
                     _lastEnabledState = Enabled;
-                    XMLogging.WriteLine($"[DisableHeadBobbing] {(Enabled ? "Enabled" : "Disabled")} ¡ú {targetValue}");
+                    Log.WriteLine($"[DisableHeadBobbing] {(Enabled ? "Enabled" : "Disabled")} Â¡Ãº {targetValue}");
                 };
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[DisableHeadBobbing] ERROR: {ex}");
+                Log.WriteLine($"[DisableHeadBobbing] ERROR: {ex}");
                 _cachedValuePtr = 0;
             }
         }
@@ -71,7 +71,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 
                 if (!klassPtr.IsValidVirtualAddress())
                 {
-                    XMLogging.WriteLine("[DisableHeadBobbing] Could not resolve GameSettingsGroup class");
+                    Log.WriteLine("[DisableHeadBobbing] Could not resolve GameSettingsGroup class");
                     return 0;
                 }
 
@@ -79,7 +79,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 ulong staticFieldData = Il2CppClass.GetStaticFieldData(klassPtr);
                 if (!staticFieldData.IsValidVirtualAddress())
                 {
-                    XMLogging.WriteLine("[DisableHeadBobbing] Class has no static field block?");
+                    Log.WriteLine("[DisableHeadBobbing] Class has no static field block?");
                     return 0;
                 }
 
@@ -87,7 +87,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 ulong headBobbingPtr = Memory.ReadPtr(staticFieldData + 0x68);
                 if (!headBobbingPtr.IsValidVirtualAddress())
                 {
-                    XMLogging.WriteLine("[DisableHeadBobbing] HeadBobbing object missing");
+                    Log.WriteLine("[DisableHeadBobbing] HeadBobbing object missing");
                     return 0;
                 }
 
@@ -95,17 +95,17 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 ulong valueClass = Memory.ReadPtr(headBobbingPtr + Offsets.BSGGameSetting.ValueClass);
                 if (!valueClass.IsValidVirtualAddress())
                 {
-                    XMLogging.WriteLine("[DisableHeadBobbing] valueClass missing");
+                    Log.WriteLine("[DisableHeadBobbing] valueClass missing");
                     return 0;
                 }
 
                 _cachedValuePtr = valueClass;
-                XMLogging.WriteLine($"[DisableHeadBobbing] Cached value ptr: 0x{valueClass:X}");
+                Log.WriteLine($"[DisableHeadBobbing] Cached value ptr: 0x{valueClass:X}");
                 return valueClass;
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[DisableHeadBobbing] Resolve failed: {ex}");
+                Log.WriteLine($"[DisableHeadBobbing] Resolve failed: {ex}");
                 return 0;
             }
         }
@@ -113,7 +113,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         public override void OnRaidStart()
         {
             _lastEnabledState = false;
-            _cachedValuePtr   = 0;
+            _cachedValuePtr = 0;
         }
     }
 }

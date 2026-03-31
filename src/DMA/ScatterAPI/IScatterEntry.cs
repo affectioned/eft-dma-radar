@@ -1,4 +1,5 @@
 ﻿using eft_dma_radar.Common.Misc.Pools;
+using VmmSharpEx.Scatter;
 
 namespace eft_dma_radar.Common.DMA.ScatterAPI
 {
@@ -18,9 +19,9 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
         bool IsFailed { get; set; }
 
         /// <summary>
-        /// Parse the memory buffer and set the result value.
+        /// Extracts the result from the executed native scatter handle.
+        /// Called after <see cref="VmmScatter.Execute"/> has completed.
         /// </summary>
-        /// <param name="hScatter">Scatter read handle.</param>
-        void SetResult(Vmmsharp.LeechCore.SCATTER_HANDLE hScatter);
+        void ReadResult(VmmScatter scatter);
     }
 }

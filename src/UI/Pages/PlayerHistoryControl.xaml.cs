@@ -72,7 +72,7 @@ namespace eft_dma_radar.UI.Pages
                 }
                 catch (TimeoutException ex)
                 {
-                    XMLogging.WriteLine($"[PANELS] {ex.Message}");
+                    Log.WriteLine($"[PANELS] {ex.Message}");
                 }
             };
         }
@@ -175,6 +175,8 @@ namespace eft_dma_radar.UI.Pages
         private void RegisterSettingsEvents()
         {
             playerHistoryDataGrid.MouseDoubleClick += PlayerHistoryDataGrid_MouseDoubleClick;
+            mnuRemoveEntry.Click += MnuRemoveEntry_Click;
+            mnuClearAll.Click += MnuClearAll_Click;
 
             RegisterDeselectionEvents();
         }
@@ -258,6 +260,12 @@ namespace eft_dma_radar.UI.Pages
             {
                 try
                 {
+                    if (string.IsNullOrEmpty(selectedEntry.ID))
+                    {
+                        NotificationsShared.Warning($"Cannot add '{selectedEntry.Name}' — Account ID not yet resolved. Try again after a dogtag has been read.");
+                        return;
+                    }
+
                     if (MessageBox.Show(
                         $"Add player '{selectedEntry.Name}' to the watchlist?",
                         "Confirm",
@@ -285,7 +293,7 @@ namespace eft_dma_radar.UI.Pages
                 catch (Exception ex)
                 {
                     NotificationsShared.Error($"Error adding to watchlist: {ex.Message}");
-                    XMLogging.WriteLine($"[PlayerHistory] Error adding to watchlist: {ex}");
+                    Log.WriteLine($"[PlayerHistory] Error adding to watchlist: {ex}");
                 }
             }
             else
@@ -312,12 +320,12 @@ namespace eft_dma_radar.UI.Pages
                     UseShellExecute = true
                 });
 
-                XMLogging.WriteLine($"[PlayerHistory] Opening profile for player ID: {playerId}");
+                Log.WriteLine($"[PlayerHistory] Opening profile for player ID: {playerId}");
             }
             catch (Exception ex)
             {
                 NotificationsShared.Error($"Error opening player profile: {ex.Message}");
-                XMLogging.WriteLine($"[PlayerHistory] Error opening player profile: {ex}");
+                Log.WriteLine($"[PlayerHistory] Error opening player profile: {ex}");
             }
         }
 
@@ -343,7 +351,8 @@ namespace eft_dma_radar.UI.Pages
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.Invoke(() => {
+                Dispatcher.Invoke(() =>
+                {
                     RefreshDataGrid();
                     RefreshSorting();
                 });
@@ -394,6 +403,42 @@ namespace eft_dma_radar.UI.Pages
             else
             {
                 AddToWatchlist();
+            }
+        }
+
+        private void MnuRemoveEntry_Click(object sender, RoutedEventArgs e)
+        {
+            if (playerHistoryDataGrid.SelectedItem is PlayerHistoryEntry selectedEntry)
+            {
+                try
+                {
+                    _playerHistory?.Remove(selectedEntry);
+                }
+                catch (Exception ex)
+                {
+                    NotificationsShared.Error($"Error removing entry: {ex.Message}");
+                    Log.WriteLine($"[PlayerHistory] Error removing entry: {ex}");
+                }
+            }
+        }
+
+        private void MnuClearAll_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (MessageBox.Show(
+                    "Clear all player history? This cannot be undone.",
+                    "Confirm",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                {
+                    _playerHistory?.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationsShared.Error($"Error clearing history: {ex.Message}");
+                Log.WriteLine($"[PlayerHistory] Error clearing history: {ex}");
             }
         }
         #endregion

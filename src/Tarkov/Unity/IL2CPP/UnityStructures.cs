@@ -1,4 +1,4 @@
-using eft_dma_radar.Common.DMA;
+ï»¿using eft_dma_radar.Common.DMA;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using System;
@@ -16,9 +16,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         [FieldOffset(0x28)]
         public readonly ulong ActiveNodes;
 
-        // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
-        // Internal cache (name ¡ú GameObject)
-        // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+        // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
+        // Internal cache (name Â¡Ãº GameObject)
+        // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
         private static readonly Dictionary<string, ulong> _nameCache = new();
         private static readonly object _cacheLock = new();
 
@@ -28,7 +28,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 _nameCache.Clear();
         }
 
-        // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+        // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
 
         public static ulong GetAddr(ulong unityBase)
         {
@@ -36,7 +36,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             {
                 try
                 {
-                    const string sig = "48 89 05 ?? ?? ?? ?? 48 83 C4 ?? C3 33 C9";
+                    const string sig = "48 89 05 ? ? ? ? 48 83 C4 ? C3 33 C9";
                     ulong addr = Memory.FindSignature(sig, "UnityPlayer.dll");
 
                     if (addr.IsValidVirtualAddress())
@@ -46,7 +46,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                         if (ptr.IsValidVirtualAddress())
                         {
-                            XMLogging.WriteLine("[GOM] Located via signature");
+                            Log.WriteLine("[GOM] Located via signature");
                             return ptr;
                         }
                     }
@@ -59,7 +59,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 if (fallback.IsValidVirtualAddress())
                 {
-                    XMLogging.WriteLine("[GOM] Located via hardcoded offset");
+                    Log.WriteLine("[GOM] Located via hardcoded offset");
                     return fallback;
                 }
 
@@ -76,9 +76,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             return Memory.ReadValue<GameObjectManager>(gomAddress, false);
         }
 
-        // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+        // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
         // ? NEW: Robust name-based lookup
-        // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+        // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
         public ulong GetGameObjectByName(
             string name,
             bool ignoreCase = true,
@@ -98,11 +98,11 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             }
 
             var first = Memory.ReadValue<LinkedListObject>(ActiveNodes);
-            var last  = Memory.ReadValue<LinkedListObject>(LastActiveNode);
+            var last = Memory.ReadValue<LinkedListObject>(LastActiveNode);
 
             ulong result =
                 ScanForward(first, last, name, ignoreCase);
-            
+
             if (result == 0)
                 result = ScanBackward(last, first, name, ignoreCase);
 
@@ -117,69 +117,69 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         public ulong FindBehaviourByClassName(string className)
         {
             var first = Memory.ReadValue<LinkedListObject>(ActiveNodes);
-            var last  = Memory.ReadValue<LinkedListObject>(LastActiveNode);
-        
+            var last = Memory.ReadValue<LinkedListObject>(LastActiveNode);
+
             ulong result =
                 ScanForwardForComponent(first, last, className);
-            if(result == 0)
+            if (result == 0)
                 ScanBackwardForComponent(last, first, className);
-        
+
             return result;
         }
-        
+
         private static ulong ScanForwardForComponent(
             LinkedListObject start,
             LinkedListObject end,
             string className)
         {
             var current = start;
-        
+
             for (int i = 0; i < 100_000; i++)
             {
                 if (!current.ThisObject.IsValidVirtualAddress())
                     break;
-        
+
                 ulong comp = eft_dma_radar.Common.Unity.GameObject.GetComponent(
                     current.ThisObject,
                     className);
-        
+
                 if (comp.IsValidVirtualAddress())
                     return comp;
-        
+
                 if (current.ThisObject == end.ThisObject)
                     break;
-        
+
                 current = Memory.ReadValue<LinkedListObject>(current.NextObjectLink);
             }
-        
+
             return 0;
         }
-        
+
         private static ulong ScanBackwardForComponent(
             LinkedListObject start,
             LinkedListObject end,
             string className)
         {
             var current = start;
-        
+
             for (int i = 0; i < 100_000; i++)
             {
                 if (!current.ThisObject.IsValidVirtualAddress())
                     break;
-        
+
                 ulong comp = eft_dma_radar.Common.Unity.GameObject.GetComponent(
                     current.ThisObject,
                     className);
-        
+
                 if (comp.IsValidVirtualAddress())
                     return comp;
-        
+
                 if (current.ThisObject == end.ThisObject)
                     break;
-        
+
                 current = Memory.ReadValue<LinkedListObject>(current.PreviousObjectLink);
             }
-        
+
             return 0;
         }
 
@@ -258,14 +258,14 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             }
             catch
             {
-                // paging / transient failure ¡ú skip node
+                // paging / transient failure Â¡Ãº skip node
                 return false;
             }
         }
 
-        // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+        // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
         // Existing helpers stay untouched
-        // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+        // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
 
         public static ulong GetComponentFromBehaviour(
             ulong componentObject,
@@ -295,7 +295,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         }
     }
 
-    // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+    // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
 
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public readonly struct LinkedListObject

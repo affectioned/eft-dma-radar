@@ -15,15 +15,15 @@ namespace eft_dma_radar.UI.SKWidgetControl
     public sealed class PlayerInfoWidget : SKWidget
     {
         private static Config Config => Program.Config;
-        private const int COL_NAME  = 25;
-        private const int COL_GRP   = 5;
+        private const int COL_NAME = 25;
+        private const int COL_GRP = 5;
         private const int COL_VALUE = 8;
         private const int COL_HANDS = 30;
-        private const int COL_DIST  = 5;
-        private const int COL_KD     = 7;
-        private const int COL_HOURS  = 7;
-        private const int COL_RAIDS  = 7;
-        private const int COL_SR     = 6;        
+        private const int COL_DIST = 5;
+        private const int COL_KD = 7;
+        private const int COL_HOURS = 7;
+        private const int COL_RAIDS = 7;
+        private const int COL_SR = 6;
         private readonly float _padding;
         private readonly List<(float TopY, float BottomY, string PlayerName)> _playerRows = new();
 
@@ -79,15 +79,15 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             var sb = new StringBuilder();
 
-            sb.AppendFormat("{0,-" + COL_NAME  + "}", "Fac/Name/Lvl ")
-              .AppendFormat("{0,-" + COL_GRP   + "}", "Grp")
+            sb.AppendFormat("{0,-" + COL_NAME + "}", "Fac/Name/Lvl ")
+              .AppendFormat("{0,-" + COL_GRP + "}", "Grp")
               .AppendFormat("{0,-" + COL_VALUE + "}", "Value")
               .AppendFormat("{0,-" + COL_HANDS + "}", "In Hands")
-              .AppendFormat("{0,-" + COL_DIST  + "}", "Dist")
-              .AppendFormat("{0,-" + COL_KD    + "}", "K/D")
+              .AppendFormat("{0,-" + COL_DIST + "}", "Dist")
+              .AppendFormat("{0,-" + COL_KD + "}", "K/D")
               .AppendFormat("{0,-" + COL_HOURS + "}", "Hours")
               .AppendFormat("{0,-" + COL_RAIDS + "}", "Raids")
-              .AppendFormat("{0,-" + COL_SR    + "}", "S/R%")
+              .AppendFormat("{0,-" + COL_SR + "}", "S/R%")
               .AppendLine();
 
             foreach (var player in filteredPlayers)
@@ -98,12 +98,12 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)
                 .ToList();
 
-            var lineSpacing = _textPlayersOverlay.FontSpacing;
+            var lineSpacing = _playerInfoFont.Spacing;
             float maxWidth = 0f;
 
             foreach (var line in lines)
             {
-                var width = _textPlayersOverlay.MeasureText(line);
+                var width = _playerInfoFont.MeasureText(line);
                 if (width > maxWidth)
                     maxWidth = width;
             }
@@ -126,7 +126,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             for (int i = 0; i < lines.Count; i++)
             {
-                canvas.DrawText(lines[i], drawPt, _textPlayersOverlay);
+                canvas.DrawText(lines[i], drawPt, SKTextAlign.Left, _playerInfoFont, _textPlayersOverlay);
 
                 if (i > 0 && i < lines.Count - 1)
                 {
@@ -239,15 +239,15 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 (int)Math.Round(Vector3.Distance(localPlayerPos, player.Position));
 
             // -------- WRITE ROW --------
-            sb.AppendFormat("{0,-" + COL_NAME  + "}", nameCol)
-              .AppendFormat("{0,-" + COL_GRP   + "}", group)
+            sb.AppendFormat("{0,-" + COL_NAME + "}", nameCol)
+              .AppendFormat("{0,-" + COL_GRP + "}", group)
               .AppendFormat("{0,-" + COL_VALUE + "}", value)
               .AppendFormat("{0,-" + COL_HANDS + "}", inHands)
-              .AppendFormat("{0,-" + COL_DIST  + "}", distance)
-              .AppendFormat("{0,-" + COL_KD    + "}", kd)
+              .AppendFormat("{0,-" + COL_DIST + "}", distance)
+              .AppendFormat("{0,-" + COL_KD + "}", kd)
               .AppendFormat("{0,-" + COL_HOURS + "}", hours)
               .AppendFormat("{0,-" + COL_RAIDS + "}", raids)
-              .AppendFormat("{0,-" + COL_SR    + "}", sr)
+              .AppendFormat("{0,-" + COL_SR + "}", sr)
               .AppendLine();
         }
 
@@ -258,7 +258,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             lock (_textPlayersOverlay)
             {
-                _textPlayersOverlay.TextSize = 12 * newScale;
+                _playerInfoFont.Size = 12 * newScale;
             }
 
             _rowSeparatorPaint.StrokeWidth = 1.0f * newScale;
@@ -267,15 +267,12 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
         private static readonly SKPaint _textPlayersOverlay = new()
         {
-            SubpixelText = true,
             Color = SKColors.White,
             IsStroke = false,
-            TextSize = 12,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Consolas"),
-            FilterQuality = SKFilterQuality.High
         };
+
+        private static readonly SKFont _playerInfoFont = new(SKTypeface.FromFamilyName("Consolas"), 12) { Subpixel = true };
 
         private static readonly SKPaint _rowSeparatorPaint = new()
         {

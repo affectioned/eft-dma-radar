@@ -11,7 +11,6 @@ using eft_dma_radar.Tarkov.Features.MemoryWrites.Patches;
 using eft_dma_radar.Tarkov.GameWorld;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.UI.Misc;
-using eft_dma_shared.Common.Unity.LowLevel.Hooks;
 using HandyControl.Controls;
 using System;
 using System.Threading;
@@ -90,7 +89,7 @@ namespace eft_dma_radar.UI.Pages
                 }
                 catch (TimeoutException ex)
                 {
-                    XMLogging.WriteLine($"[PANELS] {ex.Message}");
+                    Log.WriteLine($"[PANELS] {ex.Message}");
                 }
             };
         }
@@ -278,15 +277,15 @@ namespace eft_dma_radar.UI.Pages
             chkNightVision.Checked += MemWritingCheckbox_Checked;
             chkNightVision.Unchecked += MemWritingCheckbox_Checked;
             chkDisableFrostbite.Checked += MemWritingCheckbox_Checked;
-            chkDisableFrostbite.Unchecked += MemWritingCheckbox_Checked;            
+            chkDisableFrostbite.Unchecked += MemWritingCheckbox_Checked;
             chkThermalVision.Checked += MemWritingCheckbox_Checked;
             chkThermalVision.Unchecked += MemWritingCheckbox_Checked;
             chkThirdPerson.Checked += MemWritingCheckbox_Checked;
             chkThirdPerson.Unchecked += MemWritingCheckbox_Checked;
             chkOwlMode.Checked += MemWritingCheckbox_Checked;
             chkOwlMode.Unchecked += MemWritingCheckbox_Checked;
-           // chkDisableScreenEffects.Checked += MemWritingCheckbox_Checked;
-           // chkDisableScreenEffects.Unchecked += MemWritingCheckbox_Checked;
+            // chkDisableScreenEffects.Checked += MemWritingCheckbox_Checked;
+            // chkDisableScreenEffects.Unchecked += MemWritingCheckbox_Checked;
             chkDisableShadows.Checked += MemWritingCheckbox_Checked;
             chkDisableShadows.Unchecked += MemWritingCheckbox_Checked;
             chkDisableGrass.Checked += MemWritingCheckbox_Checked;
@@ -324,8 +323,6 @@ namespace eft_dma_radar.UI.Pages
 
             // Global Settings
             chkMasterSwitch.IsChecked = cfg.MemWritesEnabled;
-            //chkAdvancedWrites.IsChecked = cfg.AdvancedMemWrites;
-            //chkAntiPage.IsChecked = cfg.AntiPage;
 
             // Aimbot Settings
             LoadAimbotOptions();
@@ -456,9 +453,9 @@ namespace eft_dma_radar.UI.Pages
 
             foreach (CheckComboBoxItem item in ccbAimbotOptions.Items)
             {
-                var content = item.Content.ToString();
+                var content = item.Content?.ToString();
 
-                if (optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
+                if (content is not null && optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
                     item.IsSelected = shouldBeSelected;
             }
         }
@@ -498,7 +495,6 @@ namespace eft_dma_radar.UI.Pages
             ToggleFullBrightControls();
             ToggleTimeOfDayControls();
             ToggleLTWControls();
-            ToggleSilentLootControls();
             ToggleExtendedReachControls();
 
             // Camera
@@ -509,16 +505,12 @@ namespace eft_dma_radar.UI.Pages
             chkDisableFrostbite.IsEnabled = memWritingEnabled;
             chkOwlMode.IsEnabled = memWritingEnabled;
             //chkDisableHeadBobbing.IsEnabled = memWritingEnabled;
-            ToggleFOVControls();
 
             // Misc
             chkInstantPlant.IsEnabled = memWritingEnabled;
             chkMedPanel.IsEnabled = memWritingEnabled;
             chkDisableInventoryBlur.IsEnabled = memWritingEnabled;
             ToggleBigHeadControls();
-            ToggleVisCheckControls();
-
-            ToggleAdvMemWritingControls();
             //chkHideRaidCode.IsEnabled = memWritingEnabled;
         }
 
@@ -569,13 +561,13 @@ namespace eft_dma_radar.UI.Pages
 
         private void ToggleMoveSpeedControls()
         {
-           var memWrites = MemWrites.Enabled;
-           var enableControl = memWrites && MemWrites.Config.MoveSpeed.Enabled;
-           chkMoveSpeed.IsEnabled = memWrites;
-           btnMoveSpeedConfig.IsEnabled = enableControl;
-           sldrMoveSpeedMultiplier.IsEnabled = enableControl;
-           if (!enableControl && pnlMoveSpeed.Visibility == Visibility.Visible)
-               pnlMoveSpeed.Visibility = Visibility.Collapsed;
+            var memWrites = MemWrites.Enabled;
+            var enableControl = memWrites && MemWrites.Config.MoveSpeed.Enabled;
+            chkMoveSpeed.IsEnabled = memWrites;
+            btnMoveSpeedConfig.IsEnabled = enableControl;
+            sldrMoveSpeedMultiplier.IsEnabled = enableControl;
+            if (!enableControl && pnlMoveSpeed.Visibility == Visibility.Visible)
+                pnlMoveSpeed.Visibility = Visibility.Collapsed;
         }
 
         private void ToggleWideLeanControls()
@@ -616,20 +608,6 @@ namespace eft_dma_radar.UI.Pages
             if (!enableControl && pnlBigHeads.Visibility == Visibility.Visible)
                 pnlBigHeads.Visibility = Visibility.Collapsed;
         }
-        private void ToggleVisCheckControls()
-        {
-            //var memWrites = MemWrites.Enabled;
-            //var enableControl = memWrites && MemWrites.Config.VisCheck.Enabled;
-//
-            //btnVisCheckConfig.IsEnabled = enableControl;
-            //sldrVisCheckLowDistance.IsEnabled = enableControl;
-            //sldrVisCheckMidDistance.IsEnabled = enableControl;
-            //sldrVisCheckFarDistance.IsEnabled = enableControl;
-            //chkIgnoreAi.IsEnabled = enableControl;
-//
-            //if (!enableControl && pnlVisCheck.Visibility == Visibility.Visible)
-            //    pnlVisCheck.Visibility = Visibility.Collapsed;
-        }
 
         private void ToggleTimeOfDayControls()
         {
@@ -669,19 +647,6 @@ namespace eft_dma_radar.UI.Pages
             if (!enableControl && pnlLTW.Visibility == Visibility.Visible)
                 pnlLTW.Visibility = Visibility.Collapsed;
         }
-        private void ToggleSilentLootControls()
-        {
-            //var memWrites = MemWrites.Enabled;
-            //var enableControl = memWrites && MemWrites.Config.SilentLoot.Enabled;
-//
-            //chkSilentLoot.IsEnabled = memWrites;
-            //btnSilentLootConfig.IsEnabled = enableControl;
-            //sldrSilentLootDistance.IsEnabled = enableControl;
-            //sldrSilentLootMaxDistance.IsEnabled = enableControl;
-//
-            //if (!enableControl && pnlSilentLoot.Visibility == Visibility.Visible)
-            //    pnlSilentLoot.Visibility = Visibility.Collapsed;
-        }
 
         private void ToggleExtendedReachControls()
         {
@@ -696,36 +661,6 @@ namespace eft_dma_radar.UI.Pages
                 pnlExtendedReach.Visibility = Visibility.Collapsed;
         }
 
-        private void ToggleAdvMemWritingControls()
-        {
-            //var memWritingEnabled = MemWrites.Enabled;
-            //var advMemWrites = MemWrites.AdvEnabled;
-            //var enabled = (memWritingEnabled && advMemWrites);
-//
-            //// General Settings
-            //chkAdvancedWrites.IsEnabled = memWritingEnabled;
-            //chkAntiPage.IsEnabled = enabled;
-//
-            //// Chams
-            //MainWindow.Window.ESPControl.UpdateChamsControls();
-//
-            //// Weapon
-            //chkRemoveableAttachments.IsEnabled = enabled;
-//
-            //// World
-            //chkDisableShadows.IsEnabled = enabled;
-//
-            //// Camera
-            //chkDisableScreenEffects.IsEnabled = enabled;
-            //chkFOVChanger.IsEnabled = enabled;
-            //btnFOVConfig.IsEnabled = (enabled && MemWrites.Config.FOV.Enabled);
-//
-            //// Misc
-            //chkStreamerMode.IsEnabled = enabled;
-            //chkHideRaidCode.IsEnabled = enabled;
-            //chkVisCheck.IsEnabled = enabled;
-        }
-
         public void ToggleAimbotBone()
         {
             Dispatcher.Invoke(() =>
@@ -738,33 +673,15 @@ namespace eft_dma_radar.UI.Pages
             });
         }
 
-        private void ToggleFOVControls()
-        {
-            //var memWrites = MemWrites.Enabled;
-            //var enableControl = memWrites && MemWrites.Config.FOV.Enabled;
-//
-            ////chkFOVChanger.IsEnabled = memWrites && MemWrites.Config.AdvancedMemWrites;
-            ////btnFOVConfig.IsEnabled = enableControl && MemWrites.Config.AdvancedMemWrites;
-            //sldrFOVBase.IsEnabled = enableControl;
-            //sldrADSFOV.IsEnabled = enableControl;
-            //sldrTPPFOV.IsEnabled = enableControl;
-            //sldrZoomFOV.IsEnabled = enableControl;
-//
-            //if (!enableControl && pnlFOV.Visibility == Visibility.Visible)
-            //    pnlFOV.Visibility = Visibility.Collapsed;
-        }
-
         public void FeatureInstanceCheck()
         {
             var cfg = MemWrites.Config;
 
-            //MemPatchFeature<FOVChanger>.Instance.Enabled = cfg.FOV.Enabled;
             MemWriteFeature<Aimbot>.Instance.Enabled = cfg.Aimbot.Enabled;
             MemWriteFeature<NoWepMalfPatch>.Instance.Enabled = cfg.NoWeaponMalfunctions;
             MemWriteFeature<FastLoadUnload>.Instance.Enabled = cfg.FastLoadUnload;
             MemWriteFeature<FastWeaponOps>.Instance.Enabled = cfg.FastWeaponOps;
             MemWriteFeature<DisableWeaponCollision>.Instance.Enabled = cfg.DisableWeaponCollision;
-            //MemPatchFeature<RemoveableAttachments>.Instance.Enabled = cfg.RemoveableAttachments;
             MemWriteFeature<NoRecoil>.Instance.Enabled = cfg.NoRecoil;
             MemWriteFeature<InfStamina>.Instance.Enabled = cfg.InfStamina;
             MemWriteFeature<MoveSpeed>.Instance.Enabled = cfg.MoveSpeed.Enabled;
@@ -775,7 +692,6 @@ namespace eft_dma_radar.UI.Pages
             MemWriteFeature<LootThroughWalls>.Instance.Enabled = cfg.LootThroughWalls.Enabled;
             MemWriteFeature<ExtendedReach>.Instance.Enabled = cfg.ExtendedReach.Enabled;
             MemWriteFeature<FullBright>.Instance.Enabled = cfg.FullBright.Enabled;
-            //MemPatchFeature<DisableShadows>.Instance.Enabled = cfg.DisableShadows;
             MemWriteFeature<DisableGrass>.Instance.Enabled = cfg.DisableGrass;
             MemWriteFeature<ClearWeather>.Instance.Enabled = cfg.ClearWeather;
             MemWriteFeature<NoVisor>.Instance.Enabled = cfg.NoVisor;
@@ -787,15 +703,11 @@ namespace eft_dma_radar.UI.Pages
             MemWriteFeature<DisableFrostbite>.Instance.Enabled = cfg.DisableFrostbite;
             MemWriteFeature<OwlMode>.Instance.Enabled = cfg.OwlMode;
             MemWriteFeature<DisableHeadBobbing>.Instance.Enabled = cfg.DisableHeadBobbing;
-            //MemPatchFeature<StreamerMode>.Instance.Enabled = cfg.StreamerMode;
             MemWriteFeature<HideRaidCode>.Instance.Enabled = cfg.HideRaidCode;
             MemWriteFeature<InstantPlant>.Instance.Enabled = cfg.InstantPlant;
             MemWriteFeature<MedPanel>.Instance.Enabled = cfg.MedPanel;
             MemWriteFeature<DisableInventoryBlur>.Instance.Enabled = cfg.DisableInventoryBlur;
-            //MemPatchFeature<DisableScreenEffects>.Instance.Enabled = cfg.DisableScreenEffects;
             MemWriteFeature<BigHead>.Instance.Enabled = cfg.BigHead.Enabled;
-            //MemPatchFeature<SilentLoot>.Instance.Enabled = cfg.SilentLoot.Enabled;
-            //MemPatchFeature<VisibilityLinecast>.Instance.Enabled = cfg.VisCheck.Enabled;
         }
 
         private void ToggleSettingsPanel(UIElement panel)
@@ -818,7 +730,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine($"Updated aimbot option: {optionName} = {isSelected}");
+            Log.WriteLine($"Updated aimbot option: {optionName} = {isSelected}");
         }
         #endregion
 
@@ -835,7 +747,7 @@ namespace eft_dma_radar.UI.Pages
                     case "MemWritesEnabled":
                         if (value && !MemWrites.Config.MemWritesEnabled)
                         {
-                            shouldProceed = ConfirmMemoryWritingEnable(false);
+                            shouldProceed = ConfirmMemoryWritingEnable();
                             if (!shouldProceed)
                             {
                                 Dispatcher.BeginInvoke(new Action(() =>
@@ -848,7 +760,7 @@ namespace eft_dma_radar.UI.Pages
                         break;
                 }
 
-                XMLogging.WriteLine($"[Checkbox] {cb.Name} changed to {value}");
+                Log.WriteLine($"[Checkbox] {cb.Name} changed to {value}");
 
                 switch (tag)
                 {
@@ -892,9 +804,6 @@ namespace eft_dma_radar.UI.Pages
                     case "DisableWeaponCollision":
                         MemWriteFeature<DisableWeaponCollision>.Instance.Enabled = value;
                         break;
-                    //case "RemoveableAttachments":
-                    //    MemPatchFeature<RemoveableAttachments>.Instance.Enabled = value;
-                    //    break;
                     case "NoRecoil":
                         MemWriteFeature<NoRecoil>.Instance.Enabled = value;
                         ToggleNoRecoilControls();
@@ -910,9 +819,6 @@ namespace eft_dma_radar.UI.Pages
                         MemWriteFeature<TimeOfDay>.Instance.Enabled = value;
                         ToggleTimeOfDayControls();
                         break;
-                    //case "DisableShadows":
-                    //    MemPatchFeature<DisableShadows>.Instance.Enabled = value;
-                    //    break;
                     case "DisableGrass":
                         MemWriteFeature<DisableGrass>.Instance.Enabled = value;
                         break;
@@ -923,10 +829,6 @@ namespace eft_dma_radar.UI.Pages
                         MemWriteFeature<LootThroughWalls>.Instance.Enabled = value;
                         ToggleLTWControls();
                         break;
-                    //case "SilentLoot":
-                    //    MemPatchFeature<SilentLoot>.Instance.Enabled = value;
-                    //    ToggleSilentLootControls();
-                    //    break;
                     case "ExtendedReach":
                         MemWriteFeature<ExtendedReach>.Instance.Enabled = value;
                         ToggleExtendedReachControls();
@@ -957,13 +859,6 @@ namespace eft_dma_radar.UI.Pages
                     case "OwlMode":
                         MemWriteFeature<OwlMode>.Instance.Enabled = value;
                         break;
-                    //case "FOVChanger":
-                    //    MemPatchFeature<FOVChanger>.Instance.Enabled = value;
-                    //    ToggleFOVControls();
-                    //    break;
-                    //case "StreamerMode":
-                    //    MemPatchFeature<StreamerMode>.Instance.Enabled = value;
-                    //    break;
                     case "HideRaidCode":
                         MemWriteFeature<HideRaidCode>.Instance.Enabled = value;
                         break;
@@ -976,9 +871,6 @@ namespace eft_dma_radar.UI.Pages
                     case "MedPanel":
                         MemWriteFeature<MedPanel>.Instance.Enabled = value;
                         break;
-                    //case "DisableScreenEffects":
-                    //    MemPatchFeature<DisableScreenEffects>.Instance.Enabled = value;
-                    //    break;
                     case "DisableHeadBobbing":
                         MemWriteFeature<DisableHeadBobbing>.Instance.Enabled = value;
                         break;
@@ -999,17 +891,10 @@ namespace eft_dma_radar.UI.Pages
                         MemWriteFeature<BigHead>.Instance.Enabled = value;
                         ToggleBigHeadControls();
                         break;
-                    //case "VisCheck":
-                    //    MemPatchFeature<VisibilityLinecast>.Instance.Enabled = value;
-                    //    ToggleVisCheckControls();
-                    //    break;
-                    //case "IgnoreAi":
-                    //    MemWrites.Config.VisCheck.IgnoreAi = value;
-                    //    break;
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("Saved Convig");
+                Log.WriteLine("Saved Convig");
             }
         }
 
@@ -1124,27 +1009,27 @@ namespace eft_dma_radar.UI.Pages
                     case "BigHeadScale":
                         MemWrites.Config.BigHead.Scale = floatValue;
                         break;
-                    //case "VisLowDist":
-                    //    MemWrites.Config.VisCheck.LowDist = floatValue;
-                    //    break;
-                    //case "VisMidDist":
-                    //    MemWrites.Config.VisCheck.MidDist = floatValue;
-                    //    break;
-                    //case "VisfarDist":
-                    //    MemWrites.Config.VisCheck.FarDist = floatValue;
-                    //    break;
-                    //case "FOVBase":
-                    //    MemWrites.Config.FOV.Base = intValue;
-                    //    break;
-                    //case "ADSFOV":
-                    //    MemWrites.Config.FOV.ADS = intValue;
-                    //    break;
-                    //case "TPPFOV":
-                    //    MemWrites.Config.FOV.ThirdPerson = intValue;
-                    //    break;
-                    //case "ZoomFOV":
-                    //    MemWrites.Config.FOV.InstantZoom = intValue;
-                    //    break;
+                        //case "VisLowDist":
+                        //    MemWrites.Config.VisCheck.LowDist = floatValue;
+                        //    break;
+                        //case "VisMidDist":
+                        //    MemWrites.Config.VisCheck.MidDist = floatValue;
+                        //    break;
+                        //case "VisfarDist":
+                        //    MemWrites.Config.VisCheck.FarDist = floatValue;
+                        //    break;
+                        //case "FOVBase":
+                        //    MemWrites.Config.FOV.Base = intValue;
+                        //    break;
+                        //case "ADSFOV":
+                        //    MemWrites.Config.FOV.ADS = intValue;
+                        //    break;
+                        //case "TPPFOV":
+                        //    MemWrites.Config.FOV.ThirdPerson = intValue;
+                        //    break;
+                        //case "ZoomFOV":
+                        //    MemWrites.Config.FOV.InstantZoom = intValue;
+                        //    break;
                 }
 
                 Config.Save();
@@ -1206,7 +1091,7 @@ namespace eft_dma_radar.UI.Pages
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("Saved Convig");
+                Log.WriteLine("Saved Convig");
             }
         }
 
@@ -1262,15 +1147,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine("Saved aimbot options settings");
-        }
-
-        private struct NativeHookTestState
-        {
-            public uint HasRun;
-            public uint IsRunning;
-            public ulong UserData;
-            public ulong ReturnAddr;
+            Log.WriteLine("Saved aimbot options settings");
         }
 
         private async void btnAntiAFK_Click(object sender, RoutedEventArgs e)
@@ -1297,26 +1174,26 @@ namespace eft_dma_radar.UI.Pages
                 btnAntiAFK.IsEnabled = true;
             }
         }
-private static class ObservedPlayerViewOffsets
-{
-    public const uint RaidId        = 0x20;   // int
-    public const uint Voice         = 0x40;   // string
-    public const uint IsVisible     = 0x64;   // bool
-    public const uint WorldTime     = 0x68;   // float
-    public const uint Id            = 0x7C;   // int
-    public const uint GroupId       = 0x80;   // string
-    public const uint TeamId        = 0x88;   // string
-    public const uint UsedSkeleton  = 0x90;   // bool
-    public const uint Side          = 0x94;   // int (enum)
-    public const uint IsAI          = 0xA0;   // bool
-    public const uint ProfileId     = 0xA8;   // string
-    public const uint VoipId        = 0xB0;   // string
-    public const uint NickName      = 0xB8;   // string
-    public const uint AccountId     = 0xC0;   // string
-}
+        private static class ObservedPlayerViewOffsets
+        {
+            public const uint RaidId = 0x20;   // int
+            public const uint Voice = 0x40;   // string
+            public const uint IsVisible = 0x64;   // bool
+            public const uint WorldTime = 0x68;   // float
+            public const uint Id = 0x7C;   // int
+            public const uint GroupId = 0x80;   // string
+            public const uint TeamId = 0x88;   // string
+            public const uint UsedSkeleton = 0x90;   // bool
+            public const uint Side = 0x94;   // int (enum)
+            public const uint IsAI = 0xA0;   // bool
+            public const uint ProfileId = 0xA8;   // string
+            public const uint VoipId = 0xB0;   // string
+            public const uint NickName = 0xB8;   // string
+            public const uint AccountId = 0xC0;   // string
+        }
 
-private async void btnTest_Click(object sender, RoutedEventArgs e)
-{
+        private async void btnTest_Click(object sender, RoutedEventArgs e)
+        {
             btnTest.Content = "Please Wait...";
             btnTest.IsEnabled = false;
 
@@ -1338,7 +1215,7 @@ private async void btnTest_Click(object sender, RoutedEventArgs e)
                 btnTest.Content = "Test HideRaidCode";
                 btnTest.IsEnabled = true;
             }
-}
+        }
 
 
 
@@ -1356,83 +1233,34 @@ private async void btnTest_Click(object sender, RoutedEventArgs e)
             {
                 DisableAll,
                 EnableBasicOnly,
-                EnableAll,
                 KeepCurrent
             }
 
             /// <summary>
             /// Shows memory writing confirmation dialogs from the Memory Writing panel
             /// </summary>
-            public static MemoryWritingDecision ShowMemoryWritingConfirmation(bool hasBasicMemWrites, bool hasAdvancedMemWrites)
+            public static MemoryWritingDecision ShowMemoryWritingConfirmation(bool hasBasicMemWrites)
             {
                 return Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (!hasBasicMemWrites)
                         return MemoryWritingDecision.KeepCurrent;
 
-                    if (hasAdvancedMemWrites)
-                    {
-                        var advancedResult = MessageBox.Show(
-                            "⚠️ ADVANCED MEMORY WRITING DETECTED ⚠️\n\n" +
-                            "The configuration you're importing has Advanced Memory Writing features enabled.\n\n" +
-                            "Advanced features include things such as:\n" +
-                            "• Shellcode injection\n" +
-                            "• Advanced chams (vischeck)\n" +
-                            "• FOV changer\n" +
-                            "• Disable Screen Effects (eg flash bangs etc)\n" +
-                            "• Streamer Mode\n\n" +
-                            "⚠️ WARNING: These features may carry a higher detection risk!\n\n" +
-                            "Do you want to enable Advanced Memory Writing features?",
-                            "Advanced Memory Writing Configuration",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning);
+                    var basicResult = MessageBox.Show(
+                        "⚠️ MEMORY WRITING DETECTED ⚠️\n\n" +
+                        "The configuration you're importing has Memory Writing features enabled.\n\n" +
+                        "Memory writing features include:\n" +
+                        "• Aimbot, No Recoil, Infinite Stamina\n" +
+                        "• Movement modifications (Speed, No Inertia, etc.)\n" +
+                        "• Visual modifications (Night Vision, etc.)\n" +
+                        "• And other game modifications\n\n" +
+                        "⚠️ WARNING: These features carry increased detection risk!\n\n" +
+                        "Do you want to enable Memory Writing features?",
+                        "Memory Writing Configuration",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
 
-                        if (advancedResult == MessageBoxResult.Yes)
-                        {
-                            return MemoryWritingDecision.EnableAll;
-                        }
-                        else if (hasBasicMemWrites)
-                        {
-                            var basicResult = MessageBox.Show(
-                                "Advanced Memory Writing has been disabled.\n\n" +
-                                "However, this configuration also contains Basic Memory Writing features:\n\n" +
-                                "• Aimbot, No Recoil, Infinite Stamina\n" +
-                                "• Movement modifications (Speed, No Inertia, etc.)\n" +
-                                "• Visual modifications (Night Vision, etc.)\n" +
-                                "• And other game modifications\n\n" +
-                                "⚠️ WARNING: These features still carry detection risk!\n\n" +
-                                "Do you want to enable Basic Memory Writing features?",
-                                "Basic Memory Writing Configuration",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Warning);
-
-                            return basicResult == MessageBoxResult.Yes ? MemoryWritingDecision.EnableBasicOnly : MemoryWritingDecision.DisableAll;
-                        }
-                        else
-                        {
-                            return MemoryWritingDecision.DisableAll;
-                        }
-                    }
-                    else if (hasBasicMemWrites)
-                    {
-                        var basicResult = MessageBox.Show(
-                            "⚠️ MEMORY WRITING DETECTED ⚠️\n\n" +
-                            "The configuration you're importing has Memory Writing features enabled.\n\n" +
-                            "Memory writing features include:\n" +
-                            "• Aimbot, No Recoil, Infinite Stamina\n" +
-                            "• Movement modifications (Speed, No Inertia, etc.)\n" +
-                            "• Visual modifications (Night Vision, etc.)\n" +
-                            "• And other game modifications\n\n" +
-                            "⚠️ WARNING: These features carry increased detection risk!\n\n" +
-                            "Do you want to enable Memory Writing features?",
-                            "Memory Writing Configuration",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning);
-
-                        return basicResult == MessageBoxResult.Yes ? MemoryWritingDecision.EnableBasicOnly : MemoryWritingDecision.DisableAll;
-                    }
-
-                    return MemoryWritingDecision.KeepCurrent;
+                    return basicResult == MessageBoxResult.Yes ? MemoryWritingDecision.EnableBasicOnly : MemoryWritingDecision.DisableAll;
                 });
             }
 
@@ -1445,23 +1273,14 @@ private async void btnTest_Click(object sender, RoutedEventArgs e)
                 {
                     case MemoryWritingDecision.DisableAll:
                         importedConfig.MemWrites.MemWritesEnabled = false;
-                        //importedConfig.MemWrites.AdvancedMemWrites = false;
-                        XMLogging.WriteLine("[Config] User chose to disable all Memory Writing features during import");
+                        Log.WriteLine("[Config] User chose to disable all Memory Writing features during import");
                         NotificationsShared.Info("[Config] All Memory Writing features have been disabled. You can enable them later in the Memory Writing panel if needed.");
                         break;
 
                     case MemoryWritingDecision.EnableBasicOnly:
                         importedConfig.MemWrites.MemWritesEnabled = true;
-                        //importedConfig.MemWrites.AdvancedMemWrites = false;
-                        XMLogging.WriteLine("[Config] User chose to enable Basic Memory Writing features only during import");
-                        NotificationsShared.Warning("[Config] Basic Memory Writing features are enabled. Advanced features have been disabled. Please be aware of the associated risks.");
-                        break;
-
-                    case MemoryWritingDecision.EnableAll:
-                        importedConfig.MemWrites.MemWritesEnabled = true;
-                        //importedConfig.MemWrites.AdvancedMemWrites = true;
-                        XMLogging.WriteLine("[Config] User chose to keep all Memory Writing features enabled during import");
-                        NotificationsShared.Warning("[Config] All Memory Writing features including Advanced features are enabled. Please be aware of the significant risks associated with these features.");
+                        Log.WriteLine("[Config] User chose to enable Memory Writing features during import");
+                        NotificationsShared.Warning("[Config] Memory Writing features are enabled. Please be aware of the associated risks.");
                         break;
 
                     case MemoryWritingDecision.KeepCurrent:
@@ -1476,55 +1295,32 @@ private async void btnTest_Click(object sender, RoutedEventArgs e)
         public static MemoryWritingImportHandler.MemoryWritingDecision HandleConfigImportMemoryWriting(Config importedConfig)
         {
             var hasBasicMemWrites = importedConfig.MemWrites.MemWritesEnabled;
-            //var hasAdvancedMemWrites = importedConfig.MemWrites.AdvancedMemWrites;
 
-            return MemoryWritingImportHandler.ShowMemoryWritingConfirmation(hasBasicMemWrites, false);
+            return MemoryWritingImportHandler.ShowMemoryWritingConfirmation(hasBasicMemWrites);
         }
 
         /// <summary>
         /// Shows confirmation when user manually enables memory writing features
         /// </summary>
-        public bool ConfirmMemoryWritingEnable(bool isAdvanced = false)
+        public bool ConfirmMemoryWritingEnable()
         {
             return Dispatcher.Invoke(() =>
             {
-                if (isAdvanced)
-                {
-                    var result = MessageBox.Show(
-                        "⚠️ ENABLING ADVANCED MEMORY WRITING ⚠️\n\n" +
-                        "You are about to enable Advanced Memory Writing features.\n\n" +
-                        "Advanced features include things such as:\n" +
-                        "• Shellcode injection\n" +
-                        "• Advanced chams (vischeck)\n" +
-                        "• FOV changer\n" +
-                        "• Disable Screen Effects (eg flash bangs etc)\n" +
-                        "• Streamer Mode\n\n" +
-                        "⚠️ WARNING: These features may carry a higher detection risk!\n\n" +
-                        "Are you sure you want to enable Advanced Memory Writing?",
-                        "Advanced Memory Writing Warning",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
+                var result = MessageBox.Show(
+                    "⚠️ ENABLING MEMORY WRITING ⚠️\n\n" +
+                    "You are about to enable Memory Writing features.\n\n" +
+                    "Memory writing features include:\n" +
+                    "• Aimbot, No Recoil, Infinite Stamina\n" +
+                    "• Movement modifications (Speed, No Inertia, etc.)\n" +
+                    "• Visual modifications (Night Vision, etc.)\n" +
+                    "• And other game modifications\n\n" +
+                    "⚠️ WARNING: These features carry increased detection risk!\n\n" +
+                    "Are you sure you want to enable Memory Writing?",
+                    "Memory Writing Warning",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
 
-                    return result == MessageBoxResult.Yes;
-                }
-                else
-                {
-                    var result = MessageBox.Show(
-                        "⚠️ ENABLING MEMORY WRITING ⚠️\n\n" +
-                        "You are about to enable Memory Writing features.\n\n" +
-                        "Memory writing features include:\n" +
-                        "• Aimbot, No Recoil, Infinite Stamina\n" +
-                        "• Movement modifications (Speed, No Inertia, etc.)\n" +
-                        "• Visual modifications (Night Vision, etc.)\n" +
-                        "• And other game modifications\n\n" +
-                        "⚠️ WARNING: These features carry increased detection risk!\n\n" +
-                        "Are you sure you want to enable Memory Writing?",
-                        "Memory Writing Warning",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-
-                    return result == MessageBoxResult.Yes;
-                }
+                return result == MessageBoxResult.Yes;
             });
         }
         #endregion

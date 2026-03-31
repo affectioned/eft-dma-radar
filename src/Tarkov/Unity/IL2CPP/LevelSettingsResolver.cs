@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Diagnostics;
 using System.Threading;
 using eft_dma_radar.Common.DMA;
@@ -62,7 +62,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     var ls = GetLevelSettings();
                     if (ls.IsValidVirtualAddress())
                     {
-                        XMLogging.WriteLine($"[LevelSettingsResolver] Async resolved LevelSettings @ 0x{ls:X}");
+                        Log.WriteLine($"[LevelSettingsResolver] Async resolved LevelSettings @ 0x{ls:X}");
                     }
                 }
                 catch (Exception ex)
@@ -82,7 +82,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         /// </summary>
         public static ulong GetLevelSettings()
         {
-            // 1) Fast path ¨C cached value
+            // 1) Fast path Â¨C cached value
             if (TryGetCached(out var cached))
                 return cached;
 
@@ -101,7 +101,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 // 2) Global pointer to GameObjectManager
                 var gomGlobal = unityBase + UnityOffsets.ModuleBase.GameObjectManager;
-                var gomPtr    = Memory.ReadPtr(gomGlobal);
+                var gomPtr = Memory.ReadPtr(gomGlobal);
 
                 if (!gomPtr.IsValidVirtualAddress())
                 {
@@ -113,16 +113,16 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
                 // 3) Read first / last active nodes
                 var firstNode = Memory.ReadValue<LinkedListObject>(gom.ActiveNodes);
-                var lastNode  = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
+                var lastNode = Memory.ReadValue<LinkedListObject>(gom.LastActiveNode);
 
                 firstNode.ThisObject.ThrowIfInvalidVirtualAddress();
                 firstNode.NextObjectLink.ThrowIfInvalidVirtualAddress();
                 lastNode.ThisObject.ThrowIfInvalidVirtualAddress();
                 lastNode.PreviousObjectLink.ThrowIfInvalidVirtualAddress();
 
-                // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
-                // Forward scan: firstNode ¡ú lastNode
-                // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+                // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
+                // Forward scan: firstNode Â¡Ãº lastNode
+                // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
                 result = ScanForward(firstNode, lastNode);
                 if (result.IsValidVirtualAddress())
                 {
@@ -130,9 +130,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     return result;
                 }
 
-                // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
-                // Backward scan: lastNode ¡ú firstNode
-                // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+                // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
+                // Backward scan: lastNode Â¡Ãº firstNode
+                // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
                 result = ScanBackward(lastNode, firstNode);
                 if (result.IsValidVirtualAddress())
                 {
@@ -140,11 +140,10 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     return result;
                 }
 
-                Debug.WriteLine("[LevelSettingsResolver] LevelSettings GameObject not found (forward/backward).");
+
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.WriteLine($"[LevelSettingsResolver] Exception while searching: {ex.Message}");
                 result = 0;
             }
 
@@ -152,7 +151,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         }
 
         /// <summary>
-        /// Forward traversal: firstNode ¡ú lastNode over the GOM activeObjects list.
+        /// Forward traversal: firstNode Â¡Ãº lastNode over the GOM activeObjects list.
         /// </summary>
         private static ulong ScanForward(LinkedListObject firstNode, LinkedListObject lastNode)
         {
@@ -164,10 +163,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             while (true)
             {
                 if (++iterations > maxDepth)
-                {
-                    Debug.WriteLine("[LevelSettingsResolver] Forward scan hit maxDepth; aborting.");
                     break;
-                }
 
                 if (!current.ThisObject.IsValidVirtualAddress())
                     break;
@@ -188,7 +184,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         }
 
         /// <summary>
-        /// Backward traversal: lastNode ¡ú firstNode over the GOM activeObjects list.
+        /// Backward traversal: lastNode Â¡Ãº firstNode over the GOM activeObjects list.
         /// </summary>
         private static ulong ScanBackward(LinkedListObject lastNode, LinkedListObject firstNode)
         {
@@ -200,10 +196,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             while (true)
             {
                 if (++iterations > maxDepth)
-                {
-                    Debug.WriteLine("[LevelSettingsResolver] Backward scan hit maxDepth; aborting.");
                     break;
-                }
 
                 if (!current.ThisObject.IsValidVirtualAddress())
                     break;
@@ -257,7 +250,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 if (!string.Equals(name, TargetGoName, StringComparison.Ordinal))
                     return false;
 
-                // Same chain from your dumper: GO ¡ú component ¡ú instance
+                // Same chain from your dumper: GO Â¡Ãº component Â¡Ãº instance
                 var instance = Memory.ReadPtrChain(
                     node.ThisObject,
                     UnityOffsets.LevelSettings.LevelSettingsChain,
@@ -271,14 +264,14 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 }
 
                 Debug.WriteLine(
-                    $"[LevelSettingsResolver] FOUND '{TargetGoName}' ¨C LevelSettings instance 0x{instance:X}");
+                    $"[LevelSettingsResolver] FOUND '{TargetGoName}' Â¨C LevelSettings instance 0x{instance:X}");
 
                 levelSettings = instance;
                 return true;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[LevelSettingsResolver] TryMatchLevelSettings hard fail: {ex}");
+                Debug.WriteLine($"[LevelSettingsResolver] TryMatchLevelSettings: {ex.Message}");
                 return false;
             }
         }

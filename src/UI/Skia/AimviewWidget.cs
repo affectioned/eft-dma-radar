@@ -71,7 +71,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ESP WIDGET RENDER ERROR: {ex}");
+                Log.WriteLine($"CRITICAL ESP WIDGET RENDER ERROR: {ex}");
             }
 
             _aimviewCanvas.Flush();
@@ -118,7 +118,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
                 _aimviewCanvas.DrawRect(boxPt, PaintESPWidgetLoot);
                 var label = item.GetUILabel() + $" ({dist:n1}m)";
-                _aimviewCanvas.DrawText(label, textPt, TextESPWidgetLoot);
+                _aimviewCanvas.DrawText(label, textPt, SKTextAlign.Center, AimviewLootFont, TextESPWidgetLoot);
             }
         }
 
@@ -151,7 +151,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
                 _aimviewCanvas.DrawRect(boxPt, PaintESPWidgetLoot);
                 var label = $"{container.Name} ({dist:n1}m)";
-                _aimviewCanvas.DrawText(label, textPt, TextESPWidgetLoot);
+                _aimviewCanvas.DrawText(label, textPt, SKTextAlign.Center, AimviewLootFont, TextESPWidgetLoot);
             }
         }
 
@@ -167,11 +167,13 @@ namespace eft_dma_radar.UI.SKWidgetControl
 
             foreach (var player in allPlayers)
             {
-                if (player.Skeleton.UpdateESPWidgetBuffer(scaleX, scaleY))
+                var skeleton = player.Skeleton;
+                if (skeleton is null) continue;
+                if (skeleton.UpdateESPWidgetBuffer(scaleX, scaleY))
                 {
                     _aimviewCanvas.DrawPoints(
                         SKPointMode.Lines,
-                        player.Skeleton.ESPWidgetBuffer.ToArray(),
+                        skeleton.ESPWidgetBuffer.ToArray(),
                         GetPlayerPaint(player)
                     );
                 }
@@ -227,8 +229,6 @@ namespace eft_dma_radar.UI.SKWidgetControl
                     return PaintESPWidgetPScav;
                 case Player.PlayerType.SpecialPlayer:
                     return PaintESPWidgetSpecial;
-                case Player.PlayerType.Streamer:
-                    return PaintESPWidgetStreamer;
                 default:
                     return PaintESPWidgetUSEC;
             }
@@ -254,7 +254,7 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 PaintESPWidgetPScav.StrokeWidth = 1 * newScale;
                 PaintESPWidgetFocused.StrokeWidth = 1 * newScale;
                 PaintESPWidgetLoot.StrokeWidth = 0.75f * newScale;
-                TextESPWidgetLoot.TextSize = 9f * newScale;
+                AimviewLootFont.Size = 9f * newScale;
             }
         }
 
@@ -366,21 +366,16 @@ namespace eft_dma_radar.UI.SKWidgetControl
             StrokeWidth = 0.75f,
             Style = SKPaintStyle.Fill,
             IsAntialias = true,
-            FilterQuality = SKFilterQuality.High
         };
 
         internal static SKPaint TextESPWidgetLoot { get; } = new()
         {
-            SubpixelText = true,
             Color = SKColors.WhiteSmoke,
             IsStroke = false,
-            TextSize = 9f,
-            TextAlign = SKTextAlign.Center,
-            TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
-            Typeface = CustomFonts.SKFontFamilyRegular,
-            FilterQuality = SKFilterQuality.High
         };
+
+        internal static SKFont AimviewLootFont { get; } = new(CustomFonts.SKFontFamilyRegular, 9f) { Subpixel = true };
 
         #endregion
     }

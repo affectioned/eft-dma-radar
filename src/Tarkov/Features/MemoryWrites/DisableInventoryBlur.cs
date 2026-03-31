@@ -1,4 +1,4 @@
-using eft_dma_radar.Common.DMA.ScatterAPI;
+﻿using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
@@ -14,9 +14,9 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         private ulong _cachedBlurEffect;
 
         private const int BLUR_COUNT_DISABLED = 0;
-        private const int BLUR_COUNT_ENABLED  = 5;
+        private const int BLUR_COUNT_ENABLED = 5;
         private const int UPSAMPLE_TEX_DIMENSION_DISABLED = (int)Enums.InventoryBlurDimensions._2048;
-        private const int UPSAMPLE_TEX_DIMENSION_ENABLED  = (int)Enums.InventoryBlurDimensions._256;
+        private const int UPSAMPLE_TEX_DIMENSION_ENABLED = (int)Enums.InventoryBlurDimensions._256;
 
         public override bool Enabled
         {
@@ -44,13 +44,13 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     writes.Callbacks += () =>
                     {
                         _lastEnabledState = Enabled;
-                        XMLogging.WriteLine($"[DisableInventoryBlur] {(Enabled ? "Enabled" : "Disabled")}");
+                        Log.WriteLine($"[DisableInventoryBlur] {(Enabled ? "Enabled" : "Disabled")}");
                     };
                 }
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[DisableInventoryBlur]: {ex}");
+                Log.WriteLine($"[DisableInventoryBlur]: {ex}");
                 _cachedBlurEffect = default;
             }
         }

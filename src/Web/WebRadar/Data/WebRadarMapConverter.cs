@@ -17,7 +17,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
 
                 OriginX = cfg.X,
                 OriginY = cfg.Y,
-                Scale   = cfg.Scale,
+                Scale = cfg.Scale,
                 SvgScale = cfg.SvgScale,
 
                 DisableDimming = false,

@@ -1,7 +1,6 @@
-using System;
+ï»¿using System;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_shared.Common.Unity;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.Collections;
@@ -45,9 +44,9 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 if (!animator.IsValidVirtualAddress())
                     return;
 
-                // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+                // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
                 // Weight check
-                // ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+                // Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤Â©Â¤
                 var physical = Memory.ReadPtr(localPlayer + Offsets.Player.Physical);
                 if (!physical.IsValidVirtualAddress())
                     return;
@@ -61,7 +60,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 
                 if (overweight && !_lastOverweightState && Enabled)
                 {
-                    XMLogging.WriteLine(
+                    Log.WriteLine(
                         $"[MoveSpeed] You are too FAT! Reducing MoveSpeed (Weight={weightKg:F1}kg)"
                     );
                     //NotificationsShared.InfoExtended(
@@ -73,7 +72,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
 
                 float targetSpeed =
                     overweight ? BASE_SPEED :
-                    Enabled    ? configSpeed :
+                    Enabled ? configSpeed :
                                  BASE_SPEED;
 
                 float currentSpeed = Memory.ReadValue<float>(
@@ -98,7 +97,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     _lastSpeed = configSpeed;
                     _lastOverweightState = overweight;
 
-                    XMLogging.WriteLine(
+                    Log.WriteLine(
                         $"[MoveSpeed] {(Enabled ? "Enabled" : "Disabled")} | " +
                         $"Weight={weightKg:F1}kg | Speed={targetSpeed:F2}"
                     );
@@ -106,7 +105,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[MoveSpeed]: {ex}");
+                Log.WriteLine($"[MoveSpeed]: {ex}");
                 _cachedAnimator = default;
             }
         }

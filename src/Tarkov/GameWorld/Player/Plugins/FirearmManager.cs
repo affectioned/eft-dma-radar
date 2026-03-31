@@ -1,7 +1,6 @@
-using eft_dma_radar.UI.ESP;
+ï»¿using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.Common.DMA.ScatterAPI;
-using eft_dma_radar.UI.ESP;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Misc.Pools;
@@ -20,6 +19,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 
         private readonly LocalPlayer _localPlayer;
         private CachedHandsInfo _hands;
+        private Action<ScatterReadIndex> _fireportCallback;
 
         /// <summary>
         /// Returns the Hands Controller Address and if the held item is a weapon.
@@ -59,7 +59,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             if (fireport == null)
                 return;
 
-            // HARD VALIDATION ¡ª prevents poison scatter entries
+            // HARD VALIDATION Â¡Âª prevents poison scatter entries
             if (!fireport.VerticesAddr.IsValidVirtualAddress() ||
                 fireport.Index < 0 ||
                 fireport.Index > 128)
@@ -73,17 +73,20 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 fireport.VerticesAddr,
                 (fireport.Index + 1) * SizeChecker<UnityTransform.TrsX>.Size);
 
-            index.Callbacks += x1 =>
+            _fireportCallback ??= FireportRealtimeCallback;
+            index.Callbacks += _fireportCallback;
+        }
+
+        private void FireportRealtimeCallback(ScatterReadIndex x1)
+        {
+            if (x1.TryGetResult<SharedArray<UnityTransform.TrsX>>(-20, out var vertices))
+                UpdateFireport(vertices);
+            else
             {
-                if (x1.TryGetResult<SharedArray<UnityTransform.TrsX>>(-20, out var vertices))
-                    UpdateFireport(vertices);
-                else
-                {
-                    _fireportStallTicks++;
-                    if (_fireportStallTicks > 15)
-                        ResetFireport();
-                }
-            };
+                _fireportStallTicks++;
+                if (_fireportStallTicks > 15)
+                    ResetFireport();
+            }
         }
         private long _nextFireportRetry;
 
@@ -168,9 +171,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                     }
                     else
                     {
-                        // FAST PATH ¡ª direct read for immediate visual update
+                        // FAST PATH Â¡Âª direct read for immediate visual update
                         try
                         {
+                            if (FireportTransform is null)
+                            {
+                                ResetFireport();
+                                return;
+                            }
                             var pos = FireportTransform.UpdatePosition();
                             var rot = FireportTransform.GetRotation();
 
@@ -188,7 +196,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                         }
                         catch
                         {
-                            // ignore ¡ª scatter may still succeed
+                            // ignore Â¡Âª scatter may still succeed
                         }
                     }
                 }
@@ -204,24 +212,24 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         /// </summary>
         /// <param name="vertices">Fireport transform vertices.</param>
         private int _fireportStallTicks;
-        
+
         private void UpdateFireport(SharedArray<UnityTransform.TrsX> vertices)
         {
             try
             {
                 var pos = FireportTransform?.UpdatePosition(vertices);
-        
+
                 if (pos == FireportPosition)
                     _fireportStallTicks++;
                 else
                     _fireportStallTicks = 0;
-        
+
                 if (_fireportStallTicks > 30)
                 {
                     ResetFireport();
                     return;
                 }
-        
+
                 FireportPosition = pos;
                 FireportRotation = FireportTransform?.GetRotation(vertices);
             }
@@ -268,10 +276,17 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             private string _fireType;
             private string _ammo;
 
+            internal static bool DebugLogging = false;
+
+            private string _lastValidAmmo;
+            private string _lastValidFireType;
+            private int _lastValidCount;
+            private int _lastValidMaxCount;
+
             /// <summary>
             /// True if the MagazineManager is in a valid state for data output.
             /// </summary>
-            public bool IsValid => MaxCount > 0;
+            public bool IsValid => MaxCount > 0 || _lastValidMaxCount > 0;
             /// <summary>
             /// Current ammo count in Magazine.
             /// </summary>
@@ -281,6 +296,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             /// </summary>
             public int MaxCount { get; private set; }
             /// <summary>
+            /// Current ammo count, falling back to last valid reading if current is zero.
+            /// </summary>
+            public int CountWithFallback => Count > 0 ? Count : _lastValidCount;
+            /// <summary>
+            /// Maximum ammo count, falling back to last valid reading if current is zero.
+            /// </summary>
+            public int MaxCountWithFallback => MaxCount > 0 ? MaxCount : _lastValidMaxCount;
+            /// <summary>
             /// Weapon Fire Mode & Ammo Type in a formatted string.
             /// </summary>
             public string WeaponInfo
@@ -288,8 +311,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 get
                 {
                     string result = "";
-                    string ft = _fireType;
-                    string ammo = _ammo;
+                    string ft = _fireType ?? _lastValidFireType;
+                    string ammo = _ammo ?? _lastValidAmmo;
                     if (ft is not null)
                         result += $"{ft}: ";
                     if (ammo is not null)
@@ -314,84 +337,171 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             /// </summary>
             public void Update(CachedHandsInfo hands)
             {
+                bool log = DebugLogging &&
+                            Log.TryThrottle("MagCheck", TimeSpan.FromSeconds(1));
+
                 string ammoInChamber = null;
                 string fireType = null;
                 string ammoFromMag = null;
                 int maxCount = 0;
                 int currentCount = 0;
+                int chamberSlotCount = 0;
+
                 var fireModePtr = Memory.ReadValue<ulong>(hands.ItemAddr + Offsets.LootItemWeapon.FireMode);
                 var magSlotPtr = Memory.ReadValue<ulong>(hands.ItemAddr + Offsets.LootItemWeapon._magSlotCache);
+
+                if (log)
+                {
+                    string weaponClass    = ObjectClass.ReadName(hands.ItemAddr, useCache: false);
+                    string fireModeClass  = fireModePtr != 0 ? ObjectClass.ReadName(fireModePtr, useCache: false) : "null";
+                    string magSlotClass   = magSlotPtr  != 0 ? ObjectClass.ReadName(magSlotPtr,  useCache: false) : "null";
+                    Log.WriteLine($"[MagCheck] " + $"-- WeaponBase: 0x{hands.ItemAddr:X16}  class={weaponClass}");
+                    Log.WriteLine($"[MagCheck] " + $"  FireMode   : 0x{hands.ItemAddr:X16} +0x{Offsets.LootItemWeapon.FireMode:X3} ? ptr=0x{fireModePtr:X16}  class={fireModeClass}");
+                    Log.WriteLine($"[MagCheck] " + $"  MagSlot    : 0x{hands.ItemAddr:X16} +0x{Offsets.LootItemWeapon._magSlotCache:X3} ? ptr=0x{magSlotPtr:X16}  class={magSlotClass}");
+                }
+
                 if (fireModePtr != 0x0)
                 {
                     var fireMode = (EFireMode)Memory.ReadValue<byte>(fireModePtr + Offsets.FireModeComponent.FireMode);
+                    if (log)
+                        Log.WriteLine($"[MagCheck] " + $"  FireMode   : 0x{fireModePtr:X16} +0x{Offsets.FireModeComponent.FireMode:X3} ? raw={fireMode} ({fireMode.GetDescription() ?? "unknown"})");
                     if (fireMode >= EFireMode.Auto && fireMode <= EFireMode.SemiAuto)
                         fireType = fireMode.GetDescription();
                 }
 
-                try // does nothing, only exists for the catch to happen
+                // Try to resolve ammo name from the chambered round.
+                // Counts are accumulated below regardless of this path.
+                try
                 {
                     var chambers = Memory.ReadPtr(hands.ItemAddr + Offsets.LootItemWeapon.Chambers);
-                    var slotPtr = Memory.ReadPtr(chambers + MemList<byte>.ArrStartOffset + 0 * 0x8); // One in the chamber ;)
+                    var slotPtr = Memory.ReadPtr(chambers + MemList<byte>.ArrStartOffset + 0 * 0x8);
                     var slotItem = Memory.ReadPtr(slotPtr + Offsets.Slot.ContainedItem);
                     var ammoTemplate = Memory.ReadPtr(slotItem + Offsets.LootItem.Template);
                     var idPtr = Memory.ReadValue<Types.MongoID>(ammoTemplate + Offsets.ItemTemplate._id);
                     string id = Memory.ReadUnityString(idPtr.StringID);
+                    if (log)
+                        Log.WriteLine($"[MagCheck] " + $"  Chamber ammo name path: chambers=0x{chambers:X16} slotPtr=0x{slotPtr:X16} slotItem=0x{slotItem:X16} ammoTemplate=0x{ammoTemplate:X16} id={id}");
                     if (EftDataManager.AllItems.TryGetValue(id, out var ammo))
                         ammoInChamber = ammo?.ShortName;
                 }
                 catch
                 {
-                    var ammoTemplate_ = GetAmmoTemplateFromWeapon(hands.ItemAddr);
-                    var ammoIdPtr = Memory.ReadValue<Types.MongoID>(ammoTemplate_ + Offsets.ItemTemplate._id);
-                    string ammoId = Memory.ReadUnityString(ammoIdPtr.StringID);
-                    if (EftDataManager.AllItems.TryGetValue(ammoId, out var ammo))
-                        ammoFromMag = ammo?.ShortName;
-                    var magItemPtr = Memory.ReadPtr(magSlotPtr + Offsets.Slot.ContainedItem);
-                    var cartridges = Memory.ReadPtr(magItemPtr + Offsets.LootItemMagazine.Cartridges);
-                    var magStackPtr = Memory.ReadPtr(cartridges + Offsets.StackSlot._items);
-                    var magStack = MemList<ulong>.Get(magStackPtr);
-                    maxCount += Memory.ReadValue<int>(cartridges + Offsets.StackSlot.MaxCount);
-                    var magStackPtr_ = Memory.ReadPtr(cartridges + Offsets.StackSlot._items);
-                    using var magStack_ = MemList<ulong>.Get(magStackPtr);
-                    foreach (var stack in magStack_) // Each ammo type will be a separate stack
+                    // No round in chamber â€“ try to get ammo name from the magazine stack instead.
+                    try
                     {
-                        if (stack != 0x0)
-                            currentCount += Memory.ReadValue<int>(stack + Offsets.MagazineClass.StackObjectsCount, false);
+                        var ammoTemplate_ = GetAmmoTemplateFromWeapon(hands.ItemAddr);
+                        var ammoIdPtr = Memory.ReadValue<Types.MongoID>(ammoTemplate_ + Offsets.ItemTemplate._id);
+                        string ammoId = Memory.ReadUnityString(ammoIdPtr.StringID);
+                        if (log)
+                            Log.WriteLine($"[MagCheck] " + $"  Mag-stack ammo fallback: ammoTemplate=0x{ammoTemplate_:X16} id={ammoId}");
+                        if (EftDataManager.AllItems.TryGetValue(ammoId, out var ammo))
+                            ammoFromMag = ammo?.ShortName;
                     }
+                    catch { }
                 }
 
                 var chambersPtr = Memory.ReadValue<ulong>(hands.ItemAddr + Offsets.LootItemWeapon.Chambers);
+                if (log)
+                {
+                    string chambersClass = chambersPtr != 0 ? ObjectClass.ReadName(chambersPtr, useCache: false) : "null";
+                    Log.WriteLine($"[MagCheck] " + $"  ChambersPtr: 0x{hands.ItemAddr:X16} +0x{Offsets.LootItemWeapon.Chambers:X3} ? ptr=0x{chambersPtr:X16}  class={chambersClass}");
+                }
+
                 if (chambersPtr != 0x0) // Single chamber, or for some shotguns, multiple chambers
                 {
                     using var chambers = MemArray<Chamber>.Get(chambersPtr);
-                    currentCount += chambers.Count(x => x.HasBullet());
-                    ammoInChamber = GetLoadedAmmoName(chambers.FirstOrDefault(x => x.HasBullet()));
-                    maxCount += chambers.Count;
+                    int loaded = chambers.Count(x => x.HasBullet());
+                    currentCount += loaded;
+                    ammoInChamber = GetLoadedAmmoName(chambers.FirstOrDefault(x => x.HasBullet()), log);
+                    chamberSlotCount = chambers.Count;
+                    maxCount += chamberSlotCount;
+                    if (log)
+                        Log.WriteLine($"[MagCheck] " + $"  Chambers   : count={chambers.Count} loaded={loaded} ammo={ammoInChamber ?? "null"}");
                 }
 
                 if (magSlotPtr != 0x0)
                 {
                     var magItem = Memory.ReadValue<ulong>(magSlotPtr + Offsets.Slot.ContainedItem);
+                    if (log)
+                    {
+                        string magItemClass = magItem != 0 ? ObjectClass.ReadName(magItem, useCache: false) : "null";
+                        Log.WriteLine($"[MagCheck] " + $"  MagItem    : 0x{magSlotPtr:X16} +0x{Offsets.Slot.ContainedItem:X3} ? ptr=0x{magItem:X16}  class={magItemClass}");
+                    }
+
                     if (magItem != 0x0)
                     {
                         var magChambersPtr = Memory.ReadPtr(magItem + Offsets.LootItemMod.Slots);
                         using var magChambers = MemArray<Chamber>.Get(magChambersPtr);
+                        if (log)
+                        {
+                            string magChambersClass = magChambersPtr != 0 ? ObjectClass.ReadName(magChambersPtr, useCache: false) : "null";
+                            Log.WriteLine($"[MagCheck] " + $"  MagChambers: 0x{magItem:X16} +0x{Offsets.LootItemMod.Slots:X3} ? ptr=0x{magChambersPtr:X16}  count={magChambers.Count}  class={magChambersClass}");
+                        }
+
                         if (magChambers.Count > 0 || ammoInChamber is null) // Revolvers, etc.
                         {
+                            int loaded = magChambers.Count(x => x.HasBullet());
                             maxCount += magChambers.Count;
-                            currentCount += magChambers.Count(x => x.HasBullet());
-                            ammoInChamber = GetLoadedAmmoName(magChambers.FirstOrDefault(x => x.HasBullet()));
+                            currentCount += loaded;
+                            ammoInChamber = GetLoadedAmmoName(magChambers.FirstOrDefault(x => x.HasBullet()), log);
+                            if (log)
+                                Log.WriteLine($"[MagCheck] " + $"  Revolver path: magChambers={magChambers.Count} loaded={loaded} ammo={ammoInChamber ?? "null"}");
                         }
                         else // Regular magazines
                         {
-                            var cartridges = Memory.ReadPtr(magItem + Offsets.LootItemMagazine.Cartridges);
-                            maxCount += Memory.ReadValue<int>(cartridges + Offsets.StackSlot.MaxCount);
-                            var magStackPtr = Memory.ReadPtr(cartridges + Offsets.StackSlot._items);
-                            using var magStack = MemList<ulong>.Get(magStackPtr);
-                            foreach (var stack in magStack) // Each ammo type will be a separate stack
+                            maxCount -= chamberSlotCount; // chamber slot is not part of magazine capacity
+                            // Step 1: read and immediately validate the Cartridges StackSlot pointer
+                            var cartridges = Memory.ReadPtr(magItem + 0xA8);
+                            string cartridgesClass = cartridges != 0 ? ObjectClass.ReadName(cartridges, useCache: false) : "null";
+                            if (log)
+                                Log.WriteLine($"[MagCheck] " + $"  Cartridges : 0x{magItem:X16} +0x{Offsets.LootItemMagazine.Cartridges:X3} ? 0x{cartridges:X16}  class={cartridgesClass}");
+
+                            if (!cartridges.IsValidVirtualAddress())
                             {
-                                if (stack != 0x0)
-                                    currentCount += Memory.ReadValue<int>(stack + Offsets.MagazineClass.StackObjectsCount, false);
+                                if (log)
+                                    Log.WriteLine($"[MagCheck] " + "  Cartridges INVALID â€” skipping regular mag path");
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    // Step 2: read MaxCount and the stack-list pointer
+                                    int slotMax = Memory.ReadValue<int>(cartridges + Offsets.StackSlot.MaxCount);
+                                    maxCount += slotMax;
+                                    var magStackPtr = Memory.ReadPtr(cartridges + Offsets.StackSlot._items);
+                                    if (log)
+                                        Log.WriteLine($"[MagCheck] " + $"  Regular mag: MaxCount@+0x{Offsets.StackSlot.MaxCount:X3}={slotMax}  stackList@+0x{Offsets.StackSlot._items:X3}=0x{magStackPtr:X16}");
+
+                                    if (!magStackPtr.IsValidVirtualAddress())
+                                    {
+                                        if (log)
+                                            Log.WriteLine($"[MagCheck] " + "  MagStack INVALID â€” skipping");
+                                    }
+                                    else
+                                    {
+                                        using var magStack = MemList<ulong>.Get(magStackPtr);
+                                        int stackIdx = 0;
+                                        foreach (var stack in magStack) // Each ammo type will be a separate stack
+                                        {
+                                            if (stack != 0x0)
+                                            {
+                                                int stackCount = Memory.ReadValue<int>(stack + Offsets.MagazineClass.StackObjectsCount, false);
+                                                currentCount += stackCount;
+                                                if (log)
+                                                {
+                                                    string stackClass = ObjectClass.ReadName(stack, useCache: false);
+                                                    Log.WriteLine($"[MagCheck] " + $"  Stack[{stackIdx}]: 0x{stack:X16} +0x{Offsets.MagazineClass.StackObjectsCount:X3} = {stackCount}  class={stackClass}");
+                                                }
+                                            }
+                                            stackIdx++;
+                                        }
+                                    }
+                                }
+                                catch (Exception regEx)
+                                {
+                                    if (log)
+                                        Log.WriteLine($"[MagCheck] " + $"  Regular mag EXCEPTION at cartridges=0x{cartridges:X16}: {regEx.GetType().Name}: {regEx.Message}");
+                                }
                             }
                         }
                     }
@@ -401,26 +511,57 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 _fireType = fireType;
                 Count = currentCount;
                 MaxCount = maxCount;
+
+                if (log)
+                    Log.WriteLine($"[MagCheck] " + $"?? RESULT: fireType={fireType ?? "null"} ammo={_ammo ?? "null"} count={currentCount}/{maxCount}");
+
+                if (_ammo != null) _lastValidAmmo = _ammo;
+                if (_fireType != null) _lastValidFireType = _fireType;
+                if (currentCount > 0) _lastValidCount = currentCount;
+                if (maxCount > 0) _lastValidMaxCount = maxCount;
             }
 
             /// <summary>
             /// Gets the name of the ammo round currently loaded in this chamber, otherwise NULL.
             /// </summary>
             /// <param name="chamber">Chamber to check.</param>
+            /// <param name="log">When true, emit detailed address/offset trace via LoggingEnhancements.</param>
             /// <returns>Short name of ammo in chamber, or null if no round loaded.</returns>
-            private static string GetLoadedAmmoName(Chamber chamber)
+            private static string GetLoadedAmmoName(Chamber chamber, bool log = false)
             {
                 if (chamber != 0x0)
                 {
                     var bulletItem = Memory.ReadValue<ulong>(chamber + Offsets.Slot.ContainedItem);
+                    if (log)
+                    {
+                        string chamberClass    = ObjectClass.ReadName((ulong)chamber, useCache: false);
+                        string bulletItemClass = bulletItem != 0 ? ObjectClass.ReadName(bulletItem, useCache: false) : "null";
+                        Log.WriteLine($"[AmmoName] " + $"  Chamber  : 0x{(ulong)chamber:X16}  class={chamberClass}");
+                        Log.WriteLine($"[AmmoName] " + $"  BulletItem: 0x{(ulong)chamber:X16} +0x{Offsets.Slot.ContainedItem:X3} ? 0x{bulletItem:X16}  class={bulletItemClass}");
+                    }
                     if (bulletItem != 0x0)
                     {
                         var bulletTemp = Memory.ReadPtr(bulletItem + Offsets.LootItem.Template);
                         var bulletIdPtr = Memory.ReadValue<Types.MongoID>(bulletTemp + Offsets.ItemTemplate._id);
                         var bulletId = Memory.ReadUnityString(bulletIdPtr.StringID, 32);
+                        if (log)
+                        {
+                            string bulletTempClass = bulletTemp != 0 ? ObjectClass.ReadName(bulletTemp, useCache: false) : "null";
+                            Log.WriteLine($"[AmmoName] " + $"  Template : 0x{bulletItem:X16} +0x{Offsets.LootItem.Template:X3} ? 0x{bulletTemp:X16}  class={bulletTempClass}  id@+0x{Offsets.ItemTemplate._id:X3} ? {bulletId}");
+                        }
                         if (EftDataManager.AllItems.TryGetValue(bulletId, out var bullet))
+                        {
+                            if (log)
+                                Log.WriteLine($"[AmmoName] " + $"  Resolved : {bullet?.ShortName ?? "null"}");
                             return bullet?.ShortName;
+                        }
+                        if (log)
+                            Log.WriteLine($"[AmmoName] " + "  Resolved : NOT FOUND in AllItems");
                     }
+                }
+                else if (log)
+                {
+                    Log.WriteLine($"[AmmoName] " + "  Chamber  : null (0x0)");
                 }
                 return null;
             }
@@ -432,7 +573,17 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             /// <returns>Ammo Template Ptr</returns>
             public static ulong GetAmmoTemplateFromWeapon(ulong lootItemBase)
             {
+                bool log = DebugLogging &&
+                            Log.TryThrottle("AmmoTemplate", TimeSpan.FromSeconds(1));
+
                 var chambersPtr = Memory.ReadValue<ulong>(lootItemBase + Offsets.LootItemWeapon.Chambers);
+                if (log)
+                {
+                    string weaponClass   = ObjectClass.ReadName(lootItemBase, useCache: false);
+                    string chambersClass = chambersPtr != 0 ? ObjectClass.ReadName(chambersPtr, useCache: false) : "null";
+                    Log.WriteLine($"[AmmoTemplate] " + $"-- WeaponBase: 0x{lootItemBase:X16}  class={weaponClass}  ChambersPtr@+0x{Offsets.LootItemWeapon.Chambers:X3}=0x{chambersPtr:X16}  class={chambersClass}");
+                }
+
                 ulong firstRound;
                 MemArray<Chamber> chambers = null;
                 MemArray<Chamber> magChambers = null;
@@ -440,24 +591,59 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 try
                 {
                     if (chambersPtr != 0x0 && (chambers = MemArray<Chamber>.Get(chambersPtr)).Count > 0) // Single chamber, or for some shotguns, multiple chambers
-                        firstRound = Memory.ReadPtr(chambers.First(x => x.HasBullet(true)) + Offsets.Slot.ContainedItem);
+                    {
+                        var loaded = chambers.FirstOrDefault(x => x.HasBullet(true));
+                        if (log)
+                            Log.WriteLine($"[AmmoTemplate] " + $"  Chamber path: count={chambers.Count} loaded={(ulong)loaded:X16}");
+                        if (loaded == default)
+                            throw new InvalidOperationException("No loaded round found in chambers");
+                        firstRound = Memory.ReadPtr(loaded + Offsets.Slot.ContainedItem);
+                        if (log)
+                            Log.WriteLine($"[AmmoTemplate] " + $"  firstRound : 0x{(ulong)loaded:X16} +0x{Offsets.Slot.ContainedItem:X3} ? 0x{firstRound:X16}");
+                    }
                     else
                     {
                         var magSlot = Memory.ReadPtr(lootItemBase + Offsets.LootItemWeapon._magSlotCache);
                         var magItemPtr = Memory.ReadPtr(magSlot + Offsets.Slot.ContainedItem);
                         var magChambersPtr = Memory.ReadPtr(magItemPtr + Offsets.LootItemMod.Slots);
                         magChambers = MemArray<Chamber>.Get(magChambersPtr);
+                        if (log)
+                        {
+                            string magSlotClass    = magSlot    != 0 ? ObjectClass.ReadName(magSlot,    useCache: false) : "null";
+                            string magItemClass    = magItemPtr != 0 ? ObjectClass.ReadName(magItemPtr, useCache: false) : "null";
+                            string magChambersClass = magChambersPtr != 0 ? ObjectClass.ReadName(magChambersPtr, useCache: false) : "null";
+                            Log.WriteLine($"[AmmoTemplate] " + $"  Mag path: magSlot=0x{magSlot:X16}  class={magSlotClass}  magItem=0x{magItemPtr:X16}  class={magItemClass}  magChambers@+0x{Offsets.LootItemMod.Slots:X3}=0x{magChambersPtr:X16}  class={magChambersClass}  count={magChambers.Count}");
+                        }
                         if (magChambers.Count > 0) // Revolvers, etc.
-                            firstRound = Memory.ReadPtr(magChambers.First(x => x.HasBullet(true)) + Offsets.Slot.ContainedItem);
+                        {
+                            var loaded = magChambers.FirstOrDefault(x => x.HasBullet(true));
+                            if (log)
+                                Log.WriteLine($"[AmmoTemplate] " + $"  Revolver path: loaded=0x{(ulong)loaded:X16}");
+                            if (loaded == default)
+                                throw new InvalidOperationException("No loaded round found in magazine chambers");
+                            firstRound = Memory.ReadPtr(loaded + Offsets.Slot.ContainedItem);
+                            if (log)
+                                Log.WriteLine($"[AmmoTemplate] " + $"  firstRound : 0x{(ulong)loaded:X16} +0x{Offsets.Slot.ContainedItem:X3} ? 0x{firstRound:X16}");
+                        }
                         else // Regular magazines
                         {
-                            var cartridges = Memory.ReadPtr(magItemPtr + Offsets.LootItemMagazine.Cartridges);
+                            var cartridges = Memory.ReadPtr(magItemPtr + 0xA8);
                             var magStackPtr = Memory.ReadPtr(cartridges + Offsets.StackSlot._items);
                             magStack = MemList<ulong>.Get(magStackPtr);
                             firstRound = magStack[0];
+                            if (log)
+                                Log.WriteLine($"[AmmoTemplate] " + $"  Regular mag: cartridges=0x{cartridges:X16} stackList@+0x{Offsets.StackSlot._items:X3}=0x{magStackPtr:X16} stack[0]=0x{firstRound:X16}");
                         }
                     }
-                    return Memory.ReadPtr(firstRound + Offsets.LootItem.Template);
+                    var result = Memory.ReadPtr(firstRound + Offsets.LootItem.Template);
+                    if (log)
+                    {
+                        string roundClass  = firstRound != 0 ? ObjectClass.ReadName(firstRound, useCache: false) : "null";
+                        string resultClass = result     != 0 ? ObjectClass.ReadName(result,     useCache: false) : "null";
+                        Log.WriteLine($"[AmmoTemplate] " + $"  firstRound: 0x{firstRound:X16}  class={roundClass}");
+                        Log.WriteLine($"[AmmoTemplate] " + $"-- Template : 0x{firstRound:X16} +0x{Offsets.LootItem.Template:X3} ? 0x{result:X16}  class={resultClass}");
+                    }
+                    return result;
                 }
                 finally
                 {

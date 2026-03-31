@@ -13,8 +13,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
         private static volatile bool _loaded = false;
 
         private static ulong[] _typeTable = Array.Empty<ulong>();
-        private static ulong[] _namePtr  = Array.Empty<ulong>();
-        private static ulong[] _nsPtr    = Array.Empty<ulong>();
+        private static ulong[] _namePtr = Array.Empty<ulong>();
+        private static ulong[] _nsPtr = Array.Empty<ulong>();
 
         private static ulong _lastGA = 0;
         private static ulong _lastTablePtr = 0;
@@ -33,8 +33,8 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
 
             _loaded = false;
             _typeTable = Array.Empty<ulong>();
-            _namePtr   = Array.Empty<ulong>();
-            _nsPtr     = Array.Empty<ulong>();
+            _namePtr = Array.Empty<ulong>();
+            _nsPtr = Array.Empty<ulong>();
             _cache.Clear();
 
             _lastGA = 0;
@@ -95,7 +95,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     _typeTable = tmp;
 
                     _namePtr = new ulong[actualCount];
-                    _nsPtr   = new ulong[actualCount];
+                    _nsPtr = new ulong[actualCount];
 
                     // Scatter read name + namespace pointers
                     var ptrEntries = new ScatterEntry.PtrEntry[actualCount * 2];
@@ -120,7 +120,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     for (int i = 0; i < actualCount; i++)
                     {
                         _namePtr[i] = ptrEntries[k++].Transfer();
-                        _nsPtr[i]   = ptrEntries[k++].Transfer();
+                        _nsPtr[i] = ptrEntries[k++].Transfer();
                     }
 
                     _loaded = true;
@@ -152,7 +152,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
             for (int i = 0; i < count; i++)
             {
                 ulong nameP = _namePtr[i];
-                ulong nsP   = _nsPtr[i];
+                ulong nsP = _nsPtr[i];
 
                 // Pointer went stale? Reset + reload
                 if (!nameP.IsValidVirtualAddress())
@@ -218,6 +218,6 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 _namePtr = Array.Empty<ulong>();
                 _nsPtr = Array.Empty<ulong>();
             }
-        }        
+        }
     }
 }

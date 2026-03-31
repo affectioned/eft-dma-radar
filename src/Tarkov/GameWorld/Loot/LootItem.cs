@@ -17,7 +17,6 @@ namespace eft_dma_radar.Tarkov.Loot
     {
         private static Config Config => Program.Config;
         private readonly TarkovMarketItem _item;
-        private DateTime? _lastNotifyTime;
         private static readonly Dictionary<string, DateTime> _lastNotifyTimes = new();
         private static readonly TimeSpan NotifyCooldown = TimeSpan.FromSeconds(30);
 
@@ -125,12 +124,22 @@ namespace eft_dma_radar.Tarkov.Loot
         /// </summary>
         public bool IsWishlisted => Config.LootWishlist && LocalPlayer.WishlistItems.Contains(ID);
 
+        /// <summary>
+        /// True if this item is still needed for a hideout upgrade and the option is enabled.
+        /// </summary>
+        public bool IsHideoutRequired =>
+            Config.LootHideoutRequired &&
+            Program.Hideout.NeededItemIds.Contains(ID);
+
         public GroupedLootFilterEntry MatchedFilter
         {
             get
             {
                 var groups = LootFilterManager.CurrentGroups?.Groups?
                     .OrderBy(g => g.Index);
+
+                if (groups is null)
+                    return null;
 
                 foreach (var group in groups)
                 {
@@ -159,17 +168,20 @@ namespace eft_dma_radar.Tarkov.Loot
         {
             var groups = LootFilterManager.CurrentGroups?.Groups?
                 .OrderBy(g => g.Index);
-        
+
+            if (groups is null)
+                return null;
+
             foreach (var group in groups)
             {
                 if (!group.Enabled)
                     continue;
-        
+
                 var match = group.Items.FirstOrDefault(i => i.Enabled && i.ItemID == ID);
                 if (match != null)
                     return (group, match);
             }
-        
+
             return null;
         }
 
@@ -264,6 +276,7 @@ namespace eft_dma_radar.Tarkov.Loot
                         !item.IsGroupedBlacklisted &&
                         (item.Important ||
                          item.IsWishlisted ||
+                         item.IsHideoutRequired ||
                          item is QuestItem ||
                          (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
                          (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
@@ -281,6 +294,7 @@ namespace eft_dma_radar.Tarkov.Loot
                         !item.IsGroupedBlacklisted &&
                         (item.Important ||
                          item.IsWishlisted ||
+                         item.IsHideoutRequired ||
                          item is QuestItem ||
                          (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
                          (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
@@ -297,6 +311,7 @@ namespace eft_dma_radar.Tarkov.Loot
 
                 return Important ||
                        IsWishlisted ||
+                       IsHideoutRequired ||
                        this is QuestItem ||
                        (Config.QuestHelper.Enabled && IsQuestCondition) ||
                        (LootFilterControl.ShowBackpacks && IsBackpack) ||
@@ -341,7 +356,7 @@ namespace eft_dma_radar.Tarkov.Loot
                 if (MatchedFilter != null)
                     return true;
 
-                return _item.Important || IsWishlisted;
+                return _item.Important || IsWishlisted || IsHideoutRequired;
             }
         }
 
@@ -396,150 +411,151 @@ namespace eft_dma_radar.Tarkov.Loot
             return predicate(this);
         }
 
-public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer localPlayer)
-{
-    if (this is LootCorpse && (!CorpseSettings.Enabled || !MeetsCorpseValueThreshold) && !HasImportantItems)
-        return;
-
-    EntityTypeSettings entitySettings;
-
-    if (this is LootAirdrop)
-        entitySettings = AirdropSettings;
-    else if (this is LootCorpse)
-        entitySettings = CorpseSettings;
-    else if (this is QuestItem || (QuestHelperEnabled && IsQuestCondition))
-        entitySettings = QuestItemSettings;
-    else if (IsImportant || IsValuableLoot)
-        entitySettings = ImportantLootSettings;
-    else
-        entitySettings = LootSettings;
-
-    var dist = Vector3.Distance(localPlayer.Position, Position);
-    if (dist > entitySettings.RenderDistance)
-        return;
-
-    var label      = GetEntityUILabel(entitySettings);
-    var paints     = GetPaints();
-    var heightDiff = Position.Y - localPlayer.Position.Y;
-
-    var point = Position
-        .ToMapPos(mapParams.Map)
-        .ToZoomedPos(mapParams);
-
-    MouseoverPosition = new Vector2(point.X, point.Y);
-    SKPaints.ShapeOutline.StrokeWidth = 2f;
-
-    // ─────────────────────────────────────────────
-    // SNAPSHOT CORPSE LOOT ONCE (CRITICAL FIX)
-    // ─────────────────────────────────────────────
-    List<LootItem> importantLootItems = null;
-
-    if (this is LootCorpse corpse && CorpseSettings.ShowImportantLoot)
-    {
-        var corpseLootSnapshot = corpse.Loot?.ToList();
-        if (corpseLootSnapshot is not null)
+        public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer localPlayer)
         {
-            importantLootItems = corpseLootSnapshot
-                .Where(item =>
-                       item.IsImportant ||
-                       item is QuestItem ||
-                       (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
-                       item.IsWishlisted ||
-                       (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
-                       (LootFilterControl.ShowMeds && item.IsMeds) ||
-                       (LootFilterControl.ShowFood && item.IsFood) ||
-                       (LootFilterControl.ShowWeapons && item.IsWeapon) ||
-                       item.IsValuableLoot ||
-                       (!item.IsGroupedBlacklisted &&
-                        item.MatchedFilter?.Color != null &&
-                        !string.IsNullOrEmpty(item.MatchedFilter.Color)))
-                .OrderLoot()
-                .Take(5)
-                .ToList();
+            if (this is LootCorpse && (!CorpseSettings.Enabled || !MeetsCorpseValueThreshold) && !HasImportantItems)
+                return;
+
+            EntityTypeSettings entitySettings;
+
+            if (this is LootAirdrop)
+                entitySettings = AirdropSettings;
+            else if (this is LootCorpse)
+                entitySettings = CorpseSettings;
+            else if (this is QuestItem || (QuestHelperEnabled && IsQuestCondition))
+                entitySettings = QuestItemSettings;
+            else if (IsImportant || IsValuableLoot)
+                entitySettings = ImportantLootSettings;
+            else
+                entitySettings = LootSettings;
+
+            var dist = Vector3.Distance(localPlayer.Position, Position);
+            if (dist > entitySettings.RenderDistance)
+                return;
+
+            var label = GetEntityUILabel(entitySettings);
+            var paints = GetPaints();
+            var heightDiff = Position.Y - localPlayer.Position.Y;
+
+            var point = Position
+                .ToMapPos(mapParams.Map)
+                .ToZoomedPos(mapParams);
+
+            MouseoverPosition = new Vector2(point.X, point.Y);
+            SKPaints.ShapeOutline.StrokeWidth = 2f;
+
+            // ---------------------------------------------
+            // SNAPSHOT CORPSE LOOT ONCE (CRITICAL FIX)
+            // ---------------------------------------------
+            List<LootItem> importantLootItems = null;
+
+            if (this is LootCorpse corpse && CorpseSettings.ShowImportantLoot)
+            {
+                var corpseLootSnapshot = corpse.Loot?.ToList();
+                if (corpseLootSnapshot is not null)
+                {
+                    importantLootItems = corpseLootSnapshot
+                        .Where(item =>
+                               item.IsImportant ||
+                               item is QuestItem ||
+                               item.IsHideoutRequired ||
+                               (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
+                               item.IsWishlisted ||
+                               (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
+                               (LootFilterControl.ShowMeds && item.IsMeds) ||
+                               (LootFilterControl.ShowFood && item.IsFood) ||
+                               (LootFilterControl.ShowWeapons && item.IsWeapon) ||
+                               item.IsValuableLoot ||
+                               (!item.IsGroupedBlacklisted &&
+                                item.MatchedFilter?.Color != null &&
+                                !string.IsNullOrEmpty(item.MatchedFilter.Color)))
+                        .OrderLoot()
+                        .Take(5)
+                        .ToList();
+                }
+            }
+
+            float distanceYOffset;
+            float nameXOffset = 7f * MainWindow.UIScale;
+            float nameYOffset;
+
+            if (heightDiff > HEIGHT_INDICATOR_THRESHOLD)
+            {
+                using var path = point.GetUpArrow(5);
+                canvas.DrawPath(path, SKPaints.ShapeOutline);
+                canvas.DrawPath(path, paints.Item1);
+                distanceYOffset = 18f * MainWindow.UIScale;
+                nameYOffset = 6f * MainWindow.UIScale;
+            }
+            else if (heightDiff < -HEIGHT_INDICATOR_THRESHOLD)
+            {
+                using var path = point.GetDownArrow(5);
+                canvas.DrawPath(path, SKPaints.ShapeOutline);
+                canvas.DrawPath(path, paints.Item1);
+                distanceYOffset = 12f * MainWindow.UIScale;
+                nameYOffset = 1f * MainWindow.UIScale;
+            }
+            else
+            {
+                var size = 5 * MainWindow.UIScale;
+                canvas.DrawCircle(point, size, SKPaints.ShapeOutline);
+                canvas.DrawCircle(point, size, paints.Item1);
+                distanceYOffset = 16f * MainWindow.UIScale;
+                nameYOffset = 4f * MainWindow.UIScale;
+            }
+
+            if (entitySettings.ShowName || entitySettings.ShowValue)
+            {
+                point.Offset(nameXOffset, nameYOffset);
+
+                if (!string.IsNullOrEmpty(label))
+                {
+                    canvas.DrawText(label, point, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                    canvas.DrawText(label, point, SKTextAlign.Left, SKPaints.RadarFontRegular12, paints.Item2);
+                }
+            }
+
+            var currentBottomY = point.Y + distanceYOffset - nameYOffset;
+
+            if (entitySettings.ShowDistance)
+            {
+                var distText = $"{(int)dist}m";
+                var distWidth = SKPaints.RadarFontRegular12.MeasureText(distText, paints.Item2);
+
+                var distPoint = new SKPoint(
+                    point.X - (distWidth / 2) - nameXOffset,
+                    currentBottomY
+                );
+
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paints.Item2);
+            }
+
+            if (importantLootItems?.Count > 0)
+            {
+                var spacing = 1 * MainWindow.UIScale;
+                var textSize = 12 * MainWindow.UIScale;
+
+                currentBottomY += textSize + spacing;
+
+                foreach (var item in importantLootItems)
+                {
+                    var itemText = item.GetUILabel();
+                    var itemPaint = GetItemTextPaint(item);
+                    var itemWidth = SKPaints.RadarFontRegular12.MeasureText(itemText, itemPaint);
+
+                    var itemPoint = new SKPoint(
+                        point.X - (itemWidth / 2) - nameXOffset,
+                        currentBottomY
+                    );
+
+                    canvas.DrawText(itemText, itemPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                    canvas.DrawText(itemText, itemPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, itemPaint);
+
+                    currentBottomY += textSize + spacing;
+                }
+            }
         }
-    }
-
-    float distanceYOffset;
-    float nameXOffset = 7f * MainWindow.UIScale;
-    float nameYOffset;
-
-    if (heightDiff > HEIGHT_INDICATOR_THRESHOLD)
-    {
-        using var path = point.GetUpArrow(5);
-        canvas.DrawPath(path, SKPaints.ShapeOutline);
-        canvas.DrawPath(path, paints.Item1);
-        distanceYOffset = 18f * MainWindow.UIScale;
-        nameYOffset     = 6f * MainWindow.UIScale;
-    }
-    else if (heightDiff < -HEIGHT_INDICATOR_THRESHOLD)
-    {
-        using var path = point.GetDownArrow(5);
-        canvas.DrawPath(path, SKPaints.ShapeOutline);
-        canvas.DrawPath(path, paints.Item1);
-        distanceYOffset = 12f * MainWindow.UIScale;
-        nameYOffset     = 1f * MainWindow.UIScale;
-    }
-    else
-    {
-        var size = 5 * MainWindow.UIScale;
-        canvas.DrawCircle(point, size, SKPaints.ShapeOutline);
-        canvas.DrawCircle(point, size, paints.Item1);
-        distanceYOffset = 16f * MainWindow.UIScale;
-        nameYOffset     = 4f * MainWindow.UIScale;
-    }
-
-    if (entitySettings.ShowName || entitySettings.ShowValue)
-    {
-        point.Offset(nameXOffset, nameYOffset);
-
-        if (!string.IsNullOrEmpty(label))
-        {
-            canvas.DrawText(label, point, SKPaints.TextOutline);
-            canvas.DrawText(label, point, paints.Item2);
-        }
-    }
-
-    var currentBottomY = point.Y + distanceYOffset - nameYOffset;
-
-    if (entitySettings.ShowDistance)
-    {
-        var distText  = $"{(int)dist}m";
-        var distWidth = paints.Item2.MeasureText(distText);
-
-        var distPoint = new SKPoint(
-            point.X - (distWidth / 2) - nameXOffset,
-            currentBottomY
-        );
-
-        canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
-        canvas.DrawText(distText, distPoint, paints.Item2);
-    }
-
-    if (importantLootItems?.Count > 0)
-    {
-        var spacing  = 1 * MainWindow.UIScale;
-        var textSize = 12 * MainWindow.UIScale;
-
-        currentBottomY += textSize + spacing;
-
-        foreach (var item in importantLootItems)
-        {
-            var itemText  = item.GetUILabel();
-            var itemPaint = GetItemTextPaint(item);
-            var itemWidth = itemPaint.MeasureText(itemText);
-
-            var itemPoint = new SKPoint(
-                point.X - (itemWidth / 2) - nameXOffset,
-                currentBottomY
-            );
-
-            canvas.DrawText(itemText, itemPoint, SKPaints.TextOutline);
-            canvas.DrawText(itemText, itemPoint, itemPaint);
-
-            currentBottomY += textSize + spacing;
-        }
-    }
-}
 
 
         private Vector3 _position;
@@ -764,6 +780,12 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                 var itemPaint = GetItemTextPaint(lootItem);
                 lines.Add((lootItem.Name, itemPaint));
 
+                if (lootItem.IsHideoutRequired &&
+                    Program.Hideout.NeededItemCounts.TryGetValue(lootItem.ID, out var stillNeeded))
+                {
+                    lines.Add(($"Hideout: need {stillNeeded} more", SKPaints.TextHideoutItem));
+                }
+
                 Position.ToMapPos(mapParams.Map).ToZoomedPos(mapParams).DrawMouseoverText(canvas, lines);
             }
         }
@@ -774,53 +796,53 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
             {
                 if (interactiveClass == 0)
                 {
-                    XMLogging.WriteLine("[ApplyItemChams] Skipped: interactiveClass is 0");
+                    Log.WriteLine("[ApplyItemChams] Skipped: interactiveClass is 0");
                     return;
                 }
-        
+
                 var rendererList = Memory.ReadPtr(interactiveClass + 0x90);
                 if (rendererList == 0)
                 {
-                    XMLogging.WriteLine($"[ApplyItemChams] Skipped: rendererList is 0 for {interactiveClass:X}");
+                    Log.WriteLine($"[ApplyItemChams] Skipped: rendererList is 0 for {interactiveClass:X}");
                     return;
                 }
-        
+
                 int rendererCount = Memory.ReadValue<int>(rendererList + 0x18);
                 if (rendererCount <= 0 || rendererCount > 1000)
                 {
-                    XMLogging.WriteLine($"[ApplyItemChams] Skipped: invalid rendererCount ({rendererCount}) for {interactiveClass:X}");
+                    Log.WriteLine($"[ApplyItemChams] Skipped: invalid rendererCount ({rendererCount}) for {interactiveClass:X}");
                     return;
                 }
-        
+
                 var rendererBase = Memory.ReadPtr(rendererList + 0x10);
                 if (rendererBase == 0)
                 {
-                    XMLogging.WriteLine($"[ApplyItemChams] Skipped: rendererBase is 0 for {interactiveClass:X}");
+                    Log.WriteLine($"[ApplyItemChams] Skipped: rendererBase is 0 for {interactiveClass:X}");
                     return;
                 }
-        
+
                 for (int i = 0; i < rendererCount; i++)
                 {
                     var renderer = Memory.ReadPtr(rendererBase + 0x20 + (ulong)(i * 0x8));
                     if (renderer == 0) continue;
-        
+
                     var materialDict = Memory.ReadPtr(renderer + 0x10);
                     if (materialDict == 0) continue;
-        
+
                     int matCount = Memory.ReadValue<int>(materialDict + 0x158);
                     if (matCount <= 0 || matCount > 100)
                     {
-                        XMLogging.WriteLine($"[ApplyItemChams] Skipped: invalid matCount ({matCount}) at {materialDict:X}");
+                        Log.WriteLine($"[ApplyItemChams] Skipped: invalid matCount ({matCount}) at {materialDict:X}");
                         continue;
                     }
-        
+
                     var matArray = Memory.ReadPtr(materialDict + 0x148);
                     if (matArray == 0)
                     {
-                        XMLogging.WriteLine($"[ApplyItemChams] Skipped: matArray is 0 at {materialDict:X}");
+                        Log.WriteLine($"[ApplyItemChams] Skipped: matArray is 0 at {materialDict:X}");
                         continue;
                     }
-        
+
                     for (int j = 0; j < matCount; j++)
                     {
                         Memory.WriteValue(matArray + (ulong)(j * 0x4), desiredMaterialId);
@@ -829,7 +851,7 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[ApplyItemChams] Failed for {interactiveClass:X}: {ex.Message}");
+                Log.WriteLine($"[ApplyItemChams] Failed for {interactiveClass:X}: {ex.Message}");
             }
         }
 
@@ -1037,6 +1059,9 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                     if (topItem.IsWishlisted)
                         return SKPaints.PaintWishlistItem.Color;
 
+                    if (topItem.IsHideoutRequired)
+                        return SKPaints.PaintHideoutItem.Color;
+
                     if (topItem.IsValuableLoot)
                         return SKPaints.PaintImportantLoot.Color;
                 }
@@ -1054,6 +1079,7 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                                item is QuestItem ||
                                (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
                                item.IsWishlisted ||
+                               item.IsHideoutRequired ||
                                (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
                                (LootFilterControl.ShowMeds && item.IsMeds) ||
                                (LootFilterControl.ShowFood && item.IsFood) ||
@@ -1085,6 +1111,8 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                 return new(SKPaints.PaintQuestItem, SKPaints.TextQuestItem);
             if (IsWishlisted)
                 return new(SKPaints.PaintWishlistItem, SKPaints.TextWishlistItem);
+            if (IsHideoutRequired)
+                return new(SKPaints.PaintHideoutItem, SKPaints.TextHideoutItem);
             if (LootFilterControl.ShowBackpacks && IsBackpack)
                 return new(SKPaints.PaintBackpacks, SKPaints.TextBackpacks);
             if (LootFilterControl.ShowMeds && IsMeds)
@@ -1132,6 +1160,8 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                 return SKPaints.PaintMiniQuestItem;
             if (IsWishlisted)
                 return SKPaints.PaintMiniWishlistItem;
+            if (IsHideoutRequired)
+                return SKPaints.PaintMiniHideoutItem;
             if (LootFilterControl.ShowBackpacks && IsBackpack)
                 return SKPaints.PaintMiniBackpacks;
             if (LootFilterControl.ShowMeds && IsMeds)
@@ -1179,6 +1209,8 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                 return new(SKPaints.PaintQuestItemESP, SKPaints.TextQuestItemESP);
             if (IsWishlisted)
                 return new(SKPaints.PaintWishlistItemESP, SKPaints.TextWishlistItemESP);
+            if (IsHideoutRequired)
+                return new(SKPaints.PaintHideoutItemESP, SKPaints.TextHideoutItemESP);
             if (LootFilterControl.ShowBackpacks && IsBackpack)
                 return new(SKPaints.PaintBackpackESP, SKPaints.TextBackpackESP);
             if (LootFilterControl.ShowMeds && IsMeds)
@@ -1264,7 +1296,7 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
 
             if (keysToRemove.Count > 0)
             {
-                XMLogging.WriteLine($"[Notifications] Cleaned up {keysToRemove.Count} old notification entries");
+                Log.WriteLine($"[Notifications] Cleaned up {keysToRemove.Count} old notification entries");
             }
         }
 
@@ -1274,7 +1306,7 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
         public static void ClearNotificationHistory()
         {
             _lastNotifyTimes.Clear();
-            XMLogging.WriteLine("[Notifications] Cleared all notification history");
+            Log.WriteLine("[Notifications] Cleared all notification history");
         }
 
         #region Custom Loot Paints
@@ -1298,18 +1330,12 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                         StrokeWidth = 3f * MainWindow.UIScale,
                         Style = SKPaintStyle.Fill,
                         IsAntialias = true,
-                        FilterQuality = SKFilterQuality.High
                     };
                     var text = new SKPaint
                     {
-                        SubpixelText = true,
                         Color = skColor,
                         IsStroke = false,
-                        TextSize = 12f * MainWindow.UIScale,
-                        TextEncoding = SKTextEncoding.Utf8,
                         IsAntialias = true,
-                        Typeface = CustomFonts.SKFontFamilyRegular,
-                        FilterQuality = SKFilterQuality.High
                     };
                     var espPaint = new SKPaint()
                     {
@@ -1317,27 +1343,18 @@ public virtual void Draw(SKCanvas canvas, XMMapParams mapParams, ILocalPlayer lo
                         StrokeWidth = 0.25f,
                         Style = SKPaintStyle.Fill,
                         IsAntialias = true,
-                        FilterQuality = SKFilterQuality.High
                     };
                     var espText = new SKPaint()
                     {
-                        SubpixelText = true,
                         Color = skColor,
                         IsStroke = false,
-                        TextSize = 12f,
-                        TextAlign = SKTextAlign.Center,
-                        TextEncoding = SKTextEncoding.Utf8,
                         IsAntialias = true,
-                        Typeface = CustomFonts.SKFontFamilyMedium,
-                        FilterQuality = SKFilterQuality.High
                     };
                     return new Tuple<SKPaint, SKPaint, SKPaint, SKPaint>(paint, text, espPaint, espText);
                 },
                 (key, existingValue) =>
                 {
                     existingValue.Item1.StrokeWidth = 3f * MainWindow.UIScale;
-                    existingValue.Item2.TextSize = 12f * MainWindow.UIScale;
-                    existingValue.Item4.TextSize = 12f; // * ESP.Config.FontScale;
                     return existingValue;
                 });
             return result;

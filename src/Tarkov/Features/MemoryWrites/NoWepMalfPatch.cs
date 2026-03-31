@@ -1,7 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using eft_dma_radar.Tarkov.Features;
-using eft_dma_shared.Common.Unity;
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Common.Misc;
@@ -99,7 +98,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Patches
                         if (template.IsValidVirtualAddress())
                             heldTemplate = template;
 
-                            //XMLogging.WriteLine($"NoWepMalfPatch: Held weapon template addr=0x{heldTemplate:X}");
+                        //Log.WriteLine($"NoWepMalfPatch: Held weapon template addr=0x{heldTemplate:X}");
                     }
                 }
             }
@@ -140,7 +139,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites.Patches
                         if (template.IsValidVirtualAddress())
                             slotTemplate = template;
 
-                            //XMLogging.WriteLine($"NoWepMalfPatch: Inventory slot '{name}' weapon template addr=0x{slotTemplate:X}");
+                        //Log.WriteLine($"NoWepMalfPatch: Inventory slot '{name}' weapon template addr=0x{slotTemplate:X}");
                     }
                     catch { }
 

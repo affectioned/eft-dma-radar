@@ -32,7 +32,10 @@ namespace eft_dma_radar.Common.Misc
 
         public PrecisionTimer()
         {
-            _timer = new();
+            // _timer is already initialised by the field initialiser (= new()).
+            // Do NOT assign _timer again here — doing so would abandon and leak
+            // the WaitTimerHandle (kernel waitable-timer object) that the field
+            // initialiser just created.
         }
 
         public PrecisionTimer(TimeSpan interval)

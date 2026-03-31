@@ -1,9 +1,10 @@
-﻿using eft_dma_radar;
+﻿#nullable enable
+#pragma warning disable CS0162 // Unreachable code detected (DEBUG_QUEST_CONDITIONS const)
+using eft_dma_radar;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.UI.Pages;
-using eft_dma_radar.UI.ESP;
 using eft_dma_radar.Common.Maps;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
@@ -38,8 +39,8 @@ namespace eft_dma_radar.Tarkov.GameWorld
             { "Sandbox_high", "65b8d6f5cdde2479cb2a3125" }
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
-        private static FrozenDictionary<string, FrozenDictionary<string, Vector3>> _questZones;
-        private static FrozenDictionary<string, FrozenDictionary<string, List<Vector3>>> _questOutlines;
+        private static FrozenDictionary<string, FrozenDictionary<string, Vector3>>? _questZones;
+        private static FrozenDictionary<string, FrozenDictionary<string, List<Vector3>>>? _questOutlines;
         private static bool _lastKappaFilterState;
         private static bool _lastOptionalFilterState;
 
@@ -58,26 +59,26 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 _questOutlines = GetQuestOutlines();
                 _lastKappaFilterState = Config.QuestHelper.KappaFilter;
                 _lastOptionalFilterState = Config.QuestHelper.OptionalTaskFilter;
-                
+
                 if (DEBUG_QUEST_CONDITIONS)
                 {
                     var totalZones = _questZones?.Values.Sum(x => x.Count) ?? 0;
                     var totalOutlines = _questOutlines?.Values.Sum(x => x.Count) ?? 0;
-                    XMLogging.WriteLine($"[QuestManager] Cache updated: {totalZones} quest zones, {totalOutlines} zone outlines");
+                    Log.WriteLine($"[QuestManager] Cache updated: {totalZones} quest zones, {totalOutlines} zone outlines");
                 }
             }
-            
+
             // Retry if zones are empty but TaskData is available (API data loaded late)
             if ((_questZones?.Count == 0 || _questOutlines?.Count == 0) && EftDataManager.TaskData?.Count > 0)
             {
                 _questZones = GetQuestZones();
                 _questOutlines = GetQuestOutlines();
-                
+
                 if (DEBUG_QUEST_CONDITIONS)
                 {
                     var totalZones = _questZones?.Values.Sum(x => x.Count) ?? 0;
                     var totalOutlines = _questOutlines?.Values.Sum(x => x.Count) ?? 0;
-                    XMLogging.WriteLine($"[QuestManager] Cache retry: {totalZones} quest zones, {totalOutlines} zone outlines");
+                    Log.WriteLine($"[QuestManager] Cache retry: {totalZones} quest zones, {totalOutlines} zone outlines");
                 }
             }
         }
@@ -90,7 +91,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// Set to false to disable per-refresh logging (one-time dump still runs).
         /// </summary>
         private const bool DEBUG_QUEST_CONDITIONS = false;
-        
+
         /// <summary>
         /// Flag to ensure comprehensive debug dump only runs once per session.
         /// </summary>
@@ -206,7 +207,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             // IL2CPP hardcoded offsets for quest reading
             var questsData = Memory.ReadPtr(_profile + Offsets.Profile.QuestsData, false);
-            
+
             // Quest data can be temporarily null mid-raid (game unloads it during certain events)
             // This is expected behavior - just skip this refresh cycle
             if (questsData == 0 || !questsData.IsValidVirtualAddress())
@@ -214,7 +215,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 _rateLimit.Restart(); // Rate limit to avoid rapid retries
                 return;
             }
-            
+
             // Read list structure using centralized offsets
             var listItemsPtr = Memory.ReadPtr(questsData + UnityOffsets.ManagedList.ItemsPtr, false);
             if (listItemsPtr == 0 || !listItemsPtr.IsValidVirtualAddress())
@@ -222,15 +223,15 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 _rateLimit.Restart();
                 return;
             }
-            
+
             var listCount = Memory.ReadValue<int>(questsData + UnityOffsets.ManagedList.Count, false);
-            
+
             if (listCount <= 0 || listCount > 500)
             {
                 _rateLimit.Restart();
                 return;
             }
-            
+
             // One-time comprehensive debug dump
             if (!_debugDumpComplete)
             {
@@ -242,7 +243,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             {
                 var qDataEntry = Memory.ReadPtr(listItemsPtr + UnityOffsets.ManagedArray.FirstElement + (ulong)(i * UnityOffsets.ManagedArray.ElementSize));
                 if (qDataEntry == 0) continue;
-                
+
                 try
                 {
                     var qStatus = Memory.ReadValue<int>(qDataEntry + Offsets.QuestData.Status);
@@ -251,7 +252,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
                     var qIDPtr = Memory.ReadPtr(qDataEntry + Offsets.QuestData.Id);
                     var qID = Memory.ReadUnityString(qIDPtr);
-                    
+
                     if (string.IsNullOrEmpty(qID))
                         continue;
 
@@ -271,24 +272,24 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     // This is confirmed in IL2CPP dump and Camera-PWA source
                     var completedHashSetPtr = Memory.ReadPtr(qDataEntry + Offsets.QuestData.CompletedConditions, false);
                     var questCompletedConditions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    
+
                     if (completedHashSetPtr != 0)
                     {
                         try
                         {
                             if (DEBUG_QUEST_CONDITIONS)
-                                XMLogging.WriteLine($"[QuestDebug] Quest {qID}: HashSet @ 0x{completedHashSetPtr:X}");
-                            
+                                Log.WriteLine($"[QuestDebug] Quest {qID}: HashSet @ 0x{completedHashSetPtr:X}");
+
                             // Read directly from the HashSet<MongoID>
                             ReadHashSetMongoIds(completedHashSetPtr, questCompletedConditions, allCompletedConditions, qID, "completed");
-                            
+
                             if (DEBUG_QUEST_CONDITIONS && questCompletedConditions.Count > 0)
-                                XMLogging.WriteLine($"[QuestDebug] Quest {qID}: Found {questCompletedConditions.Count} completed conditions");
+                                Log.WriteLine($"[QuestDebug] Quest {qID}: Found {questCompletedConditions.Count} completed conditions");
                         }
-                        catch (Exception ex) 
-                        { 
+                        catch (Exception ex)
+                        {
                             if (DEBUG_QUEST_CONDITIONS)
-                                XMLogging.WriteLine($"[QuestDebug] Error reading completed conditions for {qID}: {ex.Message}");
+                                Log.WriteLine($"[QuestDebug] Error reading completed conditions for {qID}: {ex.Message}");
                         }
                     }
                     // Note: completedHashSetPtr == 0 is normal for quests with no completed conditions yet
@@ -326,9 +327,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (DEBUG_QUEST_CONDITIONS)
             {
                 if (allLocationConditions.Count > 0)
-                    XMLogging.WriteLine($"[QuestManager] {allLocationConditions.Count} location objectives for current map ({MapID})");
+                    Log.WriteLine($"[QuestManager] {allLocationConditions.Count} location objectives for current map ({MapID})");
                 else
-                    XMLogging.WriteLine($"[QuestManager] No location objectives for current map ({MapID}). Active quests: {activeQuests.Count}");
+                    Log.WriteLine($"[QuestManager] No location objectives for current map ({MapID}). Active quests: {activeQuests.Count}");
             }
 
             if (MainWindow.Window?.GeneralSettingsControl?.QuestItems?.Count != AllStartedQuestIds.Count)
@@ -337,7 +338,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             _rateLimit.Restart();
         }
 
-        private Quest CreateQuestFromGameData(string questId, ulong qDataEntry, HashSet<string> completedConditions, uint templateOffset)
+        private Quest? CreateQuestFromGameData(string questId, ulong qDataEntry, HashSet<string> completedConditions, uint templateOffset)
         {
             try
             {
@@ -362,7 +363,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     foreach (var apiObj in taskData.Objectives)
                     {
                         var isCompleted = !string.IsNullOrEmpty(apiObj.Id) && completedConditions.Contains(apiObj.Id);
-                        
+
                         var objective = new QuestObjective
                         {
                             Id = apiObj.Id ?? "",
@@ -430,7 +431,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 _ => QuestObjectiveType.Other
             };
         }
-        
+
         /// <summary>
         /// Gets all required item IDs from an API objective.
         /// Checks both 'item' (regular items) and 'questItem' (quest-specific items like Jaeger's Letter).
@@ -438,19 +439,19 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static List<string> GetRequiredItemIdsFromApi(TaskElement.ObjectiveElement apiObj)
         {
             var itemIds = new List<string>();
-            
+
             // Regular item (e.g., "Find 3 Morphine")
             if (!string.IsNullOrEmpty(apiObj.Item?.Id))
                 itemIds.Add(apiObj.Item.Id);
-            
+
             // Quest-specific item (e.g., "Jaeger's Letter", "Pocket Watch")
             if (!string.IsNullOrEmpty(apiObj.QuestItem?.Id))
                 itemIds.Add(apiObj.QuestItem.Id);
-            
+
             // Marker item (e.g., items to place)
             if (!string.IsNullOrEmpty(apiObj.MarkerItem?.Id))
                 itemIds.Add(apiObj.MarkerItem.Id);
-            
+
             return itemIds;
         }
 
@@ -461,13 +462,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static void ReadHashSetMongoIds(ulong hashSetPtr, HashSet<string> questConditions, HashSet<string> allConditions, string questId, string source)
         {
             if (hashSetPtr == 0) return;
-            
+
             try
             {
                 // HashSet<MongoID> structure - read the internal entries array pointer
                 var entriesPtr = Memory.ReadPtr(hashSetPtr + UnityOffsets.IL2CPPHashSet2.Entries, false);
                 var hashCount = Memory.ReadValue<int>(hashSetPtr + UnityOffsets.IL2CPPHashSet2.Count, false);
-                
+
                 // Try alternate count offsets if primary fails
                 if (hashCount <= 0 || hashCount > 100)
                 {
@@ -479,13 +480,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         hashCount = Memory.ReadValue<int>(hashSetPtr + 0x3C, false);
                     }
                 }
-                
+
                 if (entriesPtr == 0 || hashCount <= 0 || hashCount > 100)
                 {
                     // count=0 is valid (no completed conditions yet), don't log as error
                     return;
                 }
-                
+
                 int foundCount = 0;
                 // MongoID is a VALUE TYPE (struct), stored inline in the HashSet entry
                 // Entry layout: int hashCode (4), int next (4), then MongoID value inline
@@ -497,11 +498,11 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         // HashSet Entry: hashCode (4), next (4), value (MongoID struct inline)
                         var entryOffset = (ulong)(i * UnityOffsets.IL2CPPHashSet2.EntrySize);
                         var entryBase = entriesPtr + UnityOffsets.ManagedArray.FirstElement + entryOffset;
-                        
+
                         // MongoID value starts at offset 8 in the entry (after hashCode and next)
                         // Within MongoID, _stringID is at offset 0x10
                         var stringIdPtr = Memory.ReadPtr(entryBase + UnityOffsets.IL2CPPHashSet2.EntryValueOffset + UnityOffsets.MongoID.StringID, false);
-                        
+
                         if (stringIdPtr == 0 || stringIdPtr < 0x10000000)
                             continue;
 
@@ -512,7 +513,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                             allConditions.Add(conditionId);
                             foundCount++;
                             if (DEBUG_QUEST_CONDITIONS)
-                                XMLogging.WriteLine($"[QuestDebug]     ✓ {conditionId}");
+                                Log.WriteLine($"[QuestDebug]     ? {conditionId}");
                         }
                     }
                     catch
@@ -520,14 +521,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         // Skip invalid entries silently
                     }
                 }
-                
+
                 if (DEBUG_QUEST_CONDITIONS && foundCount > 0)
-                    XMLogging.WriteLine($"[QuestDebug]   {source}: Found {foundCount} conditions");
+                    Log.WriteLine($"[QuestDebug]   {source}: Found {foundCount} conditions");
             }
             catch (Exception ex)
             {
                 if (DEBUG_QUEST_CONDITIONS)
-                    XMLogging.WriteLine($"[QuestDebug]   {source} read error: {ex.Message}");
+                    Log.WriteLine($"[QuestDebug]   {source} read error: {ex.Message}");
             }
         }
 
@@ -546,61 +547,61 @@ namespace eft_dma_radar.Tarkov.GameWorld
             sb.AppendLine($"  Quest List Count: {listCount,-15} ListItemsPtr: 0x{listItemsPtr:X16}");
             sb.AppendLine("================================================================");
             sb.AppendLine();
-            
+
             // Additional offsets for MainQuest detection (from dump analysis)
             const uint QUEST_TEMPLATE_IS_MAIN_QUEST = 0x120;  // bool IsMainQuest
             const uint QUEST_TEMPLATE_TRADER_ID = 0x48;       // string TraderId
             const uint QUEST_TEMPLATE_TYPE = 0x118;           // EQuestType enum
-            
+
             for (int i = 0; i < listCount; i++)
             {
                 var qDataEntry = Memory.ReadPtr(listItemsPtr + UnityOffsets.ManagedArray.FirstElement + (ulong)(i * UnityOffsets.ManagedArray.ElementSize));
                 if (qDataEntry == 0) continue;
-                
+
                 try
                 {
                     sb.AppendLine($"-----------------------------------------------------------------------");
                     sb.AppendLine($"  QUEST #{i}");
                     sb.AppendLine($"-----------------------------------------------------------------------");
-                    
+
                     // Read basic quest data
                     var qStatus = Memory.ReadValue<int>(qDataEntry + Offsets.QuestData.Status);
                     var qIDPtr = Memory.ReadPtr(qDataEntry + Offsets.QuestData.Id);
                     var qID = Memory.ReadUnityString(qIDPtr) ?? "(null)";
                     var templatePtr = Memory.ReadPtr(qDataEntry + Offsets.QuestData.Template);
                     var completedPtr = Memory.ReadPtr(qDataEntry + Offsets.QuestData.CompletedConditions);
-                    
+
                     sb.AppendLine($"  QuestData @ 0x{qDataEntry:X16}");
                     sb.AppendLine($"    ID: {qID}");
                     sb.AppendLine($"    Status: {qStatus} ({GetStatusName(qStatus)}) Template @ 0x{templatePtr:X16}");
                     sb.AppendLine($"    CompletedConditions @ 0x{completedPtr:X16}");
-                    
+
                     // Read template data
                     if (templatePtr != 0)
                     {
                         sb.AppendLine();
                         sb.AppendLine($"    -- TEMPLATE DATA --");
-                        
+
                         try
                         {
                             var namePtr = Memory.ReadPtr(templatePtr + Offsets.QuestTemplate.Name);
                             var questName = (namePtr != 0 && namePtr > 0x10000) ? (Memory.ReadUnityString(namePtr) ?? "(null)") : $"(ptr=0x{namePtr:X})";
                             var conditionsPtr = Memory.ReadPtr(templatePtr + Offsets.QuestTemplate.Conditions);
-                            
+
                             // Read MainQuest flag
                             var isMainQuest = Memory.ReadValue<bool>(templatePtr + QUEST_TEMPLATE_IS_MAIN_QUEST);
                             var questType = Memory.ReadValue<int>(templatePtr + QUEST_TEMPLATE_TYPE);
-                            
+
                             // Try to read trader ID
                             var traderIdPtr = Memory.ReadPtr(templatePtr + QUEST_TEMPLATE_TRADER_ID);
                             var traderId = "(unknown)";
                             if (traderIdPtr != 0 && traderIdPtr > 0x10000)
                                 try { traderId = Memory.ReadUnityString(traderIdPtr) ?? "(null)"; } catch { }
-                            
+
                             sb.AppendLine($"    NamePtr @ 0x{namePtr:X} = {questName}");
                             sb.AppendLine($"    IsMainQuest: {isMainQuest} QuestType: {questType} TraderId: {traderId}");
                             sb.AppendLine($"    Conditions @ 0x{conditionsPtr:X16}");
-                            
+
                             // Try to read conditions count
                             if (conditionsPtr != 0)
                             {
@@ -617,21 +618,21 @@ namespace eft_dma_radar.Tarkov.GameWorld
                             sb.AppendLine($"    ERROR reading template: {templateEx.Message}");
                         }
                     }
-                    
+
                     // Read completed conditions HashSet
                     if (completedPtr != 0)
                     {
                         sb.AppendLine();
                         sb.AppendLine($"    -- COMPLETED CONDITIONS HASHSET --");
-                        
+
                         var entriesPtr = Memory.ReadPtr(completedPtr + UnityOffsets.IL2CPPHashSet2.Entries);
                         var count1C = Memory.ReadValue<int>(completedPtr + 0x1C);
                         var count20 = Memory.ReadValue<int>(completedPtr + 0x20);
                         var count3C = Memory.ReadValue<int>(completedPtr + 0x3C);
-                        
+
                         sb.AppendLine($"    Entries @ 0x{entriesPtr:X16}");
                         sb.AppendLine($"    Count@0x1C: {count1C} Count@0x20: {count20} Count@0x3C: {count3C}");
-                        
+
                         // Try to read first few condition IDs
                         var validCount = count1C > 0 && count1C < 100 ? count1C : (count20 > 0 && count20 < 100 ? count20 : count3C);
                         if (entriesPtr != 0 && validCount > 0)
@@ -644,7 +645,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                                     var entryOffset = (ulong)(j * UnityOffsets.IL2CPPHashSet2.EntrySize);
                                     var entryBase = entriesPtr + UnityOffsets.ManagedArray.FirstElement + entryOffset;
                                     var stringIdPtr = Memory.ReadPtr(entryBase + UnityOffsets.IL2CPPHashSet2.EntryValueOffset + UnityOffsets.MongoID.StringID);
-                                    
+
                                     if (stringIdPtr != 0 && stringIdPtr > 0x10000000)
                                     {
                                         var condId = Memory.ReadUnityString(stringIdPtr) ?? "(unreadable)";
@@ -662,19 +663,20 @@ namespace eft_dma_radar.Tarkov.GameWorld
                             }
                         }
                     }
-                    
+
                     // Check API data availability
                     sb.AppendLine();
                     sb.AppendLine($"    -- API DATA CHECK --");
-                    
-                    var hasApiData = EftDataManager.TaskData.TryGetValue(qID, out var taskData);
+
+                    TaskElement? taskData = null;
+                    var hasApiData = EftDataManager.TaskData is { } td && td.TryGetValue(qID, out taskData);
                     sb.AppendLine($"    In API TaskData: {(hasApiData ? "YES" : "NO")}");
-                    
-                    if (hasApiData && taskData != null)
+
+                    if (hasApiData && taskData is not null)
                     {
                         sb.AppendLine($"    API Name: {taskData.Name ?? "(null)"}");
                         sb.AppendLine($"    KappaRequired: {taskData.KappaRequired} Objectives: {taskData.Objectives?.Count ?? 0}");
-                        
+
                         if (taskData.Objectives != null)
                         {
                             foreach (var obj in taskData.Objectives.Take(3))
@@ -691,7 +693,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     {
                         sb.AppendLine($"    * QUEST NOT IN API - May be MainQuest/Story or new content");
                     }
-                    
+
                     sb.AppendLine();
                 }
                 catch (Exception ex)
@@ -699,25 +701,25 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     sb.AppendLine($"  ERROR reading quest #{i}: {ex.Message}");
                 }
             }
-            
+
             // Summary section
             sb.AppendLine("================================================================");
             sb.AppendLine("                           SUMMARY");
             sb.AppendLine("================================================================");
-            
+
             var zonesForMap = _questZones?.TryGetValue(_mapToId.GetValueOrDefault(MapID, ""), out var z) == true ? z.Count : 0;
             var outlinesForMap = _questOutlines?.TryGetValue(_mapToId.GetValueOrDefault(MapID, ""), out var o) == true ? o.Count : 0;
-            
+
             sb.AppendLine($"  Total Quests in Memory: {listCount}");
             sb.AppendLine($"  API TaskData Entries: {EftDataManager.TaskData?.Count ?? 0}");
             sb.AppendLine($"  Quest Zones for {MapID}: {zonesForMap}");
             sb.AppendLine($"  Zone Outlines for {MapID}: {outlinesForMap}");
             sb.AppendLine("================================================================");
-            
+
             if (DEBUG_QUEST_CONDITIONS)
-                XMLogging.WriteLine(sb.ToString());
+                Log.WriteLine(sb.ToString());
         }
-        
+
         private static string GetStatusName(int status)
         {
             return status switch
@@ -736,39 +738,39 @@ namespace eft_dma_radar.Tarkov.GameWorld
             };
         }
 
-        private QuestLocation CreateQuestLocation(string questId, string locationId, bool optional = false, string objectiveId = null)
+        private QuestLocation? CreateQuestLocation(string questId, string locationId, bool optional = false, string? objectiveId = null)
         {
             // Debug: Log zone lookup issues
             if (!_mapToId.TryGetValue(MapID, out var id))
             {
                 if (DEBUG_QUEST_CONDITIONS)
-                    XMLogging.WriteLine($"[QuestZone] MapID '{MapID}' not found in _mapToId");
+                    Log.WriteLine($"[QuestZone] MapID '{MapID}' not found in _mapToId");
                 return null;
             }
-            
-            if (!_questZones.TryGetValue(id, out var zones))
+
+            if (!_questZones!.TryGetValue(id, out var zones))
             {
                 if (DEBUG_QUEST_CONDITIONS)
-                    XMLogging.WriteLine($"[QuestZone] BSG ID '{id}' not found in _questZones (count: {_questZones?.Count ?? 0})");
+                    Log.WriteLine($"[QuestZone] BSG ID '{id}' not found in _questZones (count: {_questZones?.Count ?? 0})");
                 return null;
             }
-            
+
             if (!zones.TryGetValue(locationId, out var location))
             {
                 if (DEBUG_QUEST_CONDITIONS)
-                    XMLogging.WriteLine($"[QuestZone] Zone '{locationId}' not found for map '{id}' (zones: {zones.Count})");
+                    Log.WriteLine($"[QuestZone] Zone '{locationId}' not found for map '{id}' (zones: {zones.Count})");
                 return null;
             }
-            
+
             return new QuestLocation(questId, locationId, location, optional, objectiveId ?? locationId);
         }
 
-        private QuestLocation CreateQuestLocationWithOutline(string questId, string locationId, bool optional = false, string objectiveId = null)
+        private QuestLocation? CreateQuestLocationWithOutline(string questId, string locationId, bool optional = false, string? objectiveId = null)
         {
             if (_mapToId.TryGetValue(MapID, out var mapId) &&
-                _questOutlines.TryGetValue(mapId, out var outlines) &&
+                _questOutlines!.TryGetValue(mapId, out var outlines) &&
                 outlines.TryGetValue(locationId, out var outline) &&
-                _questZones.TryGetValue(mapId, out var zones) &&
+                _questZones!.TryGetValue(mapId, out var zones) &&
                 zones.TryGetValue(locationId, out var location))
             {
                 return new QuestLocation(questId, locationId, location, outline, optional, objectiveId ?? locationId);
@@ -926,7 +928,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static Config Config => Program.Config;
 
         private Vector3 _position;
-        private List<Vector3> _outline;
+        private List<Vector3>? _outline;
 
         /// <summary>
         /// Original location name.
@@ -961,9 +963,9 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// <summary>
         /// Quest location outlines (if any).
         /// </summary>
-        public List<Vector3> Outline => _outline;
+        public List<Vector3>? Outline => _outline;
 
-        public QuestLocation(string questId, string locationName, Vector3 position, bool optional = false, string objectiveId = null)
+        public QuestLocation(string questId, string locationName, Vector3 position, bool optional = false, string? objectiveId = null)
         {
             QuestID = questId;
             LocationName = locationName;
@@ -978,7 +980,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 QuestName = locationName;
         }
 
-        public QuestLocation(string questId, string locationName, Vector3 position, List<Vector3> outline, bool optional = false, string objectiveId = null)
+        public QuestLocation(string questId, string locationName, Vector3 position, List<Vector3> outline, bool optional = false, string? objectiveId = null)
         {
             QuestID = questId;
             LocationName = locationName;
@@ -1072,21 +1074,21 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 point.Offset(nameXOffset, nameYOffset);
                 if (!string.IsNullOrEmpty(QuestName))
                 {
-                    canvas.DrawText(QuestName, point, SKPaints.TextOutline);
-                    canvas.DrawText(QuestName, point, SKPaints.QuestHelperText);
+                    canvas.DrawText(QuestName, point, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                    canvas.DrawText(QuestName, point, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.QuestHelperText);
                 }
             }
 
             if (QuestManager.Settings.ShowDistance)
             {
                 var distText = $"{(int)dist}m";
-                var distWidth = SKPaints.QuestHelperText.MeasureText($"{(int)dist}");
+                var distWidth = SKPaints.RadarFontRegular12.MeasureText($"{(int)dist}", SKPaints.QuestHelperText);
                 var distPoint = new SKPoint(
                     point.X - (distWidth / 2) - nameXOffset,
                     point.Y + distanceYOffset - nameYOffset
                 );
-                canvas.DrawText(distText, distPoint, SKPaints.TextOutline);
-                canvas.DrawText(distText, distPoint, SKPaints.QuestHelperText);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.QuestHelperText);
             }
         }
 
@@ -1229,7 +1231,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 $"Objective ID: {ObjectiveId}",
                 $"Zone ID: {LocationName}",
             };
-            
+
             // Check completion status from memory
             if (Memory.Game is LocalGameWorld lgw && lgw.QuestManager != null)
             {
@@ -1237,14 +1239,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (quest != null)
                 {
                     lines.Add($"---");
-                    
+
                     // Check all possible IDs against CompletedConditions
                     var completedByObjId = quest.CompletedConditions.Contains(ObjectiveId);
                     var completedByZoneId = quest.CompletedConditions.Contains(LocationName);
-                    
+
                     lines.Add($"Completed (by ObjID): {completedByObjId}");
                     lines.Add($"Completed (by ZoneID): {completedByZoneId}");
-                    
+
                     // Show all completed conditions for this quest
                     if (quest.CompletedConditions.Any())
                     {
@@ -1253,17 +1255,17 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         foreach (var cond in quest.CompletedConditions.Take(10)) // Limit to 10
                         {
                             var match = (cond == ObjectiveId || cond == LocationName) ? " <-- THIS" : "";
-                            lines.Add($"  ✓ {cond}{match}");
+                            lines.Add($"  ? {cond}{match}");
                         }
                         if (quest.CompletedConditions.Count > 10)
                             lines.Add($"  ... and {quest.CompletedConditions.Count - 10} more");
                     }
                 }
             }
-            
+
             if (Optional)
                 lines.Add($"(Optional Objective)");
-            
+
             Position.ToMapPos(mapParams.Map).ToZoomedPos(mapParams).DrawMouseoverText(canvas, lines.ToArray());
         }
     }

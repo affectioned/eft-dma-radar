@@ -47,7 +47,7 @@ namespace eft_dma_radar.UI.Controls
             typeof(TextValueSlider),
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
-        public static readonly DependencyProperty ContentStringFormatProperty =
+        public static new readonly DependencyProperty ContentStringFormatProperty =
             DependencyProperty.Register("ContentStringFormat", typeof(string), typeof(TextValueSlider),
                 new PropertyMetadata("{0:0.0}", OnFormatChanged));
 
@@ -98,7 +98,7 @@ namespace eft_dma_radar.UI.Controls
             set { SetValue(IsSnapToTickEnabledProperty, value); }
         }
 
-        public string ContentStringFormat
+        public new string ContentStringFormat
         {
             get { return (string)GetValue(ContentStringFormatProperty); }
             set { SetValue(ContentStringFormatProperty, value); }
@@ -140,7 +140,8 @@ namespace eft_dma_radar.UI.Controls
 
             SizeChanged += TextValueSlider_SizeChanged;
 
-            Loaded += (s, e) => {
+            Loaded += (s, e) =>
+            {
                 UpdateValueDisplay();
                 UpdateValueTrack();
                 UpdateValueTextPosition();
@@ -482,7 +483,8 @@ namespace eft_dma_radar.UI.Controls
 
             UpdateValueDisplay();
 
-            Dispatcher.BeginInvoke(new Action(() => {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
                 UpdateValueTrack();
                 UpdateValueTextPosition();
             }), System.Windows.Threading.DispatcherPriority.Loaded);

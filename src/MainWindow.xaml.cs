@@ -1,4 +1,5 @@
-﻿using eft_dma_radar.Tarkov;
+﻿#nullable enable
+using eft_dma_radar.Tarkov;
 using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
@@ -10,6 +11,7 @@ using eft_dma_radar.Tarkov.GameWorld.Exits;
 using eft_dma_radar.Tarkov.GameWorld.Explosives;
 using eft_dma_radar.Tarkov.GameWorld.Interactables;
 using eft_dma_radar.Tarkov.Loot;
+using eft_dma_radar.Tarkov.Unity.IL2CPP;
 using eft_dma_radar.UI;
 using eft_dma_radar.UI.ESP;
 using eft_dma_radar.UI.Misc;
@@ -53,26 +55,32 @@ namespace eft_dma_radar
     public partial class MainWindow
     {
         #region Fields / Properties
-        private DispatcherTimer _sizeChangeTimer;
+        private DispatcherTimer? _sizeChangeTimer;
         private readonly Stopwatch _fpsSw = new();
         private readonly PrecisionTimer _renderTimer;
 
-        private IMouseoverEntity _mouseOverItem;
+        /// <summary>True when running inside an RDP/TerminalServices session (no GL acceleration).</summary>
+        private static readonly bool _useRdpMode = RdpDetector.IsRemoteSession;
+
+        /// <summary>Returns the active Skia canvas element (GPU or CPU depending on session type).</summary>
+        private FrameworkElement ActiveCanvas => _useRdpMode ? (FrameworkElement)skCanvasCpu : skCanvas;
+
+        private IMouseoverEntity? _mouseOverItem;
         private bool _mouseDown;
         private Point _lastMousePosition;
         private Vector2 _mapPanPosition;
 
         private const float ZOOM_TO_MOUSE_STRENGTH = 5f; // Controls how much zoom moves toward mouse cursor
-                                                           // 0.0 = Always zoom to center (like old-school map zoom)
-                                                           // 0.5 = Zoom halfway toward mouse
-                                                           // 0.7 = Nice balanced feel (recommended)
-                                                           // 1.0 = Mouse stays at same world position
-                                                           // 1.5 = Overshoot toward mouse (aggressive zoom)
-                                                           // 2.0 = Heavy overshoot (might feel too aggressive)
+                                                         // 0.0 = Always zoom to center (like old-school map zoom)
+                                                         // 0.5 = Zoom halfway toward mouse
+                                                         // 0.7 = Nice balanced feel (recommended)
+                                                         // 1.0 = Mouse stays at same world position
+                                                         // 1.5 = Overshoot toward mouse (aggressive zoom)
+                                                         // 2.0 = Heavy overshoot (might feel too aggressive)
 
         private const int ZOOM_STEP = 5; // How much zoom changes per scroll step (1-50 typical range)
 
-        private Dictionary<string, PanelInfo> _panels;
+        private Dictionary<string, PanelInfo>? _panels;
 
         private int _fps;
         private int _zoom = 100;
@@ -89,47 +97,49 @@ namespace eft_dma_radar
         private const int MIN_ESP_PANEL_HEIGHT = 200;
         private const int MIN_MEMORY_WRITING_PANEL_WIDTH = 200;
         private const int MIN_MEMORY_WRITING_PANEL_HEIGHT = 200;
-        private const int MIN_WATCHLIST_PANEL_WIDTH = 200;
-        private const int MIN_WATCHLIST_PANEL_HEIGHT = 200;
-        private const int MIN_PLAYERHISTORY_PANEL_WIDTH = 350;
-        private const int MIN_PLAYERHISTORY_PANEL_HEIGHT = 130;
         private const int MIN_SETTINGS_PANEL_WIDTH = 200;
         private const int MIN_SETTINGS_PANEL_HEIGHT = 200;
         private const int MIN_SEARCH_SETTINGS_PANEL_WIDTH = 200;
         private const int MIN_SEARCH_SETTINGS_PANEL_HEIGHT = 200;
         private const int MIN_QUEST_PLANNER_PANEL_WIDTH = 300;
         private const int MIN_QUEST_PLANNER_PANEL_HEIGHT = 300;
+        private const int MIN_HIDEOUT_STASH_PANEL_WIDTH = 340;
+        private const int MIN_HIDEOUT_STASH_PANEL_HEIGHT = 300;
+        private const int MIN_WATCHLIST_PANEL_WIDTH = 200;
+        private const int MIN_WATCHLIST_PANEL_HEIGHT = 200;
+        private const int MIN_PLAYERHISTORY_PANEL_WIDTH = 350;
+        private const int MIN_PLAYERHISTORY_PANEL_HEIGHT = 130;
 
         private readonly object _renderLock = new object();
         private volatile bool _isRendering = false;
         private volatile bool _uiInteractionActive = false;
-        private DispatcherTimer _uiActivityTimer;
+        private DispatcherTimer _uiActivityTimer = null!;
         private bool _lastInRaidState = false;
         private bool _wasQuestPlannerOpenBeforeRaid = false;
 
         private readonly Stopwatch _statusSw = Stopwatch.StartNew();
         private int _statusOrder = 1;
 
-        private AimviewWidget _aimview;
-        public AimviewWidget AimView { get => _aimview; private set => _aimview = value; }
+        private AimviewWidget? _aimview;
+        public AimviewWidget? AimView { get => _aimview; private set => _aimview = value; }
 
-        private PlayerInfoWidget _playerInfo;
-        public PlayerInfoWidget PlayerInfo { get => _playerInfo; private set => _playerInfo = value; }
+        private PlayerInfoWidget? _playerInfo;
+        public PlayerInfoWidget? PlayerInfo { get => _playerInfo; private set => _playerInfo = value; }
 
-        private DebugInfoWidget _debugInfo;
-        public DebugInfoWidget DebugInfo { get => _debugInfo; private set => _debugInfo = value; }
+        private DebugInfoWidget? _debugInfo;
+        public DebugInfoWidget? DebugInfo { get => _debugInfo; private set => _debugInfo = value; }
 
-        private LootInfoWidget _lootInfo;
-        public LootInfoWidget LootInfo { get => _lootInfo; private set => _lootInfo = value; }
+        private LootInfoWidget? _lootInfo;
+        public LootInfoWidget? LootInfo { get => _lootInfo; private set => _lootInfo = value; }
 
-        private QuestInfoWidget _questInfo;
-        public QuestInfoWidget QuestInfo { get => _questInfo; private set => _questInfo = value; }
+        private QuestInfoWidget? _questInfo;
+        public QuestInfoWidget? QuestInfo { get => _questInfo; private set => _questInfo = value; }
 
 
         /// <summary>
         /// Determines if MainWindow is ready or not
         /// </summary>
-        public static bool Initialized = false;
+        public static new volatile bool Initialized = false;
 
         private static List<PingEffect> _activePings = new();
 
@@ -138,13 +148,13 @@ namespace eft_dma_radar
         /// </summary>
         public static Config Config => Program.Config;
 
-        private static EntityTypeSettings MineEntitySettings = Config?.EntityTypeSettings?.GetSettings("Mine");
+        private static EntityTypeSettings? MineEntitySettings = Config?.EntityTypeSettings?.GetSettings("Mine");
 
         /// <summary>
         /// Singleton Instance of MainWindow.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        internal static MainWindow Window { get; private set; }
+        internal static MainWindow? Window { get; private set; }
 
         /// <summary>
         /// Current UI Scale Value for Primary Application Window.
@@ -202,22 +212,22 @@ namespace eft_dma_radar
         /// LocalPlayer (who is running Radar) 'Player' object.
         /// Returns the player the Current Window belongs to.
         /// </summary>
-        private static LocalPlayer LocalPlayer => Memory?.LocalPlayer ?? null;
+        private static LocalPlayer? LocalPlayer => Memory?.LocalPlayer ?? null;
 
         /// <summary>
         /// All Filtered Loot on the map.
         /// </summary>
-        private static IEnumerable<LootItem> Loot => Memory.Loot?.FilteredLoot;
+        private static IEnumerable<LootItem>? Loot => Memory.Loot?.FilteredLoot;
 
         /// <summary>
         /// All Unfiltered Loot on the map.
         /// </summary>
-        private static IEnumerable<LootItem> UnfilteredLoot => Memory.Loot?.UnfilteredLoot;
+        private static IEnumerable<LootItem>? UnfilteredLoot => Memory.Loot?.UnfilteredLoot;
 
         /// <summary>
         /// All Static Containers on the map.
         /// </summary>
-        private static IEnumerable<StaticLootContainer> Containers => Memory.Loot?.StaticLootContainers;
+        private static IEnumerable<StaticLootContainer>? Containers => Memory.Loot?.StaticLootContainers;
 
         /// <summary>
         /// All Players in Local Game World (including dead/exfil'd) 'Player' collection.
@@ -239,7 +249,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Contains all 'mouse-overable' items.
         /// </summary>
-        private IEnumerable<IMouseoverEntity> MouseOverItems
+        private IEnumerable<IMouseoverEntity>? MouseOverItems
         {
             get
             {
@@ -311,10 +321,8 @@ namespace eft_dma_radar
                 InitializeCanvas();
             };
 
-            Initialized = true;
             InitializePanels();
             InitializeUIActivityMonitoring();
-            InitilizeTelemetry();
         }
 
         private void btnDebug_Click(object sender, RoutedEventArgs e)
@@ -331,100 +339,115 @@ namespace eft_dma_radar
 
         #region Rendering
         /// <summary>
+        /// GPU render event (non-RDP path).
+        /// </summary>
+        private void SkCanvas_PaintSurface(object? sender, SKPaintGLSurfaceEventArgs e)
+        {
+            DrawRadarCanvas(e.Surface.Canvas, skCanvas.CanvasSize);
+        }
+
+        /// <summary>
+        /// CPU render event (RDP path).
+        /// </summary>
+        private void SkCanvasCpu_PaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+        {
+            DrawRadarCanvas(e.Surface.Canvas, skCanvasCpu.CanvasSize);
+        }
+
+        /// <summary>
         /// Main Render Event.
         /// </summary>
-        private void SkCanvas_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e)
+        private void DrawRadarCanvas(SKCanvas canvas, SKSize canvasSize)
         {
-            var isStarting  = Starting;
-            var isReady     = Ready;
-            var inRaid      = InRaid;
+            var isStarting = Starting;
+            var isReady = Ready;
+            var inRaid = InRaid;
             var localPlayer = LocalPlayer;
-            var canvas      = e.Surface.Canvas;
-        
+
             try
             {
                 SkiaResourceTracker.TrackMainWindowFrame();
-        
+
                 SetFPS(inRaid, canvas);
-        
+
                 var mapID = MapID;
                 if (string.IsNullOrWhiteSpace(mapID))
                     return;
-        
+
                 if (!mapID.Equals(XMMapManager.Map?.ID, StringComparison.OrdinalIgnoreCase))
                 {
                     XMMapManager.LoadMap(mapID);
                     UpdateSwitches();
                 }
-        
+
                 canvas.Clear(InterfaceColorOptions.RadarBackgroundColor);
-        
+
                 if (inRaid && localPlayer is not null)
                 {
                     var map = XMMapManager.Map;
                     ArgumentNullException.ThrowIfNull(map);
-        
+
                     var closestToMouse = _mouseOverItem;
-        
-                    var localPlayerPos     = localPlayer.Position;
-                    var localPlayerMapPos  = localPlayerPos.ToMapPos(map.Config);
-        
+
+                    var localPlayerPos = localPlayer.Position;
+                    var localPlayerMapPos = localPlayerPos.ToMapPos(map.Config);
+
                     XMMapParams mapParams;
                     if (_freeMode)
-                        mapParams = map.GetParameters(skCanvas, _zoom, ref _mapPanPosition);
+                        mapParams = map.GetParameters(canvasSize, _zoom, ref _mapPanPosition);
                     else
-                        mapParams = map.GetParameters(skCanvas, _zoom, ref localPlayerMapPos);
-        
+                        mapParams = map.GetParameters(canvasSize, _zoom, ref localPlayerMapPos);
+
                     if (GeneralSettingsControl.chkMapSetup.IsChecked == true)
                         MapSetupControl.UpdatePlayerPosition(localPlayer);
-        
+
                     var mapCanvasBounds = new SKRect
                     {
-                        Left   = 0,
-                        Right  = (float)skCanvas.ActualWidth,
-                        Top    = 0,
-                        Bottom = (float)skCanvas.ActualHeight
+                        Left = 0,
+                        Right = (float)ActiveCanvas.ActualWidth,
+                        Top = 0,
+                        Bottom = (float)ActiveCanvas.ActualHeight
                     };
-        
+
                     var centerX = (mapCanvasBounds.Left + mapCanvasBounds.Right) / 2;
                     var centerY = (mapCanvasBounds.Top + mapCanvasBounds.Bottom) / 2;
-        
+
                     canvas.RotateDegrees(_rotationDegrees, centerX, centerY);
-        
+
                     map.Draw(canvas, localPlayer.Position.Y, mapParams.Bounds, mapCanvasBounds);
-        
+
                     SKPaints.UpdatePulsingAsteriskColor();
-        
+
                     localPlayer.Draw(canvas, mapParams, localPlayer);
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // SNAPSHOT ALL COLLECTIONS ONCE
-                    // ─────────────────────────────
+                    // -----------------------------
                     var allPlayersSnapshot = AllPlayers?.ToList();
-                    var lootSnapshot       = Loot?.ToList();
+                    var lootSnapshot = Loot?.ToList();
                     var containersSnapshot = Containers?.ToList();
                     var explosivesSnapshot = Explosives?.ToList();
-                    var exitsSnapshot      = Exits?.ToList();
-                    var switchesSnapshot   = Switches?.ToList();
-                    var doorsSnapshot      = Memory.Game?.Interactables._Doors?.ToList();
-        
+                    var exitsSnapshot = Exits?.ToList();
+                    var switchesSnapshot = Switches?.ToList();
+                    var doorsSnapshot = Memory.Game?.Interactables._Doors?.ToList();
+
                     var allPlayers = allPlayersSnapshot?
                         .Where(x => !x.HasExfild)
                         .ToList();
-        
+
                     var btrs = allPlayers?
                         .OfType<BtrOperator>()
                         .ToList();
-        
+
                     var normalPlayers = allPlayers?
                         .Where(p => p is not BtrOperator)
                         .ToList();
-        
+
                     var battleMode = Config.BattleMode;
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // GROUP CONNECTORS (BOTTOM)
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (!Config.PlayersOnTop && Config.ConnectGroups && allPlayers is not null)
                     {
                         var groupedPlayers = allPlayers
@@ -456,7 +479,7 @@ namespace eft_dma_radar
                                     SKPaints.PaintConnectorGroup);
                             }
                         }
-                    }                  
+                    }
                     if (Config.PlayersOnTop && Config.ConnectGroups)
                     {
                         var groupedPlayers = allPlayers?.Where(x => x.IsHumanHostileActive && x.SpawnGroupID != -1);
@@ -482,32 +505,32 @@ namespace eft_dma_radar
                                 }
                             }
                         }
-                    }    
+                    }
 
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // PLAYERS (BOTTOM)
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (!Config.PlayersOnTop && normalPlayers is not null)
                     {
                         var ordered = normalPlayers
                             .Where(p => p != localPlayer)
                             .OrderBy(p => DrawPriority(p.Type))
                             .ToList();
-        
+
                         foreach (var player in ordered)
                             player.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     if (btrs is not null)
                     {
                         foreach (var btr in btrs)
                             btr.Draw(canvas, mapParams, localPlayer);
                     }
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // CONTAINERS
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (!battleMode && Config.Containers.Show && StaticLootContainer.Settings.Enabled)
                     {
                         if (containersSnapshot is not null)
@@ -516,18 +539,18 @@ namespace eft_dma_radar
                             {
                                 if (!LootSettingsControl.ContainerIsTracked(container.ID ?? "NULL"))
                                     continue;
-        
+
                                 if (Config.Containers.HideSearched && container.Searched)
                                     continue;
-        
+
                                 container.Draw(canvas, mapParams, localPlayer);
                             }
                         }
                     }
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // LOOT
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (!battleMode && Config.ProcessLoot &&
                         (LootItem.CorpseSettings.Enabled ||
                          LootItem.LootSettings.Enabled ||
@@ -538,23 +561,23 @@ namespace eft_dma_radar
                             .Where(x => x is not QuestItem)
                             .Reverse()
                             .ToList();
-        
+
                         if (loot is not null)
                         {
                             foreach (var item in loot)
                             {
                                 if (!LootItem.CorpseSettings.Enabled && item is LootCorpse)
                                     continue;
-        
+
                                 item.CheckNotify();
                                 item.Draw(canvas, mapParams, localPlayer);
                             }
                         }
                     }
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // QUEST ITEMS & LOCATIONS
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (!battleMode && Config.QuestHelper.Enabled && !localPlayer.IsScav)
                     {
                         if (LootItem.QuestItemSettings.Enabled)
@@ -562,12 +585,12 @@ namespace eft_dma_radar
                             var questItems = lootSnapshot?
                                 .Where(x => x is QuestItem)
                                 .ToList();
-        
+
                             if (questItems is not null)
                                 foreach (var item in questItems)
                                     item.Draw(canvas, mapParams, localPlayer);
                         }
-        
+
                         if (QuestManager.Settings.Enabled)
                         {
                             var questLocations = Memory.QuestManager?.LocationConditions?.ToList();
@@ -576,59 +599,59 @@ namespace eft_dma_radar
                                     loc.Draw(canvas, mapParams, localPlayer);
                         }
                     }
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // EXPLOSIVES / EXITS / SWITCHES
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (explosivesSnapshot is not null)
                         foreach (var explosive in explosivesSnapshot)
                             explosive.Draw(canvas, mapParams, localPlayer);
-        
+
                     if (!battleMode && exitsSnapshot is not null)
                     {
                         foreach (var exit in exitsSnapshot)
                         {
                             if (exit is Exfil ex && !localPlayer.IsPmc && ex.Status is Exfil.EStatus.Closed)
                                 continue;
-        
+
                             exit.Draw(canvas, mapParams, localPlayer);
                         }
                     }
-        
+
                     if (!battleMode && Switch.Settings.Enabled && switchesSnapshot is not null)
                         foreach (var sw in switchesSnapshot)
                             sw.Draw(canvas, mapParams, localPlayer);
-        
-                    // ─────────────────────────────
+
+                    // -----------------------------
                     // PLAYERS ON TOP
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (Config.PlayersOnTop && allPlayers is not null)
                     {
                         var ordered = allPlayers
                             .Where(p => p != localPlayer)
                             .OrderBy(p => DrawPriority(p.Type))
                             .ToList();
-        
+
                         foreach (var player in ordered)
                             player.Draw(canvas, mapParams, localPlayer);
                     }
-        
+
                     closestToMouse?.DrawMouseover(canvas, mapParams, localPlayer);
-                    // ─────────────────────────────
+                    // -----------------------------
                     // DOORS
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (!battleMode && Door.Settings.Enabled && doorsSnapshot is not null)
                     {
                         foreach (var door in doorsSnapshot)
                             door.Draw(canvas, mapParams, localPlayer);
-                    }          
-                    // ─────────────────────────────
+                    }
+                    // -----------------------------
                     // PINGS
-                    // ─────────────────────────────
+                    // -----------------------------
                     if (_activePings.Count > 0)
                     {
                         var now = DateTime.UtcNow;
-        
+
                         foreach (var ping in _activePings.ToList())
                         {
                             var elapsed = (float)(now - ping.StartTime).TotalSeconds;
@@ -637,37 +660,37 @@ namespace eft_dma_radar
                                 _activePings.Remove(ping);
                                 continue;
                             }
-        
+
                             float progress = elapsed / ping.DurationSeconds;
-                            float radius   = 10 + 50 * progress;
-                            float alpha    = 1f - progress;
-        
+                            float radius = 10 + 50 * progress;
+                            float alpha = 1f - progress;
+
                             var center = ping.Position.ToMapPos(map.Config).ToZoomedPos(mapParams);
-        
+
                             using var paint = new SKPaint
                             {
-                                Style        = SKPaintStyle.Stroke,
-                                StrokeWidth  = 4,
-                                Color        = new SKColor(0, 255, 255, (byte)(alpha * 255)),
-                                IsAntialias  = true
+                                Style = SKPaintStyle.Stroke,
+                                StrokeWidth = 4,
+                                Color = new SKColor(0, 255, 255, (byte)(alpha * 255)),
+                                IsAntialias = true
                             };
-        
+
                             canvas.DrawCircle(center.X, center.Y, radius, paint);
                         }
                     }
-        
+
                     if (allPlayers is not null && Config.ShowInfoTab)
                         _playerInfo?.Draw(canvas, localPlayer, allPlayers);
-        
+
                     if (Config.AimviewWidgetEnabled)
                         _aimview?.Draw(canvas);
-        
+
                     if (Config.ShowDebugWidget)
                         _debugInfo?.Draw(canvas);
-        
+
                     if (Config.ShowLootInfoWidget)
                         _lootInfo?.Draw(canvas, UnfilteredLoot);
-        
+
                     if (Config.ShowQuestInfoWidget)
                         _questInfo?.Draw(canvas);
 
@@ -682,26 +705,25 @@ namespace eft_dma_radar
                     else if (!inRaid)
                         WaitingForRaidStatus(canvas);
                 }
-        
+
                 SetStatusText(canvas);
                 canvas.Flush();
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL RENDER ERROR: {ex}");
+                Log.WriteLine($"CRITICAL RENDER ERROR: {ex}");
             }
         }
 
         private static int DrawPriority(PlayerType t) => t switch
         {
             PlayerType.SpecialPlayer => 7,
-            PlayerType.Streamer => 6,
             PlayerType.USEC or PlayerType.BEAR => 5,
             PlayerType.PScav => 4,
-            PlayerType.AIBoss=> 3,
+            PlayerType.AIBoss => 3,
             PlayerType.AIRaider => 2,
-            _                 => 1
-            
+            _ => 1
+
         };
         public static void PingItem(string itemName)
         {
@@ -716,12 +738,12 @@ namespace eft_dma_radar
                         Position = lootItem.Position,
                         StartTime = DateTime.UtcNow
                     });
-                    XMLogging.WriteLine($"[Ping] Pinged item: {lootItem.Name} at {lootItem.Position}");
+                    Log.WriteLine($"[Ping] Pinged item: {lootItem.Name} at {lootItem.Position}");
                 }
             }
             else
             {
-                XMLogging.WriteLine($"[Ping] Item '{itemName}' not found.");
+                Log.WriteLine($"[Ping] Item '{itemName}' not found.");
             }
         }
 
@@ -743,14 +765,14 @@ namespace eft_dma_radar
                 _mouseOverItem is not Player player)
                 return;
 
-            // CTRL + Right Click → Toggle teammate (NO hostile check)
+            // CTRL + Right Click ? Toggle teammate (NO hostile check)
             if ((Keyboard.Modifiers & ModifierKeys.Control) != 0)
             {
                 ToggleTeammateFromUI(player);
                 return;
             }
 
-            // Normal Right Click → Toggle focus (hostile only)
+            // Normal Right Click ? Toggle focus (hostile only)
             if (player.IsHostileActive)
             {
                 player.IsFocused = !player.IsFocused;
@@ -789,7 +811,7 @@ namespace eft_dma_radar
                 _mapPanPosition.Y -= deltaY;
 
                 _lastMousePosition = currentPos;
-                skCanvas.InvalidateVisual();
+                ActiveCanvas.InvalidateVisual();
                 return;
             }
 
@@ -875,7 +897,7 @@ namespace eft_dma_radar
             _mouseDown = false;
 
             if (_freeMode)
-                skCanvas.InvalidateVisual();
+                ActiveCanvas.InvalidateVisual();
         }
 
         private void SkCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -888,13 +910,13 @@ namespace eft_dma_radar
             int zoomChange = e.Delta > 0 ? -ZOOM_STEP : ZOOM_STEP;
             var newZoom = Math.Max(1, Math.Min(200, _zoom + zoomChange));
 
-            if (newZoom == _zoom) 
+            if (newZoom == _zoom)
                 return;
 
             if (_freeMode && zoomChange < 0)
             {
                 var zoomFactor = (float)newZoom / _zoom;
-                var canvasCenter = new Vector2((float)skCanvas.ActualWidth / 2, (float)skCanvas.ActualHeight / 2);
+                var canvasCenter = new Vector2((float)ActiveCanvas.ActualWidth / 2, (float)ActiveCanvas.ActualHeight / 2);
                 var mouseOffset = new Vector2((float)mousePosition.X - canvasCenter.X, (float)mousePosition.Y - canvasCenter.Y);
 
                 var panAdjustment = mouseOffset * (1 - zoomFactor) * ZOOM_TO_MOUSE_STRENGTH;
@@ -903,7 +925,7 @@ namespace eft_dma_radar
             }
 
             _zoom = newZoom;
-            skCanvas.InvalidateVisual();
+            ActiveCanvas.InvalidateVisual();
         }
         private void ClearRefs()
         {
@@ -914,7 +936,7 @@ namespace eft_dma_radar
         private void CheckMouseoverItems(Point mousePosition)
         {
             var mousePos = new Vector2((float)mousePosition.X, (float)mousePosition.Y);
-            IMouseoverEntity closest = null;
+            IMouseoverEntity? closest = null;
             var closestDist = float.MaxValue;
             int? mouseoverGroup = null;
 
@@ -937,7 +959,7 @@ namespace eft_dma_radar
 
             _mouseOverItem = closest;
             MouseoverGroup = mouseoverGroup;
-            skCanvas.InvalidateVisual();
+            ActiveCanvas.InvalidateVisual();
         }
 
         private void IncrementStatus()
@@ -955,9 +977,9 @@ namespace eft_dma_radar
         private void GameNotRunningStatus(SKCanvas canvas)
         {
             const string notRunning = "Game Process Not Running!";
-            float textWidth = SKPaints.TextRadarStatus.MeasureText(notRunning);
-            canvas.DrawText(notRunning, ((float)skCanvas.ActualWidth / 2) - textWidth / 2f, (float)skCanvas.ActualHeight / 2,
-                SKPaints.TextRadarStatus);
+            float textWidth = SKPaints.RadarFontRegular48.MeasureText(notRunning);
+            canvas.DrawText(notRunning, ((float)ActiveCanvas.ActualWidth / 2) - textWidth / 2f, (float)ActiveCanvas.ActualHeight / 2,
+                SKTextAlign.Left, SKPaints.RadarFontRegular48, SKPaints.TextRadarStatus);
             IncrementStatus();
         }
 
@@ -969,23 +991,25 @@ namespace eft_dma_radar
             string status = _statusOrder == 1 ?
                 startingUp1 : _statusOrder == 2 ?
                 startingUp2 : startingUp3;
-            float textWidth = SKPaints.TextRadarStatus.MeasureText(startingUp1);
-            canvas.DrawText(status, ((float)skCanvas.ActualWidth / 2) - textWidth / 2f, (float)skCanvas.ActualHeight / 2,
-                SKPaints.TextRadarStatus);
+            float textWidth = SKPaints.RadarFontRegular48.MeasureText(startingUp1);
+            canvas.DrawText(status, ((float)ActiveCanvas.ActualWidth / 2) - textWidth / 2f, (float)ActiveCanvas.ActualHeight / 2,
+                SKTextAlign.Left, SKPaints.RadarFontRegular48, SKPaints.TextRadarStatus);
             IncrementStatus();
         }
 
         private void WaitingForRaidStatus(SKCanvas canvas)
         {
-            const string waitingFor1 = "Waiting for Raid Start.";
-            const string waitingFor2 = "Waiting for Raid Start..";
-            const string waitingFor3 = "Waiting for Raid Start...";
-            string status = _statusOrder == 1 ?
-                waitingFor1 : _statusOrder == 2 ?
-                waitingFor2 : waitingFor3;
-            float textWidth = SKPaints.TextRadarStatus.MeasureText(waitingFor1);
-            canvas.DrawText(status, ((float)skCanvas.ActualWidth / 2) - textWidth / 2f, (float)skCanvas.ActualHeight / 2,
-                SKPaints.TextRadarStatus);
+            string dots = _statusOrder == 1 ? "." : _statusOrder == 2 ? ".." : "...";
+            string stageText = "Waiting for Raid Start";
+
+            var stage = MatchingProgressResolver.GetCachedStage();
+            if (stage != Enums.EMatchingStage.None)
+                stageText = stage.ToDisplayString();
+
+            string status = stageText + dots;
+            float textWidth = SKPaints.RadarFontRegular48.MeasureText(stageText + "...");
+            canvas.DrawText(status, ((float)ActiveCanvas.ActualWidth / 2) - textWidth / 2f, (float)ActiveCanvas.ActualHeight / 2,
+                SKTextAlign.Left, SKPaints.RadarFontRegular48, SKPaints.TextRadarStatus);
             IncrementStatus();
         }
 
@@ -1016,8 +1040,8 @@ namespace eft_dma_radar
                 var memWritesEnabled = MemWrites.Enabled;
                 var aimEnabled = Aimbot.Config.Enabled;
                 var mode = Aimbot.Config.TargetingMode;
-                string label = null;
-                
+                string? label = null;
+
                 if (memWritesEnabled && Config.MemWrites.RageMode)
                     label = MemWriteFeature<Aimbot>.Instance.Enabled ? $"{mode.GetDescription()}: RAGE MODE" : "RAGE MODE";
 
@@ -1049,12 +1073,12 @@ namespace eft_dma_radar
                 if (label is null)
                     return;
 
-                var width = (float)skCanvas.CanvasSize.Width;
-                var height = (float)skCanvas.CanvasSize.Height;
-                var labelWidth = SKPaints.TextStatusSmall.MeasureText(label);
+                var width = _useRdpMode ? (float)skCanvasCpu.CanvasSize.Width : (float)skCanvas.CanvasSize.Width;
+                var height = _useRdpMode ? (float)skCanvasCpu.CanvasSize.Height : (float)skCanvas.CanvasSize.Height;
+                var labelWidth = SKPaints.RadarFontMedium13.MeasureText(label);
                 var spacing = 1f * UIScale;
                 var top = spacing; // Start from top of the canvas
-                var labelHeight = SKPaints.TextStatusSmall.FontSpacing;
+                var labelHeight = SKPaints.RadarFontMedium13.Spacing;
                 var bgRect = new SKRect(
                     width / 2 - labelWidth / 2,
                     top,
@@ -1062,23 +1086,24 @@ namespace eft_dma_radar
                     top + labelHeight + spacing);
                 canvas.DrawRect(bgRect, SKPaints.PaintTransparentBacker);
                 var textLoc = new SKPoint(width / 2, top + labelHeight);
-                canvas.DrawText(label, textLoc, SKPaints.TextStatusSmall);
+                canvas.DrawText(label, textLoc, SKTextAlign.Center, SKPaints.RadarFontMedium13, SKPaints.TextStatusSmall);
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"ERROR Setting Aim UI Text: {ex}");
+                Log.WriteLine($"ERROR Setting Aim UI Text: {ex}");
             }
         }
 
         public void PurgeSKResources()
         {
+            if (_useRdpMode) return;
             Dispatcher.Invoke(() =>
             {
                 skCanvas?.GRContext?.PurgeResources();
             });
         }
 
-        private void RenderTimer_Elapsed(object sender, EventArgs e)
+        private void RenderTimer_Elapsed(object? sender, EventArgs e)
         {
             if (_isRendering) return;
 
@@ -1099,7 +1124,7 @@ namespace eft_dma_radar
                     try
                     {
                         UpdateQuestPlannerRaidState();
-                        skCanvas.InvalidateVisual();
+                        ActiveCanvas.InvalidateVisual();
                     }
                     finally
                     {
@@ -1109,7 +1134,7 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Render timer error: {ex.Message}");
+                Log.WriteLine($"Render timer error: {ex.Message}");
                 _isRendering = false;
             }
         }
@@ -1119,19 +1144,38 @@ namespace eft_dma_radar
             _renderTimer.Start();
             _fpsSw.Start();
 
-            while (skCanvas.GRContext is null)
-                await Task.Delay(25);
+            if (_useRdpMode)
+            {
+                // RDP session: GL acceleration is unavailable; use CPU (SKElement) renderer.
+                skCanvas.Visibility = Visibility.Collapsed;
+                skCanvasCpu.Visibility = Visibility.Visible;
 
-            skCanvas.GRContext.SetResourceCacheLimit(536870912); // 512 MB
+                SetupWidgets();
 
-            SetupWidgets();
+                skCanvasCpu.PaintSurface += SkCanvasCpu_PaintSurface;
+                skCanvasCpu.MouseDown += SkCanvas_MouseDown;
+                skCanvasCpu.MouseMove += SkCanvas_MouseMove;
+                skCanvasCpu.MouseUp += SkCanvas_MouseUp;
+                skCanvasCpu.MouseWheel += SkCanvas_MouseWheel;
+            }
+            else
+            {
+                // Wait for the GL context to become ready (timeout after 5 s ? fall-through with no limit set).
+                var sw = Stopwatch.StartNew();
+                while (skCanvas.GRContext is null && sw.Elapsed.TotalSeconds < 5)
+                    await Task.Delay(25);
 
-            // Setup the canvas and event handlers
-            skCanvas.PaintSurface += SkCanvas_PaintSurface;
-            skCanvas.MouseDown += SkCanvas_MouseDown;
-            skCanvas.MouseMove += SkCanvas_MouseMove;
-            skCanvas.MouseUp += SkCanvas_MouseUp;
-            skCanvas.MouseWheel += SkCanvas_MouseWheel;
+                if (skCanvas.GRContext is not null)
+                    skCanvas.GRContext.SetResourceCacheLimit(536870912); // 512 MB
+
+                SetupWidgets();
+
+                skCanvas.PaintSurface += SkCanvas_PaintSurface;
+                skCanvas.MouseDown += SkCanvas_MouseDown;
+                skCanvas.MouseMove += SkCanvas_MouseMove;
+                skCanvas.MouseUp += SkCanvas_MouseUp;
+                skCanvas.MouseWheel += SkCanvas_MouseWheel;
+            }
 
             _renderTimer.Elapsed += RenderTimer_Elapsed;
 
@@ -1145,8 +1189,8 @@ namespace eft_dma_radar
         {
             var left = 2;
             var top = 0;
-            var right = (float)skCanvas.ActualWidth;
-            var bottom = (float)skCanvas.ActualHeight;
+            var right = (float)ActiveCanvas.ActualWidth;
+            var bottom = (float)ActiveCanvas.ActualHeight;
 
             if (Config.Widgets.AimviewLocation == default)
             {
@@ -1169,11 +1213,14 @@ namespace eft_dma_radar
                 Config.Widgets.QuestInfoLocation = new SKRect(left, top + 50, left + 500, top);
             }
 
-            _aimview = new AimviewWidget(skCanvas, Config.Widgets.AimviewLocation, Config.Widgets.AimviewMinimized, UIScale);
-            _playerInfo = new PlayerInfoWidget(skCanvas, Config.Widgets.PlayerInfoLocation, Config.Widgets.PlayerInfoMinimized, UIScale);
-            _debugInfo = new DebugInfoWidget(skCanvas, Config.Widgets.DebugInfoLocation, Config.Widgets.DebugInfoMinimized, UIScale);
-            _lootInfo = new LootInfoWidget(skCanvas, Config.Widgets.LootInfoLocation, Config.Widgets.LootInfoMinimized, UIScale);
-            _questInfo = new QuestInfoWidget(skCanvas, Config.Widgets.QuestInfoLocation, Config.Widgets.QuestInfoMinimized, UIScale);
+            if (!_useRdpMode)
+            {
+                _aimview = new AimviewWidget(skCanvas, Config.Widgets.AimviewLocation, Config.Widgets.AimviewMinimized, UIScale);
+                _playerInfo = new PlayerInfoWidget(skCanvas, Config.Widgets.PlayerInfoLocation, Config.Widgets.PlayerInfoMinimized, UIScale);
+                _debugInfo = new DebugInfoWidget(skCanvas, Config.Widgets.DebugInfoLocation, Config.Widgets.DebugInfoMinimized, UIScale);
+                _lootInfo = new LootInfoWidget(skCanvas, Config.Widgets.LootInfoLocation, Config.Widgets.LootInfoMinimized, UIScale);
+                _questInfo = new QuestInfoWidget(skCanvas, Config.Widgets.QuestInfoLocation, Config.Widgets.QuestInfoMinimized, UIScale);
+            }
 
         }
 
@@ -1385,105 +1432,7 @@ namespace eft_dma_radar
             EnsurePanelInBounds(ESPPanel, mainContentGrid, adjustSize: false);
         }
         #endregion
-        #region Watchlist
-        /// <summary>
-        /// Handles setting Watchlist panel visibility
-        /// </summary>
-        private void btnWatchlist_Click(object sender, RoutedEventArgs e)
-        {
-            NotifyUIActivity();
-            TogglePanelVisibility("Watchlist");
-        }
 
-        /// <summary>
-        /// Handle close request from Watchlist control
-        /// </summary>
-        private void WatchlistControl_CloseRequested(object sender, EventArgs e)
-        {
-            WatchlistPanel.Visibility = Visibility.Collapsed;
-        }
-
-        /// <summary>
-        /// Handle drag request from Watchlist control
-        /// </summary>
-        private void WatchlistControl_DragRequested(object sender, PanelDragEventArgs e)
-        {
-            var left = Canvas.GetLeft(WatchlistPanel) + e.OffsetX;
-            var top = Canvas.GetTop(WatchlistPanel) + e.OffsetY;
-
-            Canvas.SetLeft(WatchlistPanel, left);
-            Canvas.SetTop(WatchlistPanel, top);
-
-            EnsurePanelInBounds(WatchlistPanel, mainContentGrid, adjustSize: false);
-        }
-
-        /// <summary>
-        /// Handle resize request from Watchlist control
-        /// </summary>
-        private void WatchlistControl_ResizeRequested(object sender, PanelResizeEventArgs e)
-        {
-            var width = WatchlistPanel.Width + e.DeltaWidth;
-            var height = WatchlistPanel.Height + e.DeltaHeight;
-
-            width = Math.Max(width, MIN_WATCHLIST_PANEL_WIDTH);
-            height = Math.Max(height, MIN_WATCHLIST_PANEL_HEIGHT);
-
-            WatchlistPanel.Width = width;
-            WatchlistPanel.Height = height;
-
-            EnsurePanelInBounds(WatchlistPanel, mainContentGrid, adjustSize: false);
-        }
-        #endregion
-
-        #region Player History
-        /// <summary>
-        /// Handles setting Player History panel visibility
-        /// </summary>
-        private void btnPlayerHistory_Click(object sender, RoutedEventArgs e)
-        {
-            NotifyUIActivity();
-            TogglePanelVisibility("PlayerHistory");
-        }
-
-        /// <summary>
-        /// Handle close request from Player History control
-        /// </summary>
-        private void PlayerHistoryControl_CloseRequested(object sender, EventArgs e)
-        {
-            PlayerHistoryPanel.Visibility = Visibility.Collapsed;
-        }
-
-        /// <summary>
-        /// Handle drag request from Player History control
-        /// </summary>
-        private void PlayerHistoryControl_DragRequested(object sender, PanelDragEventArgs e)
-        {
-            var left = Canvas.GetLeft(PlayerHistoryPanel) + e.OffsetX;
-            var top = Canvas.GetTop(PlayerHistoryPanel) + e.OffsetY;
-
-            Canvas.SetLeft(PlayerHistoryPanel, left);
-            Canvas.SetTop(PlayerHistoryPanel, top);
-
-            EnsurePanelInBounds(PlayerHistoryPanel, mainContentGrid, adjustSize: false);
-        }
-
-        /// <summary>
-        /// Handle resize request from Player History control
-        /// </summary>
-        private void PlayerHistoryControl_ResizeRequested(object sender, PanelResizeEventArgs e)
-        {
-            var width = PlayerHistoryPanel.Width + e.DeltaWidth;
-            var height = PlayerHistoryPanel.Height + e.DeltaHeight;
-
-            width = Math.Max(width, MIN_PLAYERHISTORY_PANEL_WIDTH);
-            height = Math.Max(height, MIN_PLAYERHISTORY_PANEL_HEIGHT);
-
-            PlayerHistoryPanel.Width = width;
-            PlayerHistoryPanel.Height = height;
-
-            EnsurePanelInBounds(PlayerHistoryPanel, mainContentGrid, adjustSize: false);
-        }
-        #endregion
         #region Loot Filter Settings
         /// <summary>
         /// Handles setting loot filter panel visibility
@@ -1776,6 +1725,21 @@ namespace eft_dma_radar
             TogglePanelVisibility("QuestPlanner");
         }
 
+        private void btnHideoutStash_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePanelVisibility("HideoutStash");
+        }
+
+        private void btnWatchlist_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePanelVisibility("Watchlist");
+        }
+
+        private void btnPlayerHistory_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePanelVisibility("PlayerHistory");
+        }
+
         private void btnFreeMode_Click(object sender, RoutedEventArgs e)
         {
             _freeMode = !_freeMode;
@@ -1815,12 +1779,12 @@ namespace eft_dma_radar
                 btnFreeMode.ToolTip = "Free Mode (OFF) - Map follows player";
             }
 
-            skCanvas.InvalidateVisual();
+            ActiveCanvas.InvalidateVisual();
         }
         #endregion
 
         #region Window Events
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             try
             {
@@ -1834,16 +1798,35 @@ namespace eft_dma_radar
                 if (!Config.WindowMaximized)
                     Config.WindowSize = new Size(ActualWidth, ActualHeight);
 
-                Config.Widgets.AimviewLocation = _aimview.ClientRect;
-                Config.Widgets.AimviewMinimized = _aimview.Minimized;
-                Config.Widgets.PlayerInfoLocation = _playerInfo.ClientRect;
-                Config.Widgets.PlayerInfoMinimized = _playerInfo.Minimized;
-                Config.Widgets.DebugInfoLocation = _debugInfo.ClientRect;
-                Config.Widgets.DebugInfoMinimized = _debugInfo.Minimized;
-                Config.Widgets.LootInfoLocation = _lootInfo.ClientRect;
-                Config.Widgets.LootInfoMinimized = _lootInfo.Minimized;
-                Config.Widgets.QuestInfoLocation = _questInfo.ClientRect;
-                Config.Widgets.QuestInfoMinimized = _questInfo.Minimized;
+                if (_aimview != null)
+                {
+                    Config.Widgets.AimviewLocation = _aimview.ClientRect;
+                    Config.Widgets.AimviewMinimized = _aimview.Minimized;
+                }
+
+                if (_playerInfo != null)
+                {
+                    Config.Widgets.PlayerInfoLocation = _playerInfo.ClientRect;
+                    Config.Widgets.PlayerInfoMinimized = _playerInfo.Minimized;
+                }
+
+                if (_debugInfo != null)
+                {
+                    Config.Widgets.DebugInfoLocation = _debugInfo.ClientRect;
+                    Config.Widgets.DebugInfoMinimized = _debugInfo.Minimized;
+                }
+
+                if (_lootInfo != null)
+                {
+                    Config.Widgets.LootInfoLocation = _lootInfo.ClientRect;
+                    Config.Widgets.LootInfoMinimized = _lootInfo.Minimized;
+                }
+
+                if (_questInfo != null)
+                {
+                    Config.Widgets.QuestInfoLocation = _questInfo.ClientRect;
+                    Config.Widgets.QuestInfoMinimized = _questInfo.Minimized;
+                }
 
                 Config.Zoom = _zoom;
 
@@ -1870,21 +1853,12 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Error during application shutdown: {ex}");
+                Log.WriteLine($"Error during application shutdown: {ex}");
             }
         }
 
         private void MainWindow_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (InRaid && _mouseOverItem is Player player && player.IsStreaming)
-                try
-                {
-                    Process.Start(new ProcessStartInfo(player.StreamingURL) { UseShellExecute = true });
-                }
-                catch
-                {
-                    NotificationsShared.Error("Unable to open this player's Twitch. Do you have a default browser set?");
-                }
         }
 
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -1924,16 +1898,6 @@ namespace eft_dma_radar
                 _uiActivityTimer.Stop();
             };
         }
-        private void InitilizeTelemetry()
-        {
-            bool sendUsage = Config?.SendAnonymousUsage ?? true;
-            if (!sendUsage)
-                    return;
-                    
-            Telemetry.Start(appVersion: Program.Version, true);
-            Telemetry.BeatNow(Program.Version);
-        }
-
         private void NotifyUIActivity()
         {
             _uiInteractionActive = true;
@@ -1953,7 +1917,7 @@ namespace eft_dma_radar
             if (mousePosition.HasValue && _freeMode)
             {
                 var zoomFactor = (float)newZoom / _zoom;
-                var canvasCenter = new Vector2((float)skCanvas.ActualWidth / 2, (float)skCanvas.ActualHeight / 2);
+                var canvasCenter = new Vector2((float)ActiveCanvas.ActualWidth / 2, (float)ActiveCanvas.ActualHeight / 2);
                 var mouseOffset = new Vector2((float)mousePosition.Value.X - canvasCenter.X, (float)mousePosition.Value.Y - canvasCenter.Y);
 
                 var panAdjustment = mouseOffset * (1 - zoomFactor) * ZOOM_TO_MOUSE_STRENGTH;
@@ -1962,7 +1926,7 @@ namespace eft_dma_radar
             }
 
             _zoom = newZoom;
-            skCanvas.InvalidateVisual();
+            ActiveCanvas.InvalidateVisual();
         }
 
         /// <summary>
@@ -1973,7 +1937,7 @@ namespace eft_dma_radar
         {
             // Zoom out never adjusts pan - always zooms from center
             _zoom = Math.Min(200, _zoom + amt);
-            skCanvas.InvalidateVisual();
+            ActiveCanvas.InvalidateVisual();
         }
         private void InitializeToolbar()
         {
@@ -1992,15 +1956,16 @@ namespace eft_dma_radar
             coordinator.RegisterRequiredPanel("ESP");
             coordinator.RegisterRequiredPanel("LootFilter");
             coordinator.RegisterRequiredPanel("LootSettings");
+            coordinator.RegisterRequiredPanel("SettingsSearch");
             coordinator.RegisterRequiredPanel("Watchlist");
             coordinator.RegisterRequiredPanel("PlayerHistory");
-            coordinator.RegisterRequiredPanel("SettingsSearch");
             coordinator.AllPanelsReady += OnAllPanelsReady;
         }
 
-        private void OnAllPanelsReady(object sender, EventArgs e)
+        private void OnAllPanelsReady(object? sender, EventArgs e)
         {
-            Dispatcher.Invoke(() => {
+            Dispatcher.Invoke(() =>
+            {
                 InitializeToolbar();
                 InitializePanelsCollection();
 
@@ -2009,24 +1974,27 @@ namespace eft_dma_radar
                 LootSettingsControl.BringToFrontRequested += (s, args) => BringPanelToFront(LootSettingsCanvas);
                 MemoryWritingControl.BringToFrontRequested += (s, args) => BringPanelToFront(MemoryWritingCanvas);
                 LootFilterControl.BringToFrontRequested += (s, args) => BringPanelToFront(LootFilterCanvas);
-                WatchlistControl.BringToFrontRequested += (s, args) => BringPanelToFront(WatchlistCanvas);
-                PlayerHistoryControl.BringToFrontRequested += (s, args) => BringPanelToFront(PlayerHistoryCanvas);
                 MapSetupControl.BringToFrontRequested += (s, args) => BringPanelToFront(MapSetupCanvas);
                 SettingsSearchControl.BringToFrontRequested += (s, e) => BringPanelToFront(SettingsSearchCanvas);
                 QuestPlannerControl.BringToFrontRequested += (s, e) => BringPanelToFront(QuestPlannerCanvas);
+                HideoutStashControl.BringToFrontRequested += (s, e) => BringPanelToFront(HideoutStashCanvas);
+                WatchlistControl.BringToFrontRequested += (s, e) => BringPanelToFront(WatchlistCanvas);
+                PlayerHistoryControl.BringToFrontRequested += (s, e) => BringPanelToFront(PlayerHistoryCanvas);
 
                 AttachPanelClickHandlers();
                 RestorePanelPositions();
                 AttachPanelEvents();
 
-                Dispatcher.BeginInvoke(new Action(() => {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
                     ValidateAndFixImportedToolbarPosition();
                     ValidateAndFixImportedPanelPositions();
                     EnsureAllPanelsInBounds();
                 }), DispatcherPriority.Loaded);
             });
 
-            XMLogging.WriteLine("[PANELS] All panels are ready!");
+            Log.WriteLine("[PANELS] All panels are ready!");
+            Initialized = true;
         }
 
         public void EnsureAllPanelsInBounds()
@@ -2036,19 +2004,22 @@ namespace eft_dma_radar
                 if (!IsLoaded || ActualWidth <= 0 || ActualHeight <= 0)
                     return;
 
-                foreach (var panel in _panels.Values)
+                if (_panels != null)
                 {
-                    EnsurePanelInBounds(panel.Panel, mainContentGrid);
+                    foreach (var panel in _panels.Values)
+                    {
+                        EnsurePanelInBounds(panel.Panel, mainContentGrid);
+                    }
                 }
 
                 if (customToolbar != null)
                     EnsurePanelInBounds(customToolbar, mainContentGrid);
 
-                XMLogging.WriteLine("[PANELS] Ensured all panels are within window bounds");
+                Log.WriteLine("[PANELS] Ensured all panels are within window bounds");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[PANELS] Error ensuring panels in bounds: {ex.Message}");
+                Log.WriteLine($"[PANELS] Error ensuring panels in bounds: {ex.Message}");
             }
         }
 
@@ -2058,7 +2029,7 @@ namespace eft_dma_radar
             {
                 if (Config.PanelPositions == null)
                 {
-                    XMLogging.WriteLine("[PANELS] No panel positions in imported config");
+                    Log.WriteLine("[PANELS] No panel positions in imported config");
                     return;
                 }
 
@@ -2070,64 +2041,65 @@ namespace eft_dma_radar
 
                 bool needsSave = false;
 
-                foreach (var panelKey in _panels.Keys)
-                {
-                    var propInfo = typeof(PanelPositionsConfig).GetProperty(panelKey);
-                    if (propInfo?.GetValue(Config.PanelPositions) is PanelPositionConfig posConfig)
+                if (_panels != null)
+                    foreach (var panelKey in _panels.Keys)
                     {
-                        var originalLeft = posConfig.Left;
-                        var originalTop = posConfig.Top;
-                        var originalWidth = posConfig.Width;
-                        var originalHeight = posConfig.Height;
-
-                        var minWidth = GetMinimumPanelWidth(_panels[panelKey].Panel);
-                        var minHeight = GetMinimumPanelHeight(_panels[panelKey].Panel);
-
-                        if (posConfig.Width < minWidth)
+                        var propInfo = typeof(PanelPositionsConfig).GetProperty(panelKey);
+                        if (propInfo?.GetValue(Config.PanelPositions) is PanelPositionConfig posConfig)
                         {
-                            posConfig.Width = minWidth;
-                            needsSave = true;
-                        }
+                            var originalLeft = posConfig.Left;
+                            var originalTop = posConfig.Top;
+                            var originalWidth = posConfig.Width;
+                            var originalHeight = posConfig.Height;
 
-                        if (posConfig.Height < minHeight)
-                        {
-                            posConfig.Height = minHeight;
-                            needsSave = true;
-                        }
+                            var minWidth = GetMinimumPanelWidth(_panels![panelKey].Panel);
+                            var minHeight = GetMinimumPanelHeight(_panels![panelKey].Panel);
 
-                        var maxLeft = windowWidth - posConfig.Width - 10;
-                        var maxTop = windowHeight - posConfig.Height - 10;
+                            if (posConfig.Width < minWidth)
+                            {
+                                posConfig.Width = minWidth;
+                                needsSave = true;
+                            }
 
-                        if (posConfig.Left < 0 || posConfig.Left > maxLeft)
-                        {
-                            posConfig.Left = Math.Max(10, Math.Min(posConfig.Left, maxLeft));
-                            needsSave = true;
-                        }
+                            if (posConfig.Height < minHeight)
+                            {
+                                posConfig.Height = minHeight;
+                                needsSave = true;
+                            }
 
-                        if (posConfig.Top < 0 || posConfig.Top > maxTop)
-                        {
-                            posConfig.Top = Math.Max(10, Math.Min(posConfig.Top, maxTop));
-                            needsSave = true;
-                        }
+                            var maxLeft = windowWidth - posConfig.Width - 10;
+                            var maxTop = windowHeight - posConfig.Height - 10;
 
-                        if (needsSave)
-                        {
-                            XMLogging.WriteLine($"[PANELS] Fixed imported position for {panelKey}: " +
-                                $"({originalLeft},{originalTop},{originalWidth},{originalHeight}) -> " +
-                                $"({posConfig.Left},{posConfig.Top},{posConfig.Width},{posConfig.Height})");
+                            if (posConfig.Left < 0 || posConfig.Left > maxLeft)
+                            {
+                                posConfig.Left = Math.Max(10, Math.Min(posConfig.Left, maxLeft));
+                                needsSave = true;
+                            }
+
+                            if (posConfig.Top < 0 || posConfig.Top > maxTop)
+                            {
+                                posConfig.Top = Math.Max(10, Math.Min(posConfig.Top, maxTop));
+                                needsSave = true;
+                            }
+
+                            if (needsSave)
+                            {
+                                Log.WriteLine($"[PANELS] Fixed imported position for {panelKey}: " +
+                                    $"({originalLeft},{originalTop},{originalWidth},{originalHeight}) -> " +
+                                    $"({posConfig.Left},{posConfig.Top},{posConfig.Width},{posConfig.Height})");
+                            }
                         }
                     }
-                }
 
                 if (needsSave)
                 {
                     Config.Save();
-                    XMLogging.WriteLine("[PANELS] Saved corrected panel positions");
+                    Log.WriteLine("[PANELS] Saved corrected panel positions");
                 }
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[PANELS] Error validating imported panel positions: {ex.Message}");
+                Log.WriteLine($"[PANELS] Error validating imported panel positions: {ex.Message}");
             }
         }
 
@@ -2137,7 +2109,7 @@ namespace eft_dma_radar
             {
                 if (Config.ToolbarPosition == null)
                 {
-                    XMLogging.WriteLine("[TOOLBAR] No toolbar position in imported config");
+                    Log.WriteLine("[TOOLBAR] No toolbar position in imported config");
                     return;
                 }
 
@@ -2175,12 +2147,12 @@ namespace eft_dma_radar
                 if (needsSave)
                 {
                     Config.Save();
-                    XMLogging.WriteLine($"[TOOLBAR] Fixed imported toolbar position: ({originalLeft},{originalTop}) -> ({toolbarConfig.Left},{toolbarConfig.Top})");
+                    Log.WriteLine($"[TOOLBAR] Fixed imported toolbar position: ({originalLeft},{originalTop}) -> ({toolbarConfig.Left},{toolbarConfig.Top})");
                 }
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[TOOLBAR] Error validating imported toolbar position: {ex.Message}");
+                Log.WriteLine($"[TOOLBAR] Error validating imported toolbar position: {ex.Message}");
             }
         }
 
@@ -2235,7 +2207,7 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[PANELS] Error in EnsurePanelInBounds for {panel?.Name}: {ex.Message}");
+                Log.WriteLine($"[PANELS] Error in EnsurePanelInBounds for {panel?.Name}: {ex.Message}");
 
                 Canvas.SetLeft(panel, 0);
                 Canvas.SetTop(panel, 0);
@@ -2250,11 +2222,12 @@ namespace eft_dma_radar
                 "LootSettingsPanel" => MIN_LOOT_PANEL_WIDTH,
                 "MemoryWritingPanel" => MIN_MEMORY_WRITING_PANEL_WIDTH,
                 "ESPPanel" => MIN_ESP_PANEL_WIDTH,
-                "WatchlistPanel" => MIN_WATCHLIST_PANEL_WIDTH,
-                "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_WIDTH,
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_WIDTH,
                 "MapSetupPanel" => 300,
                 "QuestPlannerPanel" => MIN_QUEST_PLANNER_PANEL_WIDTH,
+                "HideoutStashPanel" => MIN_HIDEOUT_STASH_PANEL_WIDTH,
+                "WatchlistPanel" => MIN_WATCHLIST_PANEL_WIDTH,
+                "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_WIDTH,
                 _ => 200
             };
         }
@@ -2267,11 +2240,12 @@ namespace eft_dma_radar
                 "LootSettingsPanel" => MIN_LOOT_PANEL_HEIGHT,
                 "MemoryWritingPanel" => MIN_MEMORY_WRITING_PANEL_HEIGHT,
                 "ESPPanel" => MIN_ESP_PANEL_HEIGHT,
-                "WatchlistPanel" => MIN_WATCHLIST_PANEL_HEIGHT,
-                "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_HEIGHT,
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_HEIGHT,
                 "MapSetupPanel" => 300,
                 "QuestPlannerPanel" => MIN_QUEST_PLANNER_PANEL_HEIGHT,
+                "HideoutStashPanel" => MIN_HIDEOUT_STASH_PANEL_HEIGHT,
+                "WatchlistPanel" => MIN_WATCHLIST_PANEL_HEIGHT,
+                "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_HEIGHT,
                 _ => 200
             };
         }
@@ -2295,8 +2269,6 @@ namespace eft_dma_radar
                 LootSettingsCanvas,
                 MemoryWritingCanvas,
                 ESPCanvas,
-                WatchlistCanvas,
-                PlayerHistoryCanvas,
                 LootFilterCanvas,
                 MapSetupCanvas
             };
@@ -2311,7 +2283,8 @@ namespace eft_dma_radar
 
         private void AttachPreviewMouseDown(FrameworkElement panel, Canvas canvas)
         {
-            panel.PreviewMouseDown += (s, e) => {
+            panel.PreviewMouseDown += (s, e) =>
+            {
                 BringPanelToFront(canvas);
             };
         }
@@ -2322,8 +2295,6 @@ namespace eft_dma_radar
             AttachPreviewMouseDown(LootSettingsPanel, LootSettingsCanvas);
             AttachPreviewMouseDown(MemoryWritingPanel, MemoryWritingCanvas);
             AttachPreviewMouseDown(ESPPanel, ESPCanvas);
-            AttachPreviewMouseDown(WatchlistPanel, WatchlistCanvas);
-            AttachPreviewMouseDown(PlayerHistoryPanel, PlayerHistoryCanvas);
             AttachPreviewMouseDown(LootFilterPanel, LootFilterCanvas);
             AttachPreviewMouseDown(MapSetupPanel, MapSetupCanvas);
             AttachPreviewMouseDown(SettingsSearchPanel, SettingsSearchCanvas);
@@ -2333,8 +2304,6 @@ namespace eft_dma_radar
             GeneralSettingsCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(GeneralSettingsCanvas);
             LootSettingsCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(LootSettingsCanvas);
             MemoryWritingCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(MemoryWritingCanvas);
-            WatchlistCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(WatchlistCanvas);
-            PlayerHistoryCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(PlayerHistoryCanvas);
             LootFilterCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(LootFilterCanvas);
             MapSetupCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(MapSetupCanvas);
             SettingsSearchCanvas.PreviewMouseDown += (s, e) => BringPanelToFront(SettingsSearchCanvas);
@@ -2343,7 +2312,7 @@ namespace eft_dma_radar
 
         private void TogglePanelVisibility(string panelKey)
         {
-            if (_panels.TryGetValue(panelKey, out var panelInfo))
+            if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
             {
                 if (panelInfo.Panel.Visibility == Visibility.Visible)
                 {
@@ -2359,7 +2328,7 @@ namespace eft_dma_radar
 
                         if (posConfig != null)
                         {
-                            posConfig.ApplyToPanel(panelInfo.Panel, panelInfo.Canvas);
+                            posConfig.ApplyToPanel(panelInfo.Panel);
                         }
                         else
                         {
@@ -2378,7 +2347,7 @@ namespace eft_dma_radar
 
         private void SetPanelVisibility(string panelKey, bool visible)
         {
-            if (_panels.TryGetValue(panelKey, out var panelInfo))
+            if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
             {
                 panelInfo.Panel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
                 SaveSinglePanelPosition(panelKey);
@@ -2394,7 +2363,7 @@ namespace eft_dma_radar
                 if (controlName != null && controlName.EndsWith("Control") && controlName.Length > "Control".Length)
                 {
                     string panelKey = controlName.Substring(0, controlName.Length - "Control".Length);
-                    if (_panels.TryGetValue(panelKey, out var panelInfo))
+                    if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                     {
                         var left = Canvas.GetLeft(panelInfo.Panel) + e.OffsetX;
                         var top = Canvas.GetTop(panelInfo.Panel) + e.OffsetY;
@@ -2415,7 +2384,7 @@ namespace eft_dma_radar
                 if (controlName != null && controlName.EndsWith("Control") && controlName.Length > "Control".Length)
                 {
                     string panelKey = controlName.Substring(0, controlName.Length - "Control".Length);
-                    if (_panels.TryGetValue(panelKey, out var panelInfo))
+                    if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                     {
                         var width = panelInfo.Panel.Width + e.DeltaWidth;
                         var height = panelInfo.Panel.Height + e.DeltaHeight;
@@ -2449,7 +2418,7 @@ namespace eft_dma_radar
                 if (controlName != null && controlName.EndsWith("Control") && controlName.Length > "Control".Length)
                 {
                     string panelKey = controlName.Substring(0, controlName.Length - "Control".Length);
-                    if (_panels.TryGetValue(panelKey, out var panelInfo))
+                    if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                     {
                         panelInfo.Panel.Visibility = Visibility.Collapsed;
                         SaveSinglePanelPosition(panelKey);
@@ -2465,14 +2434,6 @@ namespace eft_dma_radar
             LootSettingsControl.ResizeRequested += sharedResizeHandler;
             LootSettingsControl.CloseRequested += sharedCloseHandler;
 
-            WatchlistControl.DragRequested += sharedDragHandler;
-            WatchlistControl.ResizeRequested += sharedResizeHandler;
-            WatchlistControl.CloseRequested += sharedCloseHandler;
-
-            PlayerHistoryControl.DragRequested += sharedDragHandler;
-            PlayerHistoryControl.ResizeRequested += sharedResizeHandler;
-            PlayerHistoryControl.CloseRequested += sharedCloseHandler;
-
             MemoryWritingControl.DragRequested += sharedDragHandler;
             MemoryWritingControl.ResizeRequested += sharedResizeHandler;
             MemoryWritingControl.CloseRequested += sharedCloseHandler;
@@ -2487,14 +2448,26 @@ namespace eft_dma_radar
 
             MapSetupControl.DragRequested += sharedDragHandler;
             MapSetupControl.CloseRequested += sharedCloseHandler;
-            
-            SettingsSearchControl.DragRequested   += sharedDragHandler;
+
+            SettingsSearchControl.DragRequested += sharedDragHandler;
             SettingsSearchControl.ResizeRequested += sharedResizeHandler;
-            SettingsSearchControl.CloseRequested  += sharedCloseHandler;
+            SettingsSearchControl.CloseRequested += sharedCloseHandler;
 
             QuestPlannerControl.DragRequested += sharedDragHandler;
             QuestPlannerControl.ResizeRequested += sharedResizeHandler;
             QuestPlannerControl.CloseRequested += sharedCloseHandler;
+
+            HideoutStashControl.DragRequested += sharedDragHandler;
+            HideoutStashControl.ResizeRequested += sharedResizeHandler;
+            HideoutStashControl.CloseRequested += sharedCloseHandler;
+
+            WatchlistControl.DragRequested += sharedDragHandler;
+            WatchlistControl.ResizeRequested += sharedResizeHandler;
+            WatchlistControl.CloseRequested += sharedCloseHandler;
+
+            PlayerHistoryControl.DragRequested += sharedDragHandler;
+            PlayerHistoryControl.ResizeRequested += sharedResizeHandler;
+            PlayerHistoryControl.CloseRequested += sharedCloseHandler;
         }
 
         private void InitializePanelsCollection()
@@ -2505,12 +2478,13 @@ namespace eft_dma_radar
                 ["LootSettings"] = new PanelInfo(LootSettingsPanel, LootSettingsCanvas, "LootSettings", MIN_LOOT_PANEL_WIDTH, MIN_LOOT_PANEL_HEIGHT),
                 ["MemoryWriting"] = new PanelInfo(MemoryWritingPanel, MemoryWritingCanvas, "MemoryWriting", MIN_MEMORY_WRITING_PANEL_WIDTH, MIN_MEMORY_WRITING_PANEL_HEIGHT),
                 ["ESP"] = new PanelInfo(ESPPanel, ESPCanvas, "ESP", MIN_ESP_PANEL_WIDTH, MIN_ESP_PANEL_HEIGHT),
-                ["Watchlist"] = new PanelInfo(WatchlistPanel, WatchlistCanvas, "Watchlist", MIN_WATCHLIST_PANEL_WIDTH, MIN_WATCHLIST_PANEL_HEIGHT),
-                ["PlayerHistory"] = new PanelInfo(PlayerHistoryPanel, PlayerHistoryCanvas, "PlayerHistory", MIN_PLAYERHISTORY_PANEL_WIDTH, MIN_PLAYERHISTORY_PANEL_HEIGHT),
                 ["LootFilter"] = new PanelInfo(LootFilterPanel, LootFilterCanvas, "LootFilter", MIN_LOOT_FILTER_PANEL_WIDTH, MIN_LOOT_FILTER_PANEL_HEIGHT),
                 ["MapSetup"] = new PanelInfo(MapSetupPanel, MapSetupCanvas, "MapSetup", 300, 300),
                 ["SettingsSearch"] = new PanelInfo(SettingsSearchPanel, SettingsSearchCanvas, "SettingsSearch", MIN_SEARCH_SETTINGS_PANEL_WIDTH, MIN_SEARCH_SETTINGS_PANEL_HEIGHT),
-                ["QuestPlanner"] = new PanelInfo(QuestPlannerPanel, QuestPlannerCanvas, "QuestPlanner", MIN_QUEST_PLANNER_PANEL_WIDTH, MIN_QUEST_PLANNER_PANEL_HEIGHT)
+                ["QuestPlanner"] = new PanelInfo(QuestPlannerPanel, QuestPlannerCanvas, "QuestPlanner", MIN_QUEST_PLANNER_PANEL_WIDTH, MIN_QUEST_PLANNER_PANEL_HEIGHT),
+                ["HideoutStash"] = new PanelInfo(HideoutStashPanel, HideoutStashCanvas, "HideoutStash", MIN_HIDEOUT_STASH_PANEL_WIDTH, MIN_HIDEOUT_STASH_PANEL_HEIGHT),
+                ["Watchlist"] = new PanelInfo(WatchlistPanel, WatchlistCanvas, "Watchlist", MIN_WATCHLIST_PANEL_WIDTH, MIN_WATCHLIST_PANEL_HEIGHT),
+                ["PlayerHistory"] = new PanelInfo(PlayerHistoryPanel, PlayerHistoryCanvas, "PlayerHistory", MIN_PLAYERHISTORY_PANEL_WIDTH, MIN_PLAYERHISTORY_PANEL_HEIGHT)
             };
         }
 
@@ -2518,22 +2492,22 @@ namespace eft_dma_radar
         {
             try
             {
-                foreach (var panel in _panels)
+                foreach (var panel in _panels ?? [])
                 {
                     var propInfo = typeof(PanelPositionsConfig).GetProperty(panel.Key);
                     if (propInfo != null)
                     {
-                        var posConfig = PanelPositionConfig.FromPanel(panel.Value.Panel, panel.Value.Canvas);
+                        var posConfig = PanelPositionConfig.FromPanel(panel.Value.Panel);
                         propInfo.SetValue(Config.PanelPositions, posConfig);
                     }
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("[PANELS] Saved panel positions to config");
+                Log.WriteLine("[PANELS] Saved panel positions to config");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[PANELS] Error saving panel positions: {ex.Message}");
+                Log.WriteLine($"[PANELS] Error saving panel positions: {ex.Message}");
             }
         }
 
@@ -2541,19 +2515,19 @@ namespace eft_dma_radar
         {
             try
             {
-                if (_panels.TryGetValue(panelKey, out var panelInfo))
+                if (_panels?.TryGetValue(panelKey, out var panelInfo) == true)
                 {
                     var propInfo = typeof(PanelPositionsConfig).GetProperty(panelKey);
                     if (propInfo != null)
                     {
-                        var posConfig = PanelPositionConfig.FromPanel(panelInfo.Panel, panelInfo.Canvas);
+                        var posConfig = PanelPositionConfig.FromPanel(panelInfo.Panel);
                         propInfo.SetValue(Config.PanelPositions, posConfig);
                     }
                 }
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[PANELS] Error saving panel position for {panelKey}: {ex.Message}");
+                Log.WriteLine($"[PANELS] Error saving panel position for {panelKey}: {ex.Message}");
             }
         }
 
@@ -2561,7 +2535,7 @@ namespace eft_dma_radar
         {
             try
             {
-                foreach (var panel in _panels)
+                foreach (var panel in _panels ?? [])
                 {
                     var propInfo = typeof(PanelPositionsConfig).GetProperty(panel.Key);
 
@@ -2571,7 +2545,7 @@ namespace eft_dma_radar
 
                         if (posConfig != null)
                         {
-                            posConfig.ApplyToPanel(panel.Value.Panel, panel.Value.Canvas);
+                            posConfig.ApplyToPanel(panel.Value.Panel);
                             EnsurePanelInBounds(panel.Value.Panel, mainContentGrid, adjustSize: false);
                         }
                         else
@@ -2582,11 +2556,11 @@ namespace eft_dma_radar
                     }
                 }
 
-                XMLogging.WriteLine("[PANELS] Restored panel positions from config with bounds checking");
+                Log.WriteLine("[PANELS] Restored panel positions from config with bounds checking");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[PANELS] Error restoring panel positions: {ex.Message}");
+                Log.WriteLine($"[PANELS] Error restoring panel positions: {ex.Message}");
             }
         }
 
@@ -2595,11 +2569,11 @@ namespace eft_dma_radar
             try
             {
                 Config.ToolbarPosition = ToolbarPositionConfig.FromToolbar(customToolbar);
-                XMLogging.WriteLine("[TOOLBAR] Saved toolbar position to config");
+                Log.WriteLine("[TOOLBAR] Saved toolbar position to config");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[TOOLBAR] Error saving toolbar position: {ex.Message}");
+                Log.WriteLine($"[TOOLBAR] Error saving toolbar position: {ex.Message}");
             }
         }
 
@@ -2610,7 +2584,7 @@ namespace eft_dma_radar
                 if (Config.ToolbarPosition != null)
                 {
                     Config.ToolbarPosition.ApplyToToolbar(customToolbar);
-                    XMLogging.WriteLine("[TOOLBAR] Restored toolbar position from config");
+                    Log.WriteLine("[TOOLBAR] Restored toolbar position from config");
                 }
                 else
                 {
@@ -2620,7 +2594,7 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[TOOLBAR] Error restoring toolbar position: {ex.Message}");
+                Log.WriteLine($"[TOOLBAR] Error restoring toolbar position: {ex.Message}");
                 Canvas.SetLeft(customToolbar, 900);
                 Canvas.SetTop(customToolbar, 5);
             }
@@ -2643,7 +2617,7 @@ namespace eft_dma_radar
             if (e.Key == Key.Delete)
             {
                 LootFilterControl.HandleDeleteKey();
-                e.Handled = true; 
+                e.Handled = true;
             }
         }
         #endregion

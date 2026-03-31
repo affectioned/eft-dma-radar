@@ -48,10 +48,17 @@ namespace eft_dma_radar.Common.Misc
                     fontFamilyMedium = new byte[stream!.Length];
                     stream.ReadExactly(fontFamilyMedium);
                 }
-                SKFontFamilyRegular = SKTypeface.FromStream(new MemoryStream(fontFamilyRegular, false));
-                SKFontFamilyBold = SKTypeface.FromStream(new MemoryStream(fontFamilyBold, false));
-                SKFontFamilyItalic = SKTypeface.FromStream(new MemoryStream(fontFamilyItalic, false));
-                SKFontFamilyMedium = SKTypeface.FromStream(new MemoryStream(fontFamilyMedium, false));
+                // SKTypeface.FromStream reads the stream synchronously; wrap each
+                // MemoryStream in a using block so the IDisposable is honoured
+                // even though MemoryStream only holds managed memory.
+                using (var ms = new MemoryStream(fontFamilyRegular, false))
+                    SKFontFamilyRegular = SKTypeface.FromStream(ms);
+                using (var ms = new MemoryStream(fontFamilyBold, false))
+                    SKFontFamilyBold = SKTypeface.FromStream(ms);
+                using (var ms = new MemoryStream(fontFamilyItalic, false))
+                    SKFontFamilyItalic = SKTypeface.FromStream(ms);
+                using (var ms = new MemoryStream(fontFamilyMedium, false))
+                    SKFontFamilyMedium = SKTypeface.FromStream(ms);
             }
             catch (Exception ex)
             {

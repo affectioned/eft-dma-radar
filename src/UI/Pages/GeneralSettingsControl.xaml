@@ -99,6 +99,11 @@
 
                                         <CheckBox x:Name="chkMapSetup" Content="Show Map Setup" Tag="ShowMapSetup"
                                                   Style="{StaticResource DynamicCheckBoxStyle}" Grid.Row="0" Grid.Column="0" Margin="0,0,5,8"/>
+                                        <Button x:Name="btnForceOffsetsUpdate" Content="Force Offsets Update"
+                                                Tag="ForceOffsetsUpdate"
+                                                Style="{StaticResource ButtonPrimary}"
+                                                Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                                Height="28" HorizontalAlignment="Left" Margin="0,0,0,8"/>
                                     </Grid>
 
                                     <Grid Margin="0,2,0,2">
@@ -131,8 +136,6 @@
                                         </Grid>
                                     </hc:SimpleStackPanel>
 
-                                    <Button x:Name="btnSendStashDogTags" Content="Send Stashed DogTags" 
-                                            Style="{StaticResource ButtonPrimary}" HorizontalAlignment="Left" ToolTip="Sends Dogtags from your stash to our API to gather player names and stats. Thank you!" Width="145"/>
                                     <!-- Widgets -->
                                     <hc:CheckComboBox x:Name="ccbWidgets" Grid.Column="1" Margin="0,5,0,8"
                                                           Style="{StaticResource CheckComboBoxExtend}"
@@ -146,6 +149,43 @@
                                                           hc:TitleElement.Title="Radar Options"
                                                           hc:TitleElement.TitlePlacement="Top"
                                                           hc:InfoElement.Placeholder="Connect Groups, Mask Names..."/>
+                                </hc:SimpleStackPanel>
+                            </Expander>
+
+                            <!-- Font Picker -->
+                            <Expander Header="Font" Style="{StaticResource PanelExpander}" IsExpanded="True">
+                                <hc:SimpleStackPanel Style="{StaticResource ExpanderContent}" Margin="2,8,2,8">
+
+                                    <!-- Dropdown -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Active Font" Style="{StaticResource LabelText}"
+                                                   VerticalAlignment="Center" Grid.Column="0"/>
+                                        <ComboBox x:Name="cmbFontSelector"
+                                                  Grid.Column="1"
+                                                  ToolTip="Fonts loaded from the fonts/ folder next to the .exe"/>
+                                    </Grid>
+
+                                    <!-- Upload button -->
+                                    <Button x:Name="btnUploadFont"
+                                            Content="Upload Font (.ttf / .otf)"
+                                            Style="{StaticResource ButtonPrimary}"
+                                            HorizontalAlignment="Left"
+                                            Click="BtnUploadFont_Click"
+                                            ToolTip="Browse for a .ttf or .otf font file to add to the fonts/ folder"/>
+
+                                    <!-- Remove button -->
+                                    <Button x:Name="btnRemoveFont"
+                                            Content="Remove Selected Font"
+                                            Style="{StaticResource ButtonDanger}"
+                                            HorizontalAlignment="Left"
+                                            Margin="0,6,0,0"
+                                            Click="BtnRemoveFont_Click"
+                                            ToolTip="Delete the selected font from the fonts/ folder and revert to default"/>
+
                                 </hc:SimpleStackPanel>
                             </Expander>
 
@@ -1347,7 +1387,6 @@
 
                                             <!-- Bindable Hotkey List -->
                                             <ListView Grid.Row="1" x:Name="hotkeyListView"
-                                                      ItemsSource="{Binding Hotkeys}"
                                                       BorderThickness="0" Background="Transparent"
                                                       Height="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 

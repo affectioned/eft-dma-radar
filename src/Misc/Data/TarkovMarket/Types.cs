@@ -26,6 +26,9 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
 
             [JsonPropertyName("items")]
             public List<ItemElement> Items { get; set; }
+
+            [JsonPropertyName("traders")]
+            public List<TaskElement.TraderElement> Traders { get; set; }
         }
 
         public partial class ApiMapElement
@@ -86,56 +89,56 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
     {
         [JsonPropertyName("id")]
         public string Id { get; set; }
-    
+
         [JsonPropertyName("name")]
         public string Name { get; set; }
-    
+
         [JsonPropertyName("shortName")]
         public string ShortName { get; set; }
-    
+
         [JsonPropertyName("width")]
         public int Width { get; set; }
-    
+
         [JsonPropertyName("height")]
         public int Height { get; set; }
-    
+
         [JsonPropertyName("basePrice")]
         public long BasePrice { get; set; }
-    
+
         [JsonPropertyName("avg24hPrice")]
         public long? Avg24HPrice { get; set; }
-    
+
         [JsonPropertyName("categories")]
         public List<CategoryElement> Categories { get; set; }
-    
+
         [JsonPropertyName("sellFor")]
         public List<SellForElement> SellFor { get; set; }
-    
+
         [JsonPropertyName("historicalPrices")]
         public List<HistoricalPrice> HistoricalPrices { get; set; }
-    
+
         [JsonPropertyName("iconLink")]
         public string IconLink { get; set; }
-    
+
         [JsonPropertyName("iconLinkFallback")]
         public string IconLinkFallback { get; set; }
-    
+
         [JsonPropertyName("imageLink")]
         public string ImageLink { get; set; }
-    
+
         [JsonPropertyName("properties")]
         public ItemProperties Properties { get; set; }
-    
+
         [JsonIgnore]
         public string Caliber => Properties?.Caliber;
-    
+
         [JsonIgnore]
         public long HighestVendorPrice => SellFor?
             .Where(x => x.Vendor.Name != "Flea Market" && x.PriceRub is long)?
             .Select(x => x.PriceRub)?
             .DefaultIfEmpty()?
             .Max() ?? 0;
-    
+
         [JsonIgnore]
         public long OptimalFleaPrice
         {
@@ -152,28 +155,28 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                     .Average() ?? 0);
             }
         }
-    
+
         public partial class HistoricalPrice
         {
             [JsonPropertyName("price")]
             public long? Price { get; set; }
         }
-    
+
         public partial class SellForElement
         {
             [JsonPropertyName("priceRUB")]
             public long? PriceRub { get; set; }
-    
+
             [JsonPropertyName("vendor")]
             public CategoryElement Vendor { get; set; }
         }
-    
+
         public partial class CategoryElement
         {
             [JsonPropertyName("name")]
             public string Name { get; set; }
         }
-    
+
         public partial class ItemProperties
         {
             [JsonPropertyName("caliber")]
@@ -242,6 +245,9 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
 
         public partial class TraderElement
         {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+
             [JsonPropertyName("name")]
             public string Name { get; set; }
         }

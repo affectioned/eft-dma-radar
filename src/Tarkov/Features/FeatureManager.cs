@@ -1,4 +1,5 @@
-﻿using eft_dma_radar.Common.Misc;
+﻿#pragma warning disable CS0162 // Unreachable code detected (HARD_DISABLE_ALL_MEMWRITES const)
+using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.Tarkov.GameWorld;
 
@@ -40,9 +41,9 @@ namespace eft_dma_radar.Tarkov.Features
 
         private static void Worker()
         {
-            XMLogging.WriteLine("Features Thread Starting...");
+            Log.WriteLine("Features Thread Starting...");
             if (HARD_DISABLE_ALL_MEMWRITES)
-                XMLogging.WriteLine("[FeatureManager] *** MEMORY WRITES HARD DISABLED ***");
+                Log.WriteLine("[FeatureManager] *** MEMORY WRITES HARD DISABLED ***");
 
             while (true)
             {
@@ -61,12 +62,12 @@ namespace eft_dma_radar.Tarkov.Features
                         continue;
                     }
 
-                    bool enabled    = MemWrites.Enabled;
-                    bool ready      = Memory.Ready;
-                    bool inRaid     = Memory.InRaid;
-                    bool hasLocal   = Memory.LocalPlayer is not null;
+                    bool enabled = MemWrites.Enabled;
+                    bool ready = Memory.Ready;
+                    bool inRaid = Memory.InRaid;
+                    bool hasLocal = Memory.LocalPlayer is not null;
                     bool handsValid = hasLocal &&
-                                      Memory.LocalPlayer.Firearm.HandsController.Item1.IsValidVirtualAddress();
+                                      Memory.LocalPlayer!.Firearm.HandsController.Item1.IsValidVirtualAddress();
 
                     if (!enabled || !ready || !inRaid || !hasLocal || !handsValid)
                     {
@@ -93,7 +94,7 @@ namespace eft_dma_radar.Tarkov.Features
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[Features Thread] CRITICAL ERROR: {ex}");
+                    Log.WriteLine($"[Features Thread] CRITICAL ERROR: {ex}");
                 }
                 finally
                 {
@@ -134,14 +135,14 @@ namespace eft_dma_radar.Tarkov.Features
                             sw!.Stop();
                             if (sw.ElapsedMilliseconds > SLOW_FEATURE_THRESHOLD_MS)
                             {
-                                //XMLogging.WriteLine(
+                                //Log.WriteLine(
                                 //    $"[FeatureManager] SLOW feature {name} took {sw.ElapsedMilliseconds} ms in TryApply/OnApply");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        XMLogging.WriteLine($"[FeatureManager] Feature {feature.GetType().Name} threw: {ex}");
+                        Log.WriteLine($"[FeatureManager] Feature {feature.GetType().Name} threw: {ex}");
                         // Don’t kill the batch because one feature is buggy
                     }
                 }
@@ -161,7 +162,7 @@ namespace eft_dma_radar.Tarkov.Features
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[MemWrites] IsSafeToWriteMem / InRaid check threw: {ex.Message}");
+                    Log.WriteLine($"[MemWrites] IsSafeToWriteMem / InRaid check threw: {ex.Message}");
                     safeToWrite = false;
                 }
 
@@ -172,26 +173,7 @@ namespace eft_dma_radar.Tarkov.Features
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"MemWrites [FAIL] {ex}");
-            }
-        }
-
-        /// <summary>
-        /// Executes MemPatch Features.
-        /// </summary>
-        private static void ExecuteMemPatches(IEnumerable<IMemPatchFeature> patches)
-        {
-            try
-            {
-                foreach (var feature in patches)
-                {
-                    feature.TryApply();
-                    feature.OnApply();
-                }
-            }
-            catch (Exception ex)
-            {
-                XMLogging.WriteLine($"MemPatches [FAIL] {ex}");
+                Log.WriteLine($"MemWrites [FAIL] {ex}");
             }
         }
 

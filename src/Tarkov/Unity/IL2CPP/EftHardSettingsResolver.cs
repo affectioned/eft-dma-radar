@@ -29,7 +29,7 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                     return 0;
 
                 var index = (ulong)Offsets.Special.EFTHardSettings_TypeIndex;
-                var slot  = typeInfoTablePtr + index * (ulong)IntPtr.Size;
+                var slot = typeInfoTablePtr + index * (ulong)IntPtr.Size;
 
                 var klassPtr = Memory.ReadPtr(slot, useCache: false);
                 if (!Utils.IsValidVirtualAddress(klassPtr))
@@ -54,9 +54,9 @@ namespace eft_dma_radar.Tarkov.Unity.IL2CPP
                 try
                 {
                     var namePtr = Memory.ReadPtr(klassPtr + Offsets.Il2CppClass.Name, false);
-                    var nsPtr   = Memory.ReadPtr(klassPtr + Offsets.Il2CppClass.Namespace, false);
-                    var name    = Memory.ReadString(namePtr, 64, false) ?? "??";
-                    var ns      = Memory.ReadString(nsPtr, 64, false) ?? "";
+                    var nsPtr = Memory.ReadPtr(klassPtr + Offsets.Il2CppClass.Namespace, false);
+                    var name = Memory.ReadString(namePtr, 64, false) ?? "??";
+                    var ns = Memory.ReadString(nsPtr, 64, false) ?? "";
                     Debug.WriteLine($"[EftHardSettingsResolver] Resolved '{ns}.{name}' instance @ 0x{instance:X}");
                 }
                 catch

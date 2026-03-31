@@ -17,13 +17,17 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                 {
                     Items = ParseMarketData(data),
                     Tasks = data.Data.Tasks,
-                    Maps = ParseMapsData(data)
+                    Maps = ParseMapsData(data),
+                    Traders = data.Data.Traders
+                        ?.Where(t => !string.IsNullOrEmpty(t.Id) && !string.IsNullOrEmpty(t.Name))
+                        .Select(t => new OutgoingTrader { Id = t.Id, Name = t.Name })
+                        .ToList() ?? []
                 };
                 return JsonSerializer.Serialize(result);
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"{nameof(TarkovMarketJob)} [FAIL]: {ex}");
+                Log.WriteLine($"{nameof(TarkovMarketJob)} [FAIL]: {ex}");
                 throw;
             }
         }
@@ -34,6 +38,10 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
             foreach (var item in data.Data.Items)
             {
                 int slots = item.Width * item.Height;
+                var bestSell = item.SellFor?
+                    .Where(x => x.Vendor?.Name != null && x.Vendor.Name != "Flea Market" && x.PriceRub.HasValue)
+                    .OrderByDescending(x => x.PriceRub)
+                    .FirstOrDefault();
                 outgoingItems.Add(new OutgoingItem()
                 {
                     ID = item.Id,
@@ -41,14 +49,15 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                     Name = item.Name,
                     Categories = item.Categories?.Select(x => x.Name)?.ToList() ?? new(),
                     TraderPrice = item.HighestVendorPrice,
+                    BestTraderName = bestSell?.Vendor?.Name ?? string.Empty,
                     FleaPrice = item.OptimalFleaPrice,
                     Slots = item.Width * item.Height,
                     IconLink = item.IconLink,
                     IconLinkFallback = item.IconLinkFallback,
                     ImageLink = item.ImageLink,
-                    Caliber = item.Properties?.Caliber  // <-- fix here
+                    Caliber = item.Properties?.Caliber
                 });
-                
+
             }
             foreach (var questItem in data.Data.QuestItems)
             {
@@ -111,6 +120,16 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
             public List<TaskElement> Tasks { get; set; }
             [JsonPropertyName("maps")]
             public List<OutgoingMap> Maps { get; set; }
+            [JsonPropertyName("traders")]
+            public List<OutgoingTrader> Traders { get; set; }
+        }
+
+        private sealed class OutgoingTrader
+        {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+            [JsonPropertyName("name")]
+            public string Name { get; set; }
         }
 
         private sealed class OutgoingMap
@@ -166,6 +185,9 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
 
             [JsonPropertyName("price")]
             public long TraderPrice { get; set; }
+
+            [JsonPropertyName("traderName")]
+            public string BestTraderName { get; set; }
 
             [JsonPropertyName("fleaPrice")]
             public long FleaPrice { get; set; }

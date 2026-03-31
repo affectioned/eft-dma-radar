@@ -1,4 +1,4 @@
-
+﻿
 using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
@@ -17,9 +17,10 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         {
             try
             {
-                var unityBase = Memory.UnityBase;
-                var gomAddr   = GameObjectManager.GetAddr(unityBase);
-                var gom       = GameObjectManager.Get(gomAddr);
+                var gomAddr = Memory.GOM;
+                if (!gomAddr.IsValidVirtualAddress())
+                    throw new InvalidOperationException("GOM not resolved");
+                var gom = GameObjectManager.Get(gomAddr);
 
                 // ? DO NOT USE GAMEOBJECT NAME
                 ulong tarkovApplication =
@@ -42,11 +43,11 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     afkMonitor + Offsets.AfkMonitor.Delay,
                     AFK_DELAY);
 
-                    var preloaderui = Memory.ReadPtr(
-                    menuOperation + 0x60);
-                    var _alphaVersionText = Memory.ReadPtr(
-                    preloaderui + 0x110);
-                    XMLogging.WriteLine($"Game Version: {Memory.ReadUnityString(_alphaVersionText)}");
+                var preloaderui = Memory.ReadPtr(
+                menuOperation + 0x60);
+                var _alphaVersionText = Memory.ReadPtr(
+                preloaderui + 0x110);
+                Log.WriteLine($"Game Version: {Memory.ReadUnityString(_alphaVersionText)}");
             }
             catch (Exception ex)
             {

@@ -351,8 +351,7 @@ namespace eft_dma_radar.Common.Unity
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(this Quaternion q, Vector3 v)
         {
-            Matrix4x4 m = Matrix4x4.CreateFromQuaternion(q);
-            return Vector3.Transform(v, m);
+            return Vector3.Transform(v, q);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(this Vector3 v) =>
@@ -361,6 +360,6 @@ namespace eft_dma_radar.Common.Unity
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(this Quaternion q) =>
             float.IsFinite(q.X) && float.IsFinite(q.Y) &&
-            float.IsFinite(q.Z) && float.IsFinite(q.W);        
+            float.IsFinite(q.Z) && float.IsFinite(q.W);
     }
 }

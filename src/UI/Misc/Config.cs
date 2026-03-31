@@ -1,4 +1,4 @@
-﻿using eft_dma_radar;
+using eft_dma_radar;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.Features.MemoryWrites;
 using eft_dma_radar.UI;
@@ -11,7 +11,6 @@ using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Config;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Misc.Data.EFT;
-using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.LowLevel;
 using System.IO;
@@ -29,7 +28,7 @@ public static class ConfigManager
     public static readonly string CustomConfigDirectory = Program.CustomConfigPath.FullName;
     private const string ConfigExtension = ".json";
     private const string LastSelectedConfigFile = "lastSelectedConfig.json";
-    
+
     public static Config CurrentConfig { get; private set; }
     public static string CurrentConfigName { get; private set; }
 
@@ -51,18 +50,18 @@ public static class ConfigManager
         // Try to load last selected config
         string configToLoad = GetLastSelectedConfig();
         // If no last selected config or it doesn't exist, use config-eft-v3.json
-        if (string.IsNullOrEmpty(configToLoad)) 
+        if (string.IsNullOrEmpty(configToLoad))
         {
             configToLoad = "config-eft-v3.json";
         }
 
         var configPath = Path.Combine(CustomConfigDirectory, configToLoad);
-        
+
         // If the config file doesn't exist, create it
         if (!File.Exists(configPath))
         {
-            CurrentConfig = new Config 
-            { 
+            CurrentConfig = new Config
+            {
                 ConfigName = Path.GetFileNameWithoutExtension(configToLoad),
                 Filename = configToLoad
             };
@@ -76,14 +75,14 @@ public static class ConfigManager
         }
 
         CurrentConfigName = CurrentConfig.Filename;
-        XMLogging.WriteLine($"[Config] Loaded config: {CurrentConfigName}");
+        Log.WriteLine($"[Config] Loaded config: {CurrentConfigName}");
     }
 
     // Get the last selected config filename
     private static string GetLastSelectedConfig()
     {
         var lastSelectedPath = Path.Combine(CustomConfigDirectory, LastSelectedConfigFile);
-        
+
         try
         {
             if (File.Exists(lastSelectedPath))
@@ -95,9 +94,9 @@ public static class ConfigManager
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Error reading last selected config: {ex}");
+            Log.WriteLine($"[Config] Error reading last selected config: {ex}");
         }
-        
+
         return null;
     }
 
@@ -105,7 +104,7 @@ public static class ConfigManager
     private static void SetLastSelectedConfig(string configFilename)
     {
         var lastSelectedPath = Path.Combine(CustomConfigDirectory, LastSelectedConfigFile);
-        
+
         try
         {
             var lastSelected = new LastSelectedConfig { ConfigFilename = configFilename };
@@ -114,7 +113,7 @@ public static class ConfigManager
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Error saving last selected config: {ex}");
+            Log.WriteLine($"[Config] Error saving last selected config: {ex}");
         }
     }
 
@@ -135,13 +134,13 @@ public static class ConfigManager
                 if (config != null)
                 {
                     configs.Add(config);
-                    XMLogging.WriteLine($"[Config] Found config: {config.Filename}");
+                    Log.WriteLine($"[Config] Found config: {config.Filename}");
                 }
             }
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Error getting config list: {ex}");
+            Log.WriteLine($"[Config] Error getting config list: {ex}");
         }
 
         return configs;
@@ -166,34 +165,34 @@ public static class ConfigManager
                     config.ConfigName = Path.GetFileNameWithoutExtension(path);
                 }
             }
-                //GeneralSettingsControl.ApplyConfig();
-            
+            //GeneralSettingsControl.ApplyConfig();
+
             return config;
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Failed to load config '{path}': {ex}");
+            Log.WriteLine($"[Config] Failed to load config '{path}': {ex}");
             return null;
         }
     }
-    
+
+    private static readonly JsonSerializerOptions _saveOptions = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     private static bool SafeSaveConfig(Config config, string path)
     {
         try
         {
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-
-            var json = JsonSerializer.Serialize(config, options);
+            var json = JsonSerializer.Serialize(config, _saveOptions);
             File.WriteAllText(path, json);
             return true;
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Failed to save config '{path}': {ex}");
+            Log.WriteLine($"[Config] Failed to save config '{path}': {ex}");
             return false;
         }
     }
@@ -227,7 +226,7 @@ public static class ConfigManager
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Error loading config {configName}: {ex}");
+            Log.WriteLine($"[Config] Error loading config {configName}: {ex}");
         }
 
         return false;
@@ -239,30 +238,33 @@ public static class ConfigManager
         {
             if (string.IsNullOrEmpty(configName))
                 return false;
-    
+
             if (!configName.EndsWith(ConfigExtension, StringComparison.OrdinalIgnoreCase))
                 configName += ConfigExtension;
-    
+
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(CurrentConfig, options);
             var configToSave = JsonSerializer.Deserialize<Config>(json, options);
-            
-            configToSave.Filename = configName;
+
+if (configToSave is null)
+    return false;
+
+configToSave.Filename = configName;
             configToSave.ConfigName = Path.GetFileNameWithoutExtension(configName);
-    
+
             var filePath = Path.Combine(CustomConfigDirectory, configName);
             SafeSaveConfig(configToSave, filePath);
-            
-            XMLogging.WriteLine($"[Config] Saved new config: {configName}");
+
+Log.WriteLine($"[Config] Saved new config: {configName}");
             return true;
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Error saving new config {configName}: {ex}");
+            Log.WriteLine($"[Config] Error saving new config {configName}: {ex}");
             return false;
         }
     }
-   
+
     public static bool DeleteConfig(string configName)
     {
         try
@@ -279,7 +281,7 @@ public static class ConfigManager
             {
                 // Check if we're deleting the currently loaded config
                 bool isCurrent = CurrentConfigName.Equals(configName, StringComparison.OrdinalIgnoreCase);
-                
+
                 File.Delete(filePath);
 
                 if (!File.Exists(filePath))
@@ -289,7 +291,7 @@ public static class ConfigManager
                     {
                         var fallbackConfig = "config-eft-v3.json";
                         var fallbackPath = Path.Combine(CustomConfigDirectory, fallbackConfig);
-                        
+
                         if (File.Exists(fallbackPath))
                         {
                             LoadConfig(fallbackConfig);
@@ -314,7 +316,7 @@ public static class ConfigManager
         }
         catch (Exception ex)
         {
-            XMLogging.WriteLine($"[Config] Error deleting config {configName}: {ex}");
+            Log.WriteLine($"[Config] Error deleting config {configName}: {ex}");
             return false;
         }
     }
@@ -323,7 +325,7 @@ public static class ConfigManager
     {
         var defaultConfig = "config-eft-v3.json";
         var defaultPath = Path.Combine(CustomConfigDirectory, defaultConfig);
-        
+
         if (File.Exists(defaultPath))
         {
             LoadConfig(defaultConfig);
@@ -340,7 +342,8 @@ public static class ConfigManager
             SetLastSelectedConfig(defaultConfig);
         }
     }
-}
+} // end ConfigManager
+
 namespace eft_dma_radar.UI.Misc
 {
     /// <summary>
@@ -354,9 +357,7 @@ namespace eft_dma_radar.UI.Misc
         [JsonIgnore]
         public LowLevelCache LowLevelCache => this.Cache.LowLevel;
         [JsonIgnore]
-        public ChamsConfig ChamsConfig => this.MemWrites.Chams;    
-        [JsonIgnore]
-        public bool AdvancedMemWrites => this.MemWrites.AdvancedMemWrites;           
+        public ChamsConfig ChamsConfig => this.MemWrites.Chams;
         #endregion
 
         /// <summary>
@@ -511,7 +512,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("lootPPS")]
         public bool LootPPS { get; set; }
-        
+
         /// <summary>
         /// Loot Price Mode.
         /// </summary>
@@ -523,6 +524,12 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("lootWishList")]
         public bool LootWishlist { get; set; } = false;
+
+        /// <summary>
+        /// Highlight items in-raid that are still needed for hideout upgrades.
+        /// </summary>
+        [JsonPropertyName("lootHideoutRequired")]
+        public bool LootHideoutRequired { get; set; } = false;
 
         /// <summary>
         /// Show corpse markers (X) on radar
@@ -645,8 +652,16 @@ namespace eft_dma_radar.UI.Misc
         /// <summary>
         /// Filename of this Config File (not full path).
         /// </summary>
-        [JsonIgnore] 
+        [JsonIgnore]
         public string Filename { get; set; } = "config-eft-v3.json";
+
+        /// <summary>
+        /// The name of the currently selected custom font (without extension).
+        /// Loaded from the fonts/ folder next to the executable.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("fontName")]
+        public string FontName { get; set; } = string.Empty;
 
         /// <summary>
         /// The eft profile service, false if wanting tarkov.dev, true if wanting eft-api.tech
@@ -654,13 +669,6 @@ namespace eft_dma_radar.UI.Misc
         [JsonInclude]
         [JsonPropertyName("alternateProfileService")]
         public bool AlternateProfileService { get; set; } = false;
-
-        /// <summary>
-        /// Send anonymous data to fd-mambo server to count amoutn of users. A simple ping, no IP or personal info is stored. It creates and uses a uniqe ID number.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("sendAnonymousUsage")]
-        public bool SendAnonymousUsage { get; set; } = false;
 
         /// <summary>
         /// The maximum amount of requests to send per minute to eft-api.tech (5 = free tier, 60+ = premium tier)
@@ -671,11 +679,20 @@ namespace eft_dma_radar.UI.Misc
 
         [JsonIgnore] private static readonly Lock _syncRoot = new();
 
-        [JsonIgnore]
-        private FileInfo _configFile => new(Path.Combine(Program.ConfigPath.FullName, Filename));
+        private static readonly JsonSerializerOptions _loadOptions = new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            IgnoreReadOnlyProperties = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
+            PropertyNameCaseInsensitive = true
+        };
 
-        [JsonIgnore]
-        private FileInfo _tempFile => new(Path.Combine(Program.ConfigPath.FullName, Filename + ".tmp"));
+        private static readonly JsonSerializerOptions _saveOptions = new()
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
 
         public static Config Load(string filename)
         {
@@ -683,11 +700,10 @@ namespace eft_dma_radar.UI.Misc
             {
                 try
                 {
-                    Config config = new Config();
-                    config.Filename = filename;
+                    Config config = new() { Filename = filename };
 
                     // Always load from custom config directory now
-                    FileInfo configFile = new FileInfo(Path.Combine(Program.CustomConfigPath.FullName, filename));
+                    FileInfo configFile = new(Path.Combine(Program.CustomConfigPath.FullName, filename));
                     var tempFile = new FileInfo(configFile.FullName + ".tmp");
 
                     if (configFile.Exists)
@@ -715,17 +731,8 @@ namespace eft_dma_radar.UI.Misc
                         if (!string.IsNullOrEmpty(json))
                         {
                             try
-                            {
-                                var options = new JsonSerializerOptions
-                                {
-                                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                                    IgnoreReadOnlyProperties = true,
-                                    ReadCommentHandling = JsonCommentHandling.Skip,
-                                    AllowTrailingCommas = true,
-                                    PropertyNameCaseInsensitive = true
-                                };
-
-                                config = JsonSerializer.Deserialize<Config>(json, options);
+                            {                                config = JsonSerializer.Deserialize<Config>(json, _loadOptions)
+                                    ?? throw new JsonException("Deserialized config was null.");
                                 config.Filename = filename;
                                 config.ConfigName = Path.GetFileNameWithoutExtension(filename);
 
@@ -734,13 +741,15 @@ namespace eft_dma_radar.UI.Misc
                             }
                             catch (Exception ex)
                             {
-                                XMLogging.WriteLine($"Error deserializing config: {ex.Message}");
+                                Log.WriteLine($"Error deserializing config: {ex.Message}");
 
-                                config = new Config();
-                                config.Filename = filename;
-                                config.ConfigName = Path.GetFileNameWithoutExtension(filename);
+                                config = new Config
+                                {
+                                    Filename = filename,
+                                    ConfigName = Path.GetFileNameWithoutExtension(filename)
+                                };
 
-                                if (!(ex is JsonException))
+                                if (ex is not JsonException)
                                 {
                                     MessageBox.Show(
                                         $"Config File Error: {ex.Message}\n\n" +
@@ -751,18 +760,22 @@ namespace eft_dma_radar.UI.Misc
 
                         if (config == null)
                         {
-                            config = new Config();
-                            config.Filename = filename;
-                            config.ConfigName = Path.GetFileNameWithoutExtension(filename);
+                            config = new Config
+                            {
+                                Filename = filename,
+                                ConfigName = Path.GetFileNameWithoutExtension(filename)
+                            };
                             SaveInternal(config);
                         }
                     }
                     else
                     {
                         // Create new config if file doesn't exist
-                        config = new Config();
-                        config.Filename = filename;
-                        config.ConfigName = Path.GetFileNameWithoutExtension(filename);
+                        config = new Config
+                        {
+                            Filename = filename,
+                            ConfigName = Path.GetFileNameWithoutExtension(filename)
+                        };
 
                         // Only set as default if there are no other configs
                         var existingConfigs = Directory.GetFiles(Program.CustomConfigPath.FullName, "*.json");
@@ -774,11 +787,12 @@ namespace eft_dma_radar.UI.Misc
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"CRITICAL ERROR Loading Config: {ex.Message}");
-                    var config = new Config();
-                    config.Filename = filename;
-                    config.ConfigName = Path.GetFileNameWithoutExtension(filename);
-                    return config;
+                    Log.WriteLine($"CRITICAL ERROR Loading Config: {ex.Message}");
+                    return new Config
+                    {
+                        Filename = filename,
+                        ConfigName = Path.GetFileNameWithoutExtension(filename)
+                    };
                 }
             }
         }
@@ -788,169 +802,88 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         public static void EnsureComplexObjectsInitialized(Config config)
         {
-            if (config.ToolbarPosition == null)
-                config.ToolbarPosition = new ToolbarPositionConfig();
-
-            if (config.PanelPositions == null)
-                config.PanelPositions = new PanelPositionsConfig();
-
-            if (config.ExpanderStates == null)
-                config.ExpanderStates = new ExpanderStatesConfig();
-
-            if (config.PlayerTypeSettings == null)
-                config.PlayerTypeSettings = new PlayerTypeSettingsConfig();
-
-            if (config.EntityTypeSettings == null)
-                config.EntityTypeSettings = new EntityTypeSettingsConfig();
-
-            if (config.QuestHelper == null)
-                config.QuestHelper = new QuestHelperConfig();
-
-            if (config.MemWrites == null)
-                config.MemWrites = new MemWritesConfig();
-
-            if (config.ESP == null)
-                config.ESP = new ESPConfig();
-
-            if (config.Widgets == null)
-                config.Widgets = new WidgetsConfig();
-
-            if (config.ESPWidgets == null)
-                config.ESPWidgets = new ESPWidgetsConfig();
-
-            if (config.HotKeys == null)
-                config.HotKeys = new HotkeyConfig();
-
-            if (config.WebRadar == null)
-                config.WebRadar = new WebRadarConfig();
-
-            if (config.Containers == null)
-                config.Containers = new ContainersConfig();
-
-            if (config.Cache == null)
-                config.Cache = new PersistentCache();
-
-            if (config.Colors == null)
-                config.Colors = RadarColorOptions.GetDefaultColors();
-
-            if (config.InterfaceColors == null)
-                config.InterfaceColors = InterfaceColorOptions.GetDefaultColors();
-
-            if (config.QuestPlanner == null)
-                config.QuestPlanner = new QuestPlannerSettings();
+            config.ToolbarPosition ??= new ToolbarPositionConfig();
+            config.PanelPositions ??= new PanelPositionsConfig();
+            config.ExpanderStates ??= new ExpanderStatesConfig();
+            config.PlayerTypeSettings ??= new PlayerTypeSettingsConfig();
+            config.EntityTypeSettings ??= new EntityTypeSettingsConfig();
+            config.QuestHelper ??= new QuestHelperConfig();
+            config.MemWrites ??= new MemWritesConfig();
+            config.ESP ??= new ESPConfig();
+            config.Widgets ??= new WidgetsConfig();
+            config.ESPWidgets ??= new ESPWidgetsConfig();
+            config.HotKeys ??= new HotkeyConfig();
+            config.WebRadar ??= new WebRadarConfig();
+            config.Containers ??= new ContainersConfig();
+            config.Cache ??= new PersistentCache();
+            config.Colors ??= RadarColorOptions.GetDefaultColors();
+            config.InterfaceColors ??= InterfaceColorOptions.GetDefaultColors();
+            config.QuestPlanner ??= new QuestPlannerSettings();
 
             if (config.PanelPositions != null)
             {
-                if (config.PanelPositions.GeneralSettings == null)
-                    config.PanelPositions.GeneralSettings = new PanelPositionConfig();
-
-                if (config.PanelPositions.LootSettings == null)
-                    config.PanelPositions.LootSettings = new PanelPositionConfig();
-
-                if (config.PanelPositions.MemoryWriting == null)
-                    config.PanelPositions.MemoryWriting = new PanelPositionConfig();
-
-                if (config.PanelPositions.Watchlist == null)
-                    config.PanelPositions.Watchlist = new PanelPositionConfig();
-
-                if (config.PanelPositions.PlayerHistory == null)
-                    config.PanelPositions.PlayerHistory = new PanelPositionConfig();
-
-                if (config.PanelPositions.ESP == null)
-                    config.PanelPositions.ESP = new PanelPositionConfig();
-
-                if (config.PanelPositions.LootFilter == null)
-                    config.PanelPositions.LootFilter = new PanelPositionConfig();
-
-                if (config.PanelPositions.PlayerPreview == null)
-                    config.PanelPositions.PlayerPreview = new PanelPositionConfig();
-
-                if (config.PanelPositions.MapSetup == null)
-                    config.PanelPositions.MapSetup = new PanelPositionConfig();
-
-                if (config.PanelPositions.SettingsSearch == null)
-                    config.PanelPositions.SettingsSearch = new PanelPositionConfig();
-
-                if (config.PanelPositions.QuestPlanner == null)
-                    config.PanelPositions.QuestPlanner = new PanelPositionConfig();
+                config.PanelPositions.GeneralSettings ??= new PanelPositionConfig();
+                config.PanelPositions.LootSettings ??= new PanelPositionConfig();
+                config.PanelPositions.MemoryWriting ??= new PanelPositionConfig();
+                config.PanelPositions.ESP ??= new PanelPositionConfig();
+                config.PanelPositions.LootFilter ??= new PanelPositionConfig();
+                config.PanelPositions.PlayerPreview ??= new PanelPositionConfig();
+                config.PanelPositions.MapSetup ??= new PanelPositionConfig();
+                config.PanelPositions.SettingsSearch ??= new PanelPositionConfig();
+                config.PanelPositions.QuestPlanner ??= new PanelPositionConfig();
             }
 
             if (config.ExpanderStates != null)
             {
-                if (config.ExpanderStates.ExpanderStates == null)
-                    config.ExpanderStates.ExpanderStates = new Dictionary<string, bool>();
+                config.ExpanderStates.ExpanderStates ??= [];
             }
 
             if (config.PlayerTypeSettings != null)
             {
-                if (config.PlayerTypeSettings.Settings == null)
-                    config.PlayerTypeSettings.Settings = new Dictionary<string, PlayerTypeSettings>();
-
+                config.PlayerTypeSettings.Settings ??= [];
                 config.PlayerTypeSettings.InitializeDefaults();
             }
 
             if (config.EntityTypeSettings != null)
             {
-                if (config.EntityTypeSettings.Settings == null)
-                    config.EntityTypeSettings.Settings = new Dictionary<string, EntityTypeSettings>();
-
+                config.EntityTypeSettings.Settings ??= [];
                 config.EntityTypeSettings.InitializeDefaults();
             }
 
             if (config.QuestHelper != null)
             {
-                if (config.QuestHelper.BlacklistedQuests == null)
-                    config.QuestHelper.BlacklistedQuests = new HashSet<string>();
+                config.QuestHelper.BlacklistedQuests ??= [];
             }
 
             if (config.MemWrites != null)
             {
-                if (config.MemWrites.Aimbot == null)
-                    config.MemWrites.Aimbot = new AimbotConfig();
-
-                if (config.MemWrites.WideLean == null)
-                    config.MemWrites.WideLean = new WideLeanConfig();
+                config.MemWrites.Aimbot ??= new AimbotConfig();
+                config.MemWrites.WideLean ??= new WideLeanConfig();
 
                 if (config.MemWrites.Aimbot != null)
                 {
-                    if (config.MemWrites.Aimbot.SilentAim == null)
-                        config.MemWrites.Aimbot.SilentAim = new SilentAimConfig();
-
-                    if (config.MemWrites.Aimbot.RandomBone == null)
-                        config.MemWrites.Aimbot.RandomBone = new AimbotRandomBoneConfig();
+                    config.MemWrites.Aimbot.SilentAim ??= new SilentAimConfig();
+                    config.MemWrites.Aimbot.RandomBone ??= new AimbotRandomBoneConfig();
                 }
             }
 
             if (config.ESP != null)
             {
-                if (config.ESP.Colors == null)
-                    config.ESP.Colors = EspColorOptions.GetDefaultColors();
-
-                if (config.ESP.Crosshair == null)
-                    config.ESP.Crosshair = new ESPCrosshairOptions();
-
-                if (config.ESP.MiniRadar == null)
-                    config.ESP.MiniRadar = new ESPMiniRadarOptions();
-
-                if (config.ESP.PlayerTypeESPSettings == null)
-                    config.ESP.PlayerTypeESPSettings = new PlayerTypeSettingsESPConfig();
-
-                if (config.ESP.EntityTypeESPSettings == null)
-                    config.ESP.EntityTypeESPSettings = new EntityTypeSettingsESPConfig();
+                config.ESP.Colors ??= EspColorOptions.GetDefaultColors();
+                config.ESP.Crosshair ??= new ESPCrosshairOptions();
+                config.ESP.MiniRadar ??= new ESPMiniRadarOptions();
+                config.ESP.PlayerTypeESPSettings ??= new PlayerTypeSettingsESPConfig();
+                config.ESP.EntityTypeESPSettings ??= new EntityTypeSettingsESPConfig();
 
                 if (config.ESP.PlayerTypeESPSettings != null)
                 {
-                    if (config.ESP.PlayerTypeESPSettings.Settings == null)
-                        config.ESP.PlayerTypeESPSettings.Settings = new Dictionary<string, PlayerTypeSettingsESP>();
-
+                    config.ESP.PlayerTypeESPSettings.Settings ??= [];
                     config.ESP.PlayerTypeESPSettings.InitializeDefaults();
                 }
 
                 if (config.ESP.EntityTypeESPSettings != null)
                 {
-                    if (config.ESP.EntityTypeESPSettings.Settings == null)
-                        config.ESP.EntityTypeESPSettings.Settings = new Dictionary<string, EntityTypeSettingsESP>();
-
+                    config.ESP.EntityTypeESPSettings.Settings ??= [];
                     config.ESP.EntityTypeESPSettings.InitializeDefaults();
                 }
             }
@@ -978,8 +911,7 @@ namespace eft_dma_radar.UI.Misc
 
             if (config.Containers != null)
             {
-                if (config.Containers.Selected == null)
-                    config.Containers.Selected = new List<string>();
+                config.Containers.Selected ??= new List<string>();
             }
         }
 
@@ -1011,13 +943,7 @@ namespace eft_dma_radar.UI.Misc
         {
             try
             {
-                var options = new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                };
-
-                var json = JsonSerializer.Serialize(config, options);
+                var json = JsonSerializer.Serialize(config, _saveOptions);
 
                 var configFile = new FileInfo(Path.Combine(Program.CustomConfigPath.FullName, config.Filename));
                 var tempFile = new FileInfo(Path.Combine(Program.CustomConfigPath.FullName, config.Filename + ".tmp"));
@@ -1033,12 +959,12 @@ namespace eft_dma_radar.UI.Misc
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[SaveInternal] Error saving config: {ex.Message}");
+                Log.WriteLine($"[SaveInternal] Error saving config: {ex.Message}");
                 throw;
             }
         }
         #endregion
-    } 
+    }
     /// <summary>
     /// Configuration for panel positions
     /// </summary>
@@ -1067,17 +993,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("esp")]
         public PanelPositionConfig ESP { get; set; } = new PanelPositionConfig();
-        /// <summary>
-        /// Watchlist panel position
-        /// </summary>
-        [JsonPropertyName("watchlist")]
-        public PanelPositionConfig Watchlist { get; set; } = new PanelPositionConfig();
 
-        /// <summary>
-        /// Player history panel position
-        /// </summary>
-        [JsonPropertyName("playerHistory")]
-        public PanelPositionConfig PlayerHistory { get; set; } = new PanelPositionConfig();
         /// <summary>
         /// Loot filter panel position
         /// </summary>
@@ -1107,6 +1023,24 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("questPlanner")]
         public PanelPositionConfig QuestPlanner { get; set; } = new PanelPositionConfig();
+
+        /// <summary>
+        /// Hideout stash panel position
+        /// </summary>
+        [JsonPropertyName("hideoutStash")]
+        public PanelPositionConfig HideoutStash { get; set; } = new PanelPositionConfig();
+
+        /// <summary>
+        /// Watchlist panel position
+        /// </summary>
+        [JsonPropertyName("watchlist")]
+        public PanelPositionConfig Watchlist { get; set; } = new PanelPositionConfig();
+
+        /// <summary>
+        /// Player history panel position
+        /// </summary>
+        [JsonPropertyName("playerHistory")]
+        public PanelPositionConfig PlayerHistory { get; set; } = new PanelPositionConfig();
     }
 
     /// <summary>
@@ -1174,7 +1108,7 @@ namespace eft_dma_radar.UI.Misc
         [JsonPropertyName("visible")]
         public bool Visible { get; set; }
 
-        public static PanelPositionConfig FromPanel(FrameworkElement panel, Canvas canvas)
+        public static PanelPositionConfig FromPanel(FrameworkElement panel)
         {
             var left = Canvas.GetLeft(panel);
             var top = Canvas.GetTop(panel);
@@ -1192,7 +1126,7 @@ namespace eft_dma_radar.UI.Misc
             };
         }
 
-        public void ApplyToPanel(FrameworkElement panel, Canvas canvas)
+        public void ApplyToPanel(FrameworkElement panel)
         {
             if (Left >= 0 && Top >= 0)
             {
@@ -1200,10 +1134,10 @@ namespace eft_dma_radar.UI.Misc
                 Canvas.SetTop(panel, Top);
 
                 if (Width > 0)
-                    panel.Width = Width;
+                    panel.Width = Math.Max(Width, panel.MinWidth > 0 ? panel.MinWidth : Width);
 
                 if (Height > 0)
-                    panel.Height = Height;
+                    panel.Height = Math.Max(Height, panel.MinHeight > 0 ? panel.MinHeight : Height);
             }
             else
             {
@@ -1305,7 +1239,7 @@ namespace eft_dma_radar.UI.Misc
             return Settings[playerType];
         }
     }
-    
+
     /// <summary>
     /// Settings for a specific player type
     /// </summary>
@@ -1655,13 +1589,13 @@ namespace eft_dma_radar.UI.Misc
 
         [JsonPropertyName("showRadius")]
         public bool ShowRadius { get; set; } = false;
-        
+
         [JsonPropertyName("showLockedDoors")]
         public bool ShowLockedDoors { get; set; } = true;
 
         [JsonPropertyName("showUnlockedDoors")]
         public bool ShowUnlockedDoors { get; set; } = true;
-        
+
         [JsonPropertyName("hideInactiveExfils")]
         public bool HideInactiveExfils { get; set; } = false;
 
@@ -1889,7 +1823,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("espTargetScreen")]
         public int EspTargetScreen { get; set; } = 1; // Default to second monitor (fuser)
-        
+
         /// <summary>
         /// Show FPS Counter in ESP Window.
         /// </summary>
@@ -1980,7 +1914,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("topLootOffset")]
         public PointFSer TopLootOffset { get; set; } = new PointFSer(0, 0);
-        
+
         [JsonPropertyName("killfeedOffset")]
         public PointFSer KillfeedOffset { get; set; } = new PointFSer(0, 0);
 
@@ -2160,11 +2094,6 @@ namespace eft_dma_radar.UI.Misc
     public sealed class MemWritesConfig
     {
         /// <summary>
-        /// Keep always off, left for Chams compatibility.
-        /// </summary>
-        [JsonPropertyName("advancedMemWritesRisky")]
-        public bool AdvancedMemWrites { get; set; } = false;        
-        /// <summary>
         /// Enables DMA Memory Writing
         /// </summary>
         [JsonPropertyName("enableMemWritesRisky")]
@@ -2193,7 +2122,7 @@ namespace eft_dma_radar.UI.Misc
         /// Enable Loot Through Walls (LTW) on Startup.
         /// </summary>
         [JsonPropertyName("ltw")]
-        public LTWConfig LootThroughWalls { get; set; } = new();        
+        public LTWConfig LootThroughWalls { get; set; } = new();
         /// <summary>
         /// Amount of 'No Sway'. 0 = None, 1 = Full
         /// </summary>
@@ -2208,7 +2137,7 @@ namespace eft_dma_radar.UI.Misc
 
         [JsonPropertyName("muleMode")]
         public bool MuleMode { get; set; } = false;
-        
+
         [JsonPropertyName("noWeaponMalfunctions")]
         public bool NoWeaponMalfunctions { get; set; } = false;
 
@@ -2347,13 +2276,13 @@ namespace eft_dma_radar.UI.Misc
         /// Enables big head mode.
         /// </summary>
         [JsonPropertyName("bigHead")]
-        public BigHeadConfig BigHead { get; set; } = new();   
+        public BigHeadConfig BigHead { get; set; } = new();
 
         /// <summary>
         /// Move Speed is Enabled.
         /// </summary>
         [JsonPropertyName("moveSpeed")]
-        public MoveSpeedConfig MoveSpeed { get; set; } = new();     
+        public MoveSpeedConfig MoveSpeed { get; set; } = new();
 
     }
     public sealed class MoveSpeedConfig
@@ -2390,7 +2319,7 @@ namespace eft_dma_radar.UI.Misc
         /// </summary>
         [JsonPropertyName("scale")]
         public float Scale { get; set; } = 1.0f;
-    }    
+    }
     public sealed class LongJumpConfig
     {
         /// <summary>
@@ -2840,4 +2769,4 @@ namespace eft_dma_radar.UI.Misc
         public bool KappaFilter { get; set; } = false;
 
     }
-}
+} // end namespace eft_dma_radar.UI.Misc

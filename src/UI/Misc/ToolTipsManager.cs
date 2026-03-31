@@ -61,32 +61,7 @@ namespace eft_dma_radar.UI.Misc
             if (context.FindName("chkContainersHideSearched") is CheckBox chkContainersHideSearched)
                 chkContainersHideSearched.ToolTip = "Hides containers that have already been searched by a networked entity (usually ONLY yourself).";
         }
-        public static void AssignPlayerHistoryTooltips(UserControl context)
-        {
-            if (context.FindName("playerHistoryDataGrid") is DataGrid playerHistoryDataGrid)
-                playerHistoryDataGrid.ToolTip = "Double click to add a recent player into the watchlist.";
-        }
 
-        public static void AssignWatchlistTooltips(UserControl context)
-        {
-            if (context.FindName("txtAccountID") is HandyControl.Controls.TextBox txtAccountID)
-                txtAccountID.ToolTip = "The Account ID of the player.";
-
-            if (context.FindName("txtReason") is HandyControl.Controls.TextBox txtReason)
-                txtReason.ToolTip = "The reason why they are being watched.";
-
-            if (context.FindName("btnClearForm") is Button btnClearForm)
-                btnClearForm.ToolTip = "Clears the selected entry/form.";
-
-            if (context.FindName("btnAddEntry") is Button btnAddEntry)
-                btnAddEntry.ToolTip = "Add a new entry or update an existing one.";
-
-            if (context.FindName("btnRemoveEntry") is Button btnRemoveEntry)
-                btnRemoveEntry.ToolTip = "Remove the selected watchlist entry.";
-
-            if (context.FindName("watchlistListView") is ListView watchlistListView)
-                watchlistListView.ToolTip = "Click to select & edit an existing watchlist entry.";
-        }
         public static void AssignLootFilterTooltips(UserControl context)
         {
             if (context.FindName("cboLootFilters") is HandyControl.Controls.ComboBox cboLootFilters)
@@ -286,15 +261,6 @@ namespace eft_dma_radar.UI.Misc
                 "- The majority of risk stems from the fact that most of these features increase your power greatly, making other players more likely to report you.\n" +
                 "- Player reports are the #1 risk to getting banned.\n" +
                 "- None of these features are currently 'detected', but there is a VERY small risk that they could be in the future.";
-
-            if (context.FindName("chkAdvancedWrites") is CheckBox chkAdvancedWrites)
-                chkAdvancedWrites.ToolTip = "Enables Advanced Memory Writing Features. Includes (but not limited to):\n" +
-                "- AntiPage Feature.\n" +
-                "- Disable screen effects/Streamer Mode/Hide Raid Code\n" +
-                "- Advanced Chams Options.\n" +
-                "- Show proper AI Enemy Types (Passive).\n" +
-                "- Enhanced reliability of some features (Passive)." +
-                "\n\nWARNING: These features use a riskier injection technique. Use at your own risk.";
 
             if (context.FindName("btnAntiAFK") is Button btnAntiAFK)
                 btnAntiAFK.ToolTip = "Enables the Anti-AFK Feature. Prevents the game from closing due to inactivity.\n" +
@@ -565,6 +531,33 @@ namespace eft_dma_radar.UI.Misc
 
             if (context.FindName("rdbToggle") is RadioButton rdbToggle)
                 rdbToggle.ToolTip = "Toggle the action on and off with the key.";
+        }
+
+        public static void AssignPlayerHistoryTooltips(UserControl context)
+        {
+            if (context.FindName("playerHistoryDataGrid") is DataGrid playerHistoryDataGrid)
+                playerHistoryDataGrid.ToolTip = "Double click to add a recent player into the watchlist.";
+        }
+
+        public static void AssignWatchlistTooltips(UserControl context)
+        {
+            if (context.FindName("txtAccountID") is HandyControl.Controls.TextBox txtAccountID)
+                txtAccountID.ToolTip = "The Account ID of the player.";
+
+            if (context.FindName("txtReason") is HandyControl.Controls.TextBox txtReason)
+                txtReason.ToolTip = "The reason why they are being watched.";
+
+            if (context.FindName("btnClearForm") is Button btnClearForm)
+                btnClearForm.ToolTip = "Clears the selected entry/form.";
+
+            if (context.FindName("btnAddEntry") is Button btnAddEntry)
+                btnAddEntry.ToolTip = "Add a new entry or update an existing one.";
+
+            if (context.FindName("btnRemoveEntry") is Button btnRemoveEntry)
+                btnRemoveEntry.ToolTip = "Remove the selected watchlist entry.";
+
+            if (context.FindName("watchlistListView") is ListView watchlistListView)
+                watchlistListView.ToolTip = "Click to select & edit an existing watchlist entry.";
         }
     }
 }

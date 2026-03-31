@@ -18,7 +18,7 @@ namespace eft_dma_radar.UI.ESP
 
         public ViewMatrix() { }
 
-        public void Update(ref Matrix4x4 matrix) 
+        public void Update(ref Matrix4x4 matrix)
         {
             /// Transpose necessary fields
             M44 = matrix.M44;

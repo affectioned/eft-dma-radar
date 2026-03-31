@@ -21,27 +21,26 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             ulong world = 0;
             ulong interactableArrayPtr = 0;
-        
+
             try
             {
-        
+
                 world = Memory.ReadPtr(_localGameWorld + Offsets.ClientLocalGameWorld.World, true);
-        
+
                 if (!world.IsValidVirtualAddress())
                     return;
 
-                interactableArrayPtr = Memory.ReadPtr(world + Offsets.WorldController.Interactables, true);
-        
+                interactableArrayPtr = Memory.ReadPtr(world + 0x30, true);
+
                 if (!interactableArrayPtr.IsValidVirtualAddress())
                     return;
 
                 using var array = MemArray<ulong>.Get(interactableArrayPtr, true);
-                var set = array.Where(x => x != 0x0).ToHashSet();
-        
-                foreach (var item in set)
+                foreach (var item in array)
                 {
+                    if (item == 0x0)
+                        continue;
                     var itemName = ObjectClass.ReadName(item);
-        
                     if (itemName == "Door")
                         _Doors.Add(new Door(item));
                 }

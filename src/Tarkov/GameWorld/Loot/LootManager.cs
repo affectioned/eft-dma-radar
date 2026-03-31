@@ -13,12 +13,12 @@ using eft_dma_radar.Tarkov.Features;
 using eft_dma_radar.Tarkov.GameWorld;
 using System.IO;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
-using eft_dma_radar.Tarkov.API;
 using eft_dma_radar.UI.ESP.eft_dma_radar.UI.ESP;
 using HandyControl.Controls;
 using System.Drawing.Imaging.Effects;
 using eft_dma_radar.UI.Misc;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
+using eft_dma_radar.Web.ProfileApi;
 
 namespace eft_dma_radar.Tarkov.Loot
 {
@@ -30,9 +30,8 @@ namespace eft_dma_radar.Tarkov.Loot
         private readonly CancellationToken _ct;
         private readonly Lock _filterSync = new();
 
-        // Loot refresh caching - only refresh every X seconds
-        private const int LOOT_REFRESH_INTERVAL_MS = 5000; // 5 seconds
-        private DateTime _lastLootRefresh = DateTime.MinValue;
+        // Loot refresh caching - only refresh every 5 seconds
+        private RateLimiter _lootRefreshLimit = new(TimeSpan.FromMilliseconds(5000));
         private bool _initialRefreshDone = false;
 
         // ============================================
@@ -86,14 +85,24 @@ namespace eft_dma_radar.Tarkov.Loot
                 try
                 {
                     var filter = LootFilterControl.Create();
-                    FilteredLoot = UnfilteredLoot?
-                        .Where(x => filter(x))
-                        .OrderByDescending(x => x.Important)
-                        .ThenByDescending(x => (Program.Config.QuestHelper.Enabled && x.IsQuestCondition))
-                        .ThenByDescending(x => x.IsWishlisted)
-                        .ThenByDescending(x => x.IsValuableLoot)
-                        .ThenByDescending(x => x?.Price ?? 0)
-                        .ToList();
+                    bool questEnabled = Program.Config.QuestHelper.Enabled;
+                    var filtered = new List<LootItem>();
+                    var unfiltered = UnfilteredLoot;
+                    if (unfiltered is not null)
+                    {
+                        foreach (var x in unfiltered)
+                            if (filter(x))
+                                filtered.Add(x);
+                        filtered.Sort((a, b) =>
+                        {
+                            int c = b.Important.CompareTo(a.Important); if (c != 0) return c;
+                            c = (questEnabled && b.IsQuestCondition ? 1 : 0).CompareTo(questEnabled && a.IsQuestCondition ? 1 : 0); if (c != 0) return c;
+                            c = (b.IsWishlisted ? 1 : 0).CompareTo(a.IsWishlisted ? 1 : 0); if (c != 0) return c;
+                            c = (b.IsValuableLoot ? 1 : 0).CompareTo(a.IsValuableLoot ? 1 : 0); if (c != 0) return c;
+                            return (b?.Price ?? 0).CompareTo(a?.Price ?? 0);
+                        });
+                    }
+                    FilteredLoot = filtered;
                 }
                 catch { }
                 finally
@@ -111,23 +120,21 @@ namespace eft_dma_radar.Tarkov.Loot
         {
             try
             {
-                // Only refresh loot every LOOT_REFRESH_INTERVAL_MS to reduce CPU/memory load
-                var now = DateTime.UtcNow;
-                if (_initialRefreshDone && (now - _lastLootRefresh).TotalMilliseconds < LOOT_REFRESH_INTERVAL_MS)
+                // Only refresh loot every 5 seconds to reduce CPU/memory load
+                if (_initialRefreshDone && !_lootRefreshLimit.TryEnter())
                 {
                     // Just refresh the filter (fast operation) without re-reading all loot
                     RefreshFilter();
                     return;
                 }
-                
-                _lastLootRefresh = now;
+
                 GetLoot();
                 RefreshFilter();
-                
+
                 if (!_initialRefreshDone)
                 {
                     _initialRefreshDone = true;
-                    XMLogging.WriteLine($"[LootManager] Initial load: {UnfilteredLoot?.Count ?? 0} items, {StaticLootContainers?.Count ?? 0} containers");
+                    Log.WriteLine($"[LootManager] Initial load: {UnfilteredLoot?.Count ?? 0} items, {StaticLootContainers?.Count ?? 0} containers");
                 }
 
                 LootItem.CleanupNotificationHistory(UnfilteredLoot);
@@ -138,7 +145,7 @@ namespace eft_dma_radar.Tarkov.Loot
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR - Failed to refresh loot: {ex}");
+                Log.WriteLine($"CRITICAL ERROR - Failed to refresh loot: {ex}");
             }
         }
 
@@ -159,7 +166,7 @@ namespace eft_dma_radar.Tarkov.Loot
             var containers = new List<StaticLootContainer>(64);
             var deadPlayers = Memory.Players?
                 .Where(x => x.Corpse is not null)?.ToList();
-            
+
             using var map = ScatterReadMap.Get();
             var round1 = map.AddRound();
             var round2 = map.AddRound();
@@ -167,27 +174,27 @@ namespace eft_dma_radar.Tarkov.Loot
             var round4 = map.AddRound();
             var round5 = map.AddRound(); // Extra round for transform chain
             var round6 = map.AddRound(); // Final transform dereference
-            
+
             for (int ix = 0; ix < lootList.Count; ix++)
             {
                 var i = ix;
                 _ct.ThrowIfCancellationRequested();
                 var lootBase = lootList[i];
-                
+
                 // ROUND 1: Get MonoBehaviour and start of class name chain
                 round1[i].AddEntry<MemPointer>(0, lootBase + MONOBEHAVIOUR_OFFSET);  // 0x10 → MonoBehaviour
                 round1[i].AddEntry<MemPointer>(1, lootBase + CLASS_NAME_CHAIN[0]);   // 0x0 → C1 for class name
-                
+
                 round1[i].Callbacks += x1 =>
                 {
-                    if (x1.TryGetResult<MemPointer>(0, out var monoBehaviour) && 
+                    if (x1.TryGetResult<MemPointer>(0, out var monoBehaviour) &&
                         x1.TryGetResult<MemPointer>(1, out var c1))
                     {
                         // ROUND 2: Get InteractiveClass, GameObject, and continue class name chain
                         round2[i].AddEntry<MemPointer>(2, monoBehaviour + COMPONENT_OBJECTCLASS);  // 0x30 → InteractiveClass
                         round2[i].AddEntry<MemPointer>(3, monoBehaviour + COMPONENT_GAMEOBJECT);   // 0x58 → GameObject
                         round2[i].AddEntry<MemPointer>(4, c1 + CLASS_NAME_CHAIN[1]);               // 0x10 → ClassNamePtr
-                        
+
                         round2[i].Callbacks += x2 =>
                         {
                             if (x2.TryGetResult<MemPointer>(2, out var interactiveClass) &&
@@ -197,7 +204,7 @@ namespace eft_dma_radar.Tarkov.Loot
                                 // ROUND 3: Get Components array, GameObject name
                                 round3[i].AddEntry<MemPointer>(5, gameObject + GAMEOBJECT_COMPONENTS);  // 0x58 → Components
                                 round3[i].AddEntry<MemPointer>(6, gameObject + GAMEOBJECT_NAME);        // 0x88 → Name pointer
-                                
+
                                 round3[i].Callbacks += x3 =>
                                 {
                                     if (x3.TryGetResult<MemPointer>(5, out var components) &&
@@ -207,7 +214,7 @@ namespace eft_dma_radar.Tarkov.Loot
                                         round4[i].AddEntry<UTF8String>(7, classNamePtr, 64);                  // ClassName
                                         round4[i].AddEntry<UTF8String>(8, pGameObjectName, 64);               // ObjectName
                                         round4[i].AddEntry<MemPointer>(9, components + COMPONENTARRAY_ITEMS); // 0x8 → T1 (first transform component)
-                                        
+
                                         round4[i].Callbacks += x4 =>
                                         {
                                             if (x4.TryGetResult<UTF8String>(7, out var className) &&
@@ -216,36 +223,26 @@ namespace eft_dma_radar.Tarkov.Loot
                                             {
                                                 // ROUND 5: Dereference T1 + 0x30 to get T2
                                                 round5[i].AddEntry<MemPointer>(10, t1 + TRANSFORM_OBJECTCLASS); // 0x30 → T2
-                                                
+
                                                 round5[i].Callbacks += x5 =>
                                                 {
                                                     if (x5.TryGetResult<MemPointer>(10, out var t2))
                                                     {
                                                         // ROUND 6: Final dereference T2 + 0x10 to get TransformInternal
                                                         round6[i].AddEntry<MemPointer>(11, t2 + TRANSFORM_INTERNAL); // 0x10 → TransformInternal
-                                                        
+
                                                         round6[i].Callbacks += x6 =>
                                                         {
                                                             if (x6.TryGetResult<MemPointer>(11, out var transformInternal))
                                                             {
-                                                                // Defer processing until all scatter reads complete
-                                                                map.CompletionCallbacks += () =>
-                                                {
-                                                    _ct.ThrowIfCancellationRequested();
-                                                    try
-                                                    {
-                                                                        var classNameStr = (string)className;
-                                                                        var objectNameStr = (string)objectName;
-                                                                        
-                                                        ProcessLootIndex(loot, containers, deadPlayers,
-                                                                            interactiveClass, objectNameStr,
-                                                                            transformInternal, classNameStr, gameObject);
-                                                    }
-                                                    catch
-                                                    {
-                                                                        // Silently ignore processing errors
-                                                                    }
-                                                                };
+                                                                _ct.ThrowIfCancellationRequested();
+                                                                try
+                                                                {
+                                                                    ProcessLootIndex(loot, containers, deadPlayers,
+                                                                        interactiveClass, (string)objectName,
+                                                                        transformInternal, (string)className, gameObject);
+                                                                }
+                                                                catch { }
                                                             }
                                                         };
                                                     }
@@ -261,7 +258,7 @@ namespace eft_dma_radar.Tarkov.Loot
             }
 
             map.Execute(); // Execute scatter read
-            
+
             this.UnfilteredLoot = loot;
             this.StaticLootContainers = containers;
         }
@@ -291,8 +288,7 @@ namespace eft_dma_radar.Tarkov.Loot
 
                     GetCorpseLoot(interactiveClass, corpseLoot, isPMC);
 
-                    // 🔥 LOG DOGTAG ONCE HERE
-                    CorpseDogtagLogger.TryLog(player, corpseLoot);
+                    CorpseKillfeedLogger.TryLog(player, corpseLoot);
 
                     var corpse = new LootCorpse(corpseLoot)
                     {
@@ -394,38 +390,31 @@ namespace eft_dma_radar.Tarkov.Loot
         /// </summary>
         private static void GetItemsInSlots(ulong slotsPtr, List<LootItem> loot, bool isPMC)
         {
-            var slotDict = new Dictionary<string, ulong>(StringComparer.OrdinalIgnoreCase);
             using var slots = MemArray<ulong>.Get(slotsPtr);
 
             foreach (var slot in slots)
             {
-                var namePtr = Memory.ReadPtr(slot + Offsets.Slot.ID);
-                var name = Memory.ReadUnityString(namePtr);
-                if (!_skipSlots.Contains(name))
-                    slotDict.TryAdd(name, slot);
-            }
-
-            foreach (var slot in slotDict)
-            {
                 try
                 {
-                    if (isPMC && slot.Key == "Scabbard")
+                    var namePtr = Memory.ReadPtr(slot + Offsets.Slot.ID);
+                    var name = Memory.ReadUnityString(namePtr);
+                    if (_skipSlots.Contains(name))
                         continue;
-                    var containedItem = Memory.ReadPtr(slot.Value + Offsets.Slot.ContainedItem);
+                    if (isPMC && name == "Scabbard")
+                        continue;
+                    var containedItem = Memory.ReadPtr(slot + Offsets.Slot.ContainedItem);
                     var inventorytemplate = Memory.ReadPtr(containedItem + Offsets.LootItem.Template);
                     var idPtr = Memory.ReadValue<Types.MongoID>(inventorytemplate + Offsets.ItemTemplate._id);
                     var id = Memory.ReadUnityString(idPtr.StringID);
                     if (EftDataManager.AllItems.TryGetValue(id, out var entry))
                         loot.Add(new LootItem(entry)
                         {
-                            InteractiveClass = containedItem // <-- THIS IS THE ITEM
+                            InteractiveClass = containedItem
                         });
                     var childGrids = Memory.ReadPtr(containedItem + Offsets.LootItemMod.Grids);
-                    GetItemsInGrid(childGrids, loot); // Recurse the grids (if possible)
+                    GetItemsInGrid(childGrids, loot);
                 }
-                catch
-                {
-                }
+                catch { }
             }
         }
 
@@ -446,36 +435,16 @@ namespace eft_dma_radar.Tarkov.Loot
         }
 
         #endregion
-        #region DogTags
-        /// <summary>
-        /// Gets all dogtags on a corpse.
-        /// </summary>
-        internal static class CorpseDogtagLogger
+        #region Killfeed
+        internal static class CorpseKillfeedLogger
         {
-            // =========================
-            // CONFIG
-            // =========================
-            public static bool EnableDebug = false;
-
-            // =========================
-            // STATE
-            // =========================
             private static readonly HashSet<string> _loggedProfileIds = new();
             private static readonly object _sync = new();
 
-            // =========================
-            // PUBLIC ENTRY
-            // =========================
             public static void TryLog(Player player, List<LootItem> corpseLoot)
             {
-                Debug($"[Dogtag] Checking corpse: Name='{player?.Name}' PMC={player?.IsPmc} LootCount={corpseLoot?.Count ?? 0}");
-
-                    
                 if (corpseLoot == null || corpseLoot.Count == 0)
-                {
-                    Debug("[Dogtag] SKIP: corpseLoot empty");
                     return;
-                }
 
                 foreach (var item in corpseLoot)
                 {
@@ -490,9 +459,6 @@ namespace eft_dma_radar.Tarkov.Loot
                     if (!itemBase.IsValidVirtualAddress())
                         continue;
 
-                    // -------------------------------------------------
-                    // DogtagComponent
-                    // -------------------------------------------------
                     ulong dogtagComp;
                     try
                     {
@@ -506,94 +472,70 @@ namespace eft_dma_radar.Tarkov.Loot
                     if (!dogtagComp.IsValidVirtualAddress())
                         continue;
 
-                    // -------------------------------------------------
-                    // VICTIM
-                    // -------------------------------------------------
-                    string victimName = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.Nickname, "VictimName");
-                    string victimProfileId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.ProfileId, "VictimProfileId");
-                    string victimAccountId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.AccountId, "VictimAccountId");
+                    string victimName = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.Nickname);
+                    string victimProfileId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.ProfileId);
+                    string victimAccountId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.AccountId);
 
-                    if (string.IsNullOrEmpty(victimProfileId) ||
-                        string.IsNullOrEmpty(victimAccountId) ||
-                        string.IsNullOrEmpty(victimName))
+                    if (string.IsNullOrEmpty(victimProfileId) || string.IsNullOrEmpty(victimName))
                         continue;
+
+                    // Victim's own AccountId is embedded in the dogtag at 0x20.
+                    // Seed both victim and killer so stats can be fetched for either side.
+                    PlayerLookupApiClient.SeedFromDogtag(victimProfileId, victimAccountId, victimName);
 
                     lock (_sync)
                     {
                         if (!_loggedProfileIds.Add(victimProfileId))
-                        {
-                            Debug($"[Dogtag] DUPLICATE Victim ProfileId '{victimProfileId}'");
                             continue;
-                        }
                     }
 
-                    //XMLogging.WriteLine($"[Dogtag] ✔ VICTIM {victimName} ({victimProfileId})");
-
-                    DogtagApiClient.Send(
-                        victimAccountId,
-                        victimProfileId,
-                        victimName);
-
-                    // -------------------------------------------------
-                    // KILLER (AS SEPARATE PLAYER)
-                    // -------------------------------------------------
-                    string killerProfileId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.KillerProfileId, "KillerProfileId");
-                    string killerAccountId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.KillerAccountId, "KillerAccountId");
-                    string killerName = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.KillerName, "KillerName");
-                    string killerWeapon = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.WeaponName, "KillerWeapon");
+                    string killerProfileId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.KillerProfileId);
+                    string killerAccountId = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.KillerAccountId);
+                    string killerName = ReadStringPtr(dogtagComp + Offsets.DogtagComponent.KillerName);
 
                     if (!string.IsNullOrEmpty(killerProfileId) &&
                         !string.IsNullOrEmpty(killerAccountId) &&
                         !string.IsNullOrEmpty(killerName))
                     {
-                        //XMLogging.WriteLine($"[Dogtag] ✔ KILLER {killerName} ({killerProfileId})");
                         PlayerListWorker.UpdateIdentity(
                             profileId: killerProfileId,
                             nickname: killerName,
                             accountId: killerAccountId);
-                        DogtagApiClient.Send(
-                            killerAccountId,
-                            killerProfileId,
-                            killerName);
-                        // -------------------------------------------------
-                        // RESOLVE KILLER WEAPON FROM LIVE PLAYER LIST
-                        // -------------------------------------------------
+
+                        // Killer's profileId + accountId are both present in the dogtag.
+                        // Seed the local registry so PlayerProfile can resolve stats.
+                        PlayerLookupApiClient.SeedFromDogtag(killerProfileId, killerAccountId, killerName);
+
                         string weapon = "UNKNOWN";
                         PlayerType side = PlayerType.Default;
-                        string level = ""; 
+                        string level = "";
                         string ammo = "";
 
-                        if (!string.IsNullOrEmpty(killerProfileId))
+                        try
                         {
-                            try
-                            {
-                                var killerPlayer = Memory.Players?
-                                    .FirstOrDefault(p =>
-                                        p is ObservedPlayer op &&
-                                        op.ProfileID == killerProfileId);
+                            var killerPlayer = Memory.Players?
+                                .FirstOrDefault(p =>
+                                    p is ObservedPlayer op &&
+                                    op.ProfileID == killerProfileId);
 
-                                if (killerPlayer?.Hands?.CurrentItem is string w &&
-                                    !string.IsNullOrWhiteSpace(w))
+                            if (killerPlayer?.Hands?.CurrentItem is string w &&
+                                !string.IsNullOrWhiteSpace(w))
+                            {
+                                weapon = w;
+                                ammo = killerPlayer.Hands?.CurrentAmmo;
+                                side = killerPlayer!.Type;
+                                if (killerPlayer is ObservedPlayer op)
                                 {
-                                    weapon = w;
-                                    ammo = killerPlayer?.Hands?.CurrentAmmo;
-                                    side = killerPlayer.Type;
-                                    if (killerPlayer is ObservedPlayer op)
-                                    {
-                                        if (op.Profile?.Level is int lvl)
-                                            level = lvl.ToString();
-                                    }
+                                    if (op.Profile?.Level is int lvl)
+                                        level = lvl.ToString();
                                 }
                             }
-                            catch
-                            {
-                                // ignore — fallback to UNKNOWN
-                            }
+                        }
+                        catch
+                        {
+                            // fallback to UNKNOWN
                         }
 
-                        // -------------------------------------------------
-                        // PUSH KILLFEED EVENT
-                        // -------------------------------------------------
                         KillfeedManager.Push(
                             killerName,
                             victimName,
@@ -601,15 +543,12 @@ namespace eft_dma_radar.Tarkov.Loot
                             side,
                             ammo,
                             level
-                        );                      
-                    }                 
+                        );
+                    }
                 }
             }
 
-            // =========================
-            // HELPERS
-            // =========================
-            private static string ReadStringPtr(ulong addr, string label)
+            private static string ReadStringPtr(ulong addr)
             {
                 try
                 {
@@ -625,21 +564,11 @@ namespace eft_dma_radar.Tarkov.Loot
                 }
             }
 
-            private static void Debug(string msg)
-            {
-                if (EnableDebug)
-                    XMLogging.WriteLine(msg);
-            }
-
-            // =========================
-            // RESET
-            // =========================
             public static void Reset()
             {
                 lock (_sync)
                 {
                     _loggedProfileIds.Clear();
-                    XMLogging.WriteLine("[Dogtag] Reset logged profile IDs");
                 }
             }
         }
