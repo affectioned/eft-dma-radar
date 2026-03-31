@@ -286,21 +286,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
             _worldInteractablesManager = new WorldInteractablesManager(Base);
 
             Log.WriteLine("[Raid] Game data initialized successfully!");
-
-            if (Config.MemWrites.Aimbot.Enabled && Config.MemWrites.MemWritesEnabled)
-            {
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        Features.MemoryWrites.Aimbot.RunBallisticsDiagnosticOnce();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.WriteLine($"[Raid] Ballistics diagnostic failed: {ex.Message}");
-                    }
-                }, ct);
-            }
         }
 
         /// <summary>

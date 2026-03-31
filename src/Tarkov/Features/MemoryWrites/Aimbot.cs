@@ -90,8 +90,9 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                         // NOTE: We don't check game.RaidHasStarted anymore because it uses MonoLib
                         // which is deprecated and doesn't work in IL2CPP.
                         // If we're here, the raid is definitely active.
-                        // Run ballistics diagnostic once per raid (even without MemWrites enabled)
-                        TryRunBallisticsDiagnostic();
+                        // Run ballistics diagnostic once per raid (only when aimbot and MemWrites are enabled)
+                        if (Enabled && MemWrites.Enabled)
+                            TryRunBallisticsDiagnostic();
 
                         // ALWAYS log on first iteration after raid starts (per iteration check)
                         //Log.WriteLine($"[Aimbot] WORKER CHECK: Enabled={Enabled}, MemWrites.Enabled={MemWrites.Enabled}, Engaged={Engaged}");
@@ -120,54 +121,6 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                     try { ResetAimbot(); } catch { }
                     Thread.Sleep(200);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Public static method to run ballistics diagnostic - can be called from LocalGameWorld.
-        /// </summary>
-        public static void RunBallisticsDiagnosticOnce()
-        {
-            if (_ballisticsDiagnosticLogged) return;
-
-            Log.WriteLine("[Aimbot] RunBallisticsDiagnosticOnce called from LocalGameWorld...");
-
-            try
-            {
-                // Wait a bit for the realtime thread to populate HandsController
-                Thread.Sleep(2000);
-
-                var handsController = ILocalPlayer.HandsController;
-                if (handsController == 0 || !handsController.IsValidVirtualAddress())
-                {
-                    // Wait up to 8 more seconds
-                    for (int i = 0; i < 16; i++)
-                    {
-                        Thread.Sleep(500);
-                        handsController = ILocalPlayer.HandsController;
-                        if (handsController != 0 && handsController.IsValidVirtualAddress())
-                        {
-                            Log.WriteLine($"[Aimbot] HandsController ready after {2000 + (i + 1) * 500}ms");
-                            break;
-                        }
-                    }
-                }
-
-                if (handsController == 0 || !handsController.IsValidVirtualAddress())
-                {
-                    Log.WriteLine("[Aimbot] Diagnostic skipped - HandsController not ready (equip a weapon!)");
-                    _ballisticsDiagnosticLogged = true;
-                    return;
-                }
-
-                Log.WriteLine($"[Aimbot] HandsController @ 0x{handsController:X} - running diagnostic...");
-                LogBallisticsDiagnostic(handsController, null);
-                _ballisticsDiagnosticLogged = true;
-            }
-            catch (Exception ex)
-            {
-                Log.WriteLine($"[Aimbot] Diagnostic error: {ex.Message}");
-                _ballisticsDiagnosticLogged = true;
             }
         }
 
@@ -241,18 +194,6 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         {
             try
             {
-                // Check for weapon equip even without aimbot engaged (for diagnostics)
-                if (Memory.LocalPlayer is LocalPlayer localPlayer && ILocalPlayer.HandsController is ulong handsController && handsController.IsValidVirtualAddress())
-                {
-                    // One-time ballistics diagnostic log - runs on first weapon equip regardless of aimbot state
-                    if (!_ballisticsDiagnosticLogged)
-                    {
-                        Log.WriteLine("[Aimbot] Weapon detected - running ballistics diagnostic...");
-                        LogBallisticsDiagnostic(handsController, null);
-                        _ballisticsDiagnosticLogged = true;
-                    }
-                }
-
                 if (Engaged && Memory.LocalPlayer is LocalPlayer lp && ILocalPlayer.HandsController is ulong hc && hc.IsValidVirtualAddress())
                 {
                     if (Cache != hc)
