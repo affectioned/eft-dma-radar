@@ -2744,18 +2744,4 @@ namespace eft_dma_radar.UI.Misc
         public bool KappaFilter { get; set; } = false;
 
     }
-
-    /// <summary>
-    /// Quest Planner filter settings.
-    /// </summary>
-    public sealed class QuestPlannerSettings
-    {
-        /// <summary>
-        /// When true, restricts the active quest display to Kappa-required quests only.
-        /// Maps with zero Kappa objectives are hidden and re-ranked.
-        /// </summary>
-        [JsonPropertyName("kappaFilter")]
-        public bool KappaFilter { get; set; } = false;
-
-    }
 } // end namespace eft_dma_radar.UI.Misc
