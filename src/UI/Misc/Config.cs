@@ -2086,6 +2086,12 @@ namespace eft_dma_radar.UI.Misc
         public bool MemWritesEnabled { get; set; } = false;
 
         /// <summary>
+        /// Enable Advanced Memory Writes features.
+        /// </summary>
+        [JsonPropertyName("advancedMemWrites")]
+        public bool AdvancedMemWrites { get; set; } = false;
+
+        /// <summary>
         /// Enable No Recoil Feature on Startup.
         /// </summary>
         [JsonPropertyName("enableNoRecoil")]

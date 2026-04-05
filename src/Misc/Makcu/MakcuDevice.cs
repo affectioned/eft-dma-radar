@@ -28,7 +28,7 @@ namespace eft_dma_radar.Misc.Makcu
         public void Connect(string port)
         {
             Check(makcu_connect(_handle, port));
-            XMLogging.WriteLine($"[Makcu] Connected on {port}");
+            Log.WriteLine($"[Makcu] Connected on {port}");
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace eft_dma_radar.Misc.Makcu
         public void Disconnect()
         {
             Check(makcu_disconnect(_handle));
-            XMLogging.WriteLine("[Makcu] Disconnected");
+            Log.WriteLine("[Makcu] Disconnected");
         }
 
         /// <summary>

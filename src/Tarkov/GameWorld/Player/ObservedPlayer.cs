@@ -8,7 +8,6 @@ using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
 using eft_dma_radar.UI.Misc;
-using eft_dma_radar.Web.ProfileApi;
 using static SDK.Enums;
 using static SDK.Offsets;
 
@@ -532,31 +531,11 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         Log.WriteLine(
                             $"[ObservedPlayer] Identity applied from PlayerList.json: {Name} ({AccountID})");
                     }
-                    else
-                    {
-                        // Fallback: use the nickname stored in the local dogtag database if the
-                        // in-game name is not yet available. Don't set _identityApplied so the
-                        // real in-game name still takes over as soon as the game provides it.
-                        var cached = PlayerLookupApiClient.TryGetCached(ProfileID);
-                        if (!string.IsNullOrEmpty(cached?.Nickname))
-                        {
-                            Name = cached.Nickname;
-                            PlayerHistory.AddOrUpdate(this);
-                        }
-                    }
+                    // No fallback profile lookup available
                 }
             }
 
-            // Resolve AccountID from DogtagDatabase once ProfileID is available
-            if (string.IsNullOrEmpty(AccountID) && !string.IsNullOrEmpty(ProfileID))
-            {
-                var cached = PlayerLookupApiClient.TryGetCached(ProfileID);
-                if (!string.IsNullOrEmpty(cached?.AccountId))
-                {
-                    AccountID = cached.AccountId;
-                    PlayerHistory.AddOrUpdate(this);
-                }
-            }
+            // AccountID resolved from in-game dogtag data or PlayerList.json
 
             // Re-check watchlist when AccountID is available (supports mid-raid watchlist additions)
             if (!string.IsNullOrEmpty(AccountID) && IsHumanHostile)

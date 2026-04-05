@@ -35,7 +35,7 @@ namespace eft_dma_radar.Misc.Makcu
                 dev.Connect(port);
                 _device = dev;
 
-                XMLogging.WriteLine($"[MakcuManager] Connected on {port}");
+                Log.WriteLine($"[MakcuManager] Connected on {port}");
             }
         }
 
@@ -48,7 +48,7 @@ namespace eft_dma_radar.Misc.Makcu
             {
                 _device?.Dispose();
                 _device = null;
-                XMLogging.WriteLine("[MakcuManager] Disconnected");
+                Log.WriteLine("[MakcuManager] Disconnected");
             }
         }
     }

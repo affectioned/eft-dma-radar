@@ -132,7 +132,7 @@ namespace eft_dma_radar.UI.Pages
                 }
                 catch (TimeoutException ex)
                 {
-                    XMLogging.WriteLine($"[PANELS] {ex.Message}");
+                    Log.WriteLine($"[PANELS] {ex.Message}");
                 }
             };
         }
@@ -464,7 +464,7 @@ namespace eft_dma_radar.UI.Pages
             settings.RenderMode = (ESPPlayerRenderMode)cboPlayerRenderMode.SelectedIndex;
 
             Config.Save();
-            XMLogging.WriteLine($"Saved ESP player type settings for {playerType}");
+            Log.WriteLine($"Saved ESP player type settings for {playerType}");
             //PlayerPreviewControl.RefreshESPPreview();
         }
 
@@ -637,7 +637,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine($"Saved ESP entity type settings for {entityType}");
+            Log.WriteLine($"Saved ESP entity type settings for {entityType}");
             //PlayerPreviewControl.RefreshESPPreview();
         }
 
@@ -729,7 +729,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine($"Updated widget option: {widgetName} = {isSelected}");
+            Log.WriteLine($"Updated widget option: {widgetName} = {isSelected}");
         }
 
         /// <summary>
@@ -894,7 +894,7 @@ namespace eft_dma_radar.UI.Pages
             if (sender is CheckBox cb && cb.Tag is string tag)
             {
                 var value = cb.IsChecked == true;
-                XMLogging.WriteLine($"[Checkbox] {cb.Name} changed to {value}");
+                Log.WriteLine($"[Checkbox] {cb.Name} changed to {value}");
                 switch (tag)
                 {
                     case "AutoFullscreen":
@@ -925,7 +925,7 @@ namespace eft_dma_radar.UI.Pages
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("Saved Config");
+                Log.WriteLine("Saved Config");
             }
         }
 
@@ -988,7 +988,7 @@ namespace eft_dma_radar.UI.Pages
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("[ComboBox] Selection changed and config saved.");
+                Log.WriteLine("[ComboBox] Selection changed and config saved.");
             }
         }
 
@@ -1002,7 +1002,7 @@ namespace eft_dma_radar.UI.Pages
 
                 ESPForm.Window?.UpdateRenderTimerInterval(fpsValue);
 
-                XMLogging.WriteLine($"[FPS Cap] Changed to {fpsValue}");
+                Log.WriteLine($"[FPS Cap] Changed to {fpsValue}");
             }
         }
 
@@ -1090,7 +1090,7 @@ namespace eft_dma_radar.UI.Pages
             Config.ESP.ShowTopLoot = IsOptionSelected("Top Loot");
 
             Config.Save();
-            XMLogging.WriteLine("Saved ESP option settings");
+            Log.WriteLine("Saved ESP option settings");
         }
 
         private void widgetsCheckComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1115,7 +1115,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine("Saved widget settings");
+            Log.WriteLine("Saved widget settings");
         }
         /// <summary>
         /// Load available monitors into the ComboBox
@@ -1136,11 +1136,11 @@ namespace eft_dma_radar.UI.Pages
                 else
                     cmbTargetMonitor.SelectedIndex = monitors.Count > 1 ? 1 : 0; // Default to second monitor if available
                 
-                XMLogging.WriteLine($"[ESP] Loaded {monitors.Count} monitor(s), selected monitor {cmbTargetMonitor.SelectedIndex}");
+                Log.WriteLine($"[ESP] Loaded {monitors.Count} monitor(s), selected monitor {cmbTargetMonitor.SelectedIndex}");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[ESP] Error loading monitors: {ex.Message}");
+                Log.WriteLine($"[ESP] Error loading monitors: {ex.Message}");
             }
         }
 
@@ -1153,10 +1153,10 @@ namespace eft_dma_radar.UI.Pages
             {
                 Config.ESP.EspTargetScreen = monitor.Index;
                 Config.Save();
-                XMLogging.WriteLine($"[ESP] Target monitor changed to {monitor.DisplayName}");
+                Log.WriteLine($"[ESP] Target monitor changed to {monitor.DisplayName}");
                 
                 // Log for debugging
-                XMLogging.WriteLine($"[ESP] Monitor resolution: {monitor.Width}x{monitor.Height} @ ({monitor.Left}, {monitor.Top})");
+                Log.WriteLine($"[ESP] Monitor resolution: {monitor.Width}x{monitor.Height} @ ({monitor.Left}, {monitor.Top})");
             }
         }
         #endregion

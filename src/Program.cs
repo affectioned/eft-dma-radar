@@ -99,7 +99,7 @@ namespace eft_dma_radar
             Config = newConfig;
             SharedProgram.UpdateConfig(Config);
 
-            XMLogging.WriteLine("[Program] Global config reference updated");
+            Log.WriteLine("[Program] Global config reference updated");
         }
 
         /// <summary>
@@ -215,11 +215,11 @@ namespace eft_dma_radar
                                 File.Copy(legacyConfigPath, destPath);
 
                                 selectedConfigFile = "config-eft-v3.json";
-                                XMLogging.WriteLine("[Program] Migrated legacy config-eft-v3.json to custom config directory");
+                                Log.WriteLine("[Program] Migrated legacy config-eft-v3.json to custom config directory");
                             }
                             catch (Exception ex)
                             {
-                                XMLogging.WriteLine($"[Program] Error migrating legacy config: {ex}");
+                                Log.WriteLine($"[Program] Error migrating legacy config: {ex}");
                             }
                         }
                     }
@@ -241,7 +241,7 @@ namespace eft_dma_radar
                             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                         }));
 
-                        XMLogging.WriteLine("[Program] Created new config-eft-v3.json");
+                        Log.WriteLine("[Program] Created new config-eft-v3.json");
                     }
                 }
 
@@ -307,7 +307,7 @@ namespace eft_dma_radar
                 }
                 else if (!result.IsSuccess)
                 {
-                    XMLogging.WriteLine($"[Program] Version check failed: {result.Error}");
+                    Log.WriteLine($"[Program] Version check failed: {result.Error}");
                 }
                 await mainWindow.Dispatcher.InvokeAsync(() =>
                 {
@@ -316,7 +316,7 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Program] Error during version check: {ex.Message}");
+                Log.WriteLine($"[Program] Error during version check: {ex.Message}");
             }
         }
 
@@ -364,7 +364,7 @@ namespace eft_dma_radar
                     }
                     catch (Exception ex)
                     {
-                        XMLogging.WriteLine($"[Program] Failed to open browser: {ex.Message}");
+                        Log.WriteLine($"[Program] Failed to open browser: {ex.Message}");
 
                         try
                         {
@@ -386,7 +386,7 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Program] Error showing update notification: {ex.Message}");
+                Log.WriteLine($"[Program] Error showing update notification: {ex.Message}");
             }
         }
 
@@ -433,7 +433,7 @@ namespace eft_dma_radar
             try
             {
                 loading.UpdateStatus("Starting in Safe Mode...", 10);
-                XMLogging.WriteLine("Starting application in Safe Mode - DMA functionality disabled");
+                Log.WriteLine("Starting application in Safe Mode - DMA functionality disabled");
 
                 loading.UpdateStatus("Loading Configuration...", 25);
 
@@ -451,7 +451,7 @@ namespace eft_dma_radar
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"Non-critical safe mode component failed: {ex.Message}");
+                    Log.WriteLine($"Non-critical safe mode component failed: {ex.Message}");
                 }
 
                 loading.UpdateStatus("Initializing Safe Mode Features...", 85);
@@ -462,7 +462,7 @@ namespace eft_dma_radar
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Safe Mode initialization failed: {ex}");
+                Log.WriteLine($"Safe Mode initialization failed: {ex}");
                 loading.UpdateStatus("Safe Mode initialization failed", 100);
                 Thread.Sleep(1000);
             }
@@ -479,11 +479,11 @@ namespace eft_dma_radar
         {
             try
             {
-                XMLogging.WriteLine("Safe mode features initialized");
+                Log.WriteLine("Safe mode features initialized");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Error initializing safe mode features: {ex}");
+                Log.WriteLine($"Error initializing safe mode features: {ex}");
             }
         }
 
@@ -575,20 +575,20 @@ namespace eft_dma_radar
             {
                 Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
-                XMLogging.WriteLine("[DPI] Successfully enabled PerMonitorV2 DPI awareness");
+                Log.WriteLine("[DPI] Successfully enabled PerMonitorV2 DPI awareness");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[DPI] Failed to set DPI awareness: {ex.Message}");
+                Log.WriteLine($"[DPI] Failed to set DPI awareness: {ex.Message}");
 
                 try
                 {
                     Application.SetHighDpiMode(HighDpiMode.SystemAware);
-                    XMLogging.WriteLine("[DPI] Fallback: Enabled SystemAware DPI awareness");
+                    Log.WriteLine("[DPI] Fallback: Enabled SystemAware DPI awareness");
                 }
                 catch
                 {
-                    XMLogging.WriteLine("[DPI] Warning: Could not enable DPI awareness");
+                    Log.WriteLine("[DPI] Warning: Could not enable DPI awareness");
                 }
             }
         }
@@ -631,7 +631,7 @@ namespace eft_dma_radar
             {
                 if (_cachedResult != null && DateTime.Now - _lastCheck < CacheTimeout)
                 {
-                    XMLogging.WriteLine("[VersionChecker] Using cached result");
+                    Log.WriteLine("[VersionChecker] Using cached result");
                     return _cachedResult;
                 }
 
@@ -666,7 +666,7 @@ namespace eft_dma_radar
             {
                 try
                 {
-                    XMLogging.WriteLine("[VersionChecker] Checking for updates via GitHub Releases API...");
+                    Log.WriteLine("[VersionChecker] Checking for updates via GitHub Releases API...");
 
                     var latestRelease = await GetLatestReleaseAsync(cancellationToken);
                     if (latestRelease == null)
@@ -693,7 +693,7 @@ namespace eft_dma_radar
 
                     var isOutdated = currentVersion < latestVersion;
 
-                    XMLogging.WriteLine($"[VersionChecker] Current: {GetCurrentVersionString()}, Latest: {latestRelease.TagName}, Outdated: {isOutdated}");
+                    Log.WriteLine($"[VersionChecker] Current: {GetCurrentVersionString()}, Latest: {latestRelease.TagName}, Outdated: {isOutdated}");
 
                     return new VersionCheckResult
                     {
@@ -707,7 +707,7 @@ namespace eft_dma_radar
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[VersionChecker] Error checking version: {ex.Message}");
+                    Log.WriteLine($"[VersionChecker] Error checking version: {ex.Message}");
                     return new VersionCheckResult
                     {
                         IsOutdated = false,
@@ -735,13 +735,13 @@ namespace eft_dma_radar
 
                     if (string.IsNullOrEmpty(tagName))
                     {
-                        XMLogging.WriteLine("[VersionChecker] No tag_name found in GitHub API response");
+                        Log.WriteLine("[VersionChecker] No tag_name found in GitHub API response");
                         return null;
                     }
 
                     if (isDraft)
                     {
-                        XMLogging.WriteLine("[VersionChecker] Latest release is a draft, skipping");
+                        Log.WriteLine("[VersionChecker] Latest release is a draft, skipping");
                         return null;
                     }
 
@@ -756,17 +756,17 @@ namespace eft_dma_radar
                 }
                 catch (HttpRequestException ex)
                 {
-                    XMLogging.WriteLine($"[VersionChecker] HTTP error: {ex.Message}");
+                    Log.WriteLine($"[VersionChecker] HTTP error: {ex.Message}");
                     return null;
                 }
                 catch (JsonException ex)
                 {
-                    XMLogging.WriteLine($"[VersionChecker] JSON parsing error: {ex.Message}");
+                    Log.WriteLine($"[VersionChecker] JSON parsing error: {ex.Message}");
                     return null;
                 }
                 catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    XMLogging.WriteLine("[VersionChecker] Request was cancelled");
+                    Log.WriteLine("[VersionChecker] Request was cancelled");
                     return null;
                 }
             }
@@ -833,7 +833,7 @@ namespace eft_dma_radar
             {
                 _cachedResult = null;
                 _lastCheck = DateTime.MinValue;
-                XMLogging.WriteLine("[VersionChecker] Version check cache cleared");
+                Log.WriteLine("[VersionChecker] Version check cache cleared");
             }
 
             /// <summary>

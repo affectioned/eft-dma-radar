@@ -40,7 +40,7 @@ namespace eft_dma_radar.Tarkov.Features
 
         private static void Worker()
         {
-            XMLogging.WriteLine("Features Thread Starting...");
+            Log.WriteLine("Features Thread Starting...");
 
             while (true)
             {
@@ -50,7 +50,7 @@ namespace eft_dma_radar.Tarkov.Features
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[Features Thread] CRITICAL ERROR: {ex}");
+                    Log.WriteLine($"[Features Thread] CRITICAL ERROR: {ex}");
                 }
             }
         }

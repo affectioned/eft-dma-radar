@@ -537,7 +537,7 @@ namespace eft_dma_radar.UI.ESP
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[ESPForm] Error closing ESP window: {ex}");
+                Log.WriteLine($"[ESPForm] Error closing ESP window: {ex}");
                 // Ensure we clean up even if there was an error
                 Window = null;
                 CameraManagerBase.EspRunning = false;
@@ -742,7 +742,7 @@ namespace eft_dma_radar.UI.ESP
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"ESP RENDER CRITICAL ERROR: {ex}");
+                Log.WriteLine($"ESP RENDER CRITICAL ERROR: {ex}");
             }
 
             // Skia auto-flushes on swap; explicit flush not needed
@@ -921,7 +921,7 @@ namespace eft_dma_radar.UI.ESP
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"ERROR Setting ESP Status Text: {ex}");
+                Log.WriteLine($"ERROR Setting ESP Status Text: {ex}");
             }
         }
 

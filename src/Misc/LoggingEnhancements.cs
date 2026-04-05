@@ -36,7 +36,7 @@ namespace eft_dma_radar.Common.Misc
                 _ => ""
             };
 
-            XMLogging.WriteLine($"{levelPrefix}{prefix}{message}");
+            eft_dma_radar.Common.Misc.Log.WriteLine($"{levelPrefix}{prefix}{message}");
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace eft_dma_radar.Common.Misc
                     // Only flush if old enough and repeated
                     if (count > 1 && now - firstTime >= threshold)
                     {
-                        XMLogging.WriteLine($"  └─ (repeated {count}x in {(now - firstTime).TotalSeconds:F1}s)");
+                        eft_dma_radar.Common.Misc.Log.WriteLine($"  └─ (repeated {count}x in {(now - firstTime).TotalSeconds:F1}s)");
                         _repeatedMessages.TryRemove(kvp.Key, out _);
                     }
                     else if (now - firstTime >= TimeSpan.FromMinutes(1))

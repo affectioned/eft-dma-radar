@@ -17,7 +17,6 @@ using HandyControl.Controls;
 using System.Drawing.Imaging.Effects;
 using eft_dma_radar.UI.Misc;
 using static eft_dma_radar.Tarkov.EFTPlayer.Player;
-using eft_dma_radar.Web.ProfileApi;
 
 namespace eft_dma_radar.Tarkov.Loot
 {
@@ -479,8 +478,6 @@ namespace eft_dma_radar.Tarkov.Loot
                         continue;
 
                     // Victim's own AccountId is embedded in the dogtag at 0x20.
-                    // Seed both victim and killer so stats can be fetched for either side.
-                    PlayerLookupApiClient.SeedFromDogtag(victimProfileId, victimAccountId, victimName);
 
                     lock (_sync)
                     {
@@ -500,10 +497,6 @@ namespace eft_dma_radar.Tarkov.Loot
                             profileId: killerProfileId,
                             nickname: killerName,
                             accountId: killerAccountId);
-
-                        // Killer's profileId + accountId are both present in the dogtag.
-                        // Seed the local registry so PlayerProfile can resolve stats.
-                        PlayerLookupApiClient.SeedFromDogtag(killerProfileId, killerAccountId, killerName);
 
                         string weapon = "UNKNOWN";
                         PlayerType side = PlayerType.Default;

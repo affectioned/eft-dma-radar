@@ -173,7 +173,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                Common.Misc.XMLogging.WriteLine($"[AimbotControl] Connect failed: {ex.Message}");
+                Common.Misc.Log.WriteLine($"[AimbotControl] Connect failed: {ex.Message}");
             }
             finally
             {

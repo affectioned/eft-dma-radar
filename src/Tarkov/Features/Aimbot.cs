@@ -67,7 +67,7 @@ namespace eft_dma_radar.Tarkov.Features
 
         private void Worker()
         {
-            XMLogging.WriteLine("[Aimbot] Thread started.");
+            Log.WriteLine("[Aimbot] Thread started.");
 
             while (true)
             {
@@ -131,7 +131,7 @@ namespace eft_dma_radar.Tarkov.Features
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[Aimbot] Error: {ex.Message}");
+                    Log.WriteLine($"[Aimbot] Error: {ex.Message}");
                     Thread.Sleep(250);
                 }
             }

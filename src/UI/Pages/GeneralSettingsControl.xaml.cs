@@ -20,7 +20,6 @@ using eft_dma_radar.Common.Misc.Data.EFT;
 using eft_dma_radar.UI.Controls;
 using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Common.Unity.LowLevel;
-using eft_dma_radar.Common.Unity.LowLevel.PhysX;
 using HandyControl.Controls;
 using HandyControl.Data;
 using HandyControl.Themes;
@@ -179,7 +178,7 @@ namespace eft_dma_radar.UI.Pages
                 }
                 catch (TimeoutException ex)
                 {
-                    XMLogging.WriteLine($"[PANELS] {ex.Message}");
+                    Log.WriteLine($"[PANELS] {ex.Message}");
                 }
             };
         }
@@ -294,11 +293,11 @@ namespace eft_dma_radar.UI.Pages
                                 throw new InvalidOperationException("Deserialized config is null");
                             }
 
-                            XMLogging.WriteLine("[Config] Configuration deserialized successfully");
+                            Log.WriteLine("[Config] Configuration deserialized successfully");
                         }
                         catch (Exception ex)
                         {
-                            XMLogging.WriteLine($"[Config] Failed to process configuration: {ex.Message}");
+                            Log.WriteLine($"[Config] Failed to process configuration: {ex.Message}");
                             throw new JsonException("Invalid configuration data in clipboard", ex);
                         }
                     });
@@ -315,7 +314,7 @@ namespace eft_dma_radar.UI.Pages
                     {
                         try
                         {
-                            XMLogging.WriteLine("[Config] Starting config import process...");
+                            Log.WriteLine("[Config] Starting config import process...");
 
                             var currentCache = Config.Cache;
                             var currentWebRadar = Config.WebRadar;
@@ -383,7 +382,7 @@ namespace eft_dma_radar.UI.Pages
                                         if (mainWindow.customToolbar != null)
                                             mainWindow.EnsurePanelInBounds(mainWindow.customToolbar, mainWindow.mainContentGrid);
 
-                                        XMLogging.WriteLine("[Config] Panel and toolbar positions applied and validated");
+                                        Log.WriteLine("[Config] Panel and toolbar positions applied and validated");
                                     };
                                     timer.Start();
                                 }
@@ -397,11 +396,11 @@ namespace eft_dma_radar.UI.Pages
 
                             Config.Save();
 
-                            XMLogging.WriteLine("[Config] Configuration imported successfully");
+                            Log.WriteLine("[Config] Configuration imported successfully");
                         }
                         catch (Exception ex)
                         {
-                            XMLogging.WriteLine($"[Config] Import error during config application: {ex}");
+                            Log.WriteLine($"[Config] Import error during config application: {ex}");
                             throw;
                         }
                     });
@@ -410,7 +409,7 @@ namespace eft_dma_radar.UI.Pages
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[Config] Import error: {ex}");
+                    Log.WriteLine($"[Config] Import error: {ex}");
                     NotificationsShared.Error($"[Config] Import error: {ex.Message}");
                 }
                 finally
@@ -421,7 +420,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Import error: {ex}");
+                Log.WriteLine($"[Config] Import error: {ex}");
                 NotificationsShared.Error($"[Config] Import error: {ex.Message}");
             }
         }
@@ -440,7 +439,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Error refreshing container data: {ex}");
+                Log.WriteLine($"[Config] Error refreshing container data: {ex}");
             }
         }
 
@@ -453,7 +452,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Error refreshing quest data: {ex}");
+                Log.WriteLine($"[Config] Error refreshing quest data: {ex}");
             }
         }
 
@@ -461,11 +460,11 @@ namespace eft_dma_radar.UI.Pages
         {
             try
             {
-                XMLogging.WriteLine("[Config] Feature instances updated successfully");
+                Log.WriteLine("[Config] Feature instances updated successfully");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Error updating feature instances: {ex}");
+                Log.WriteLine($"[Config] Error updating feature instances: {ex}");
             }
         }
         #endregion
@@ -858,7 +857,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine($"Updated widget option: {widgetName} = {isSelected}");
+            Log.WriteLine($"Updated widget option: {widgetName} = {isSelected}");
         }
 
         private void UpdateSpecificGeneralOption(string optionName, bool isSelected)
@@ -876,7 +875,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine($"Updated general option: {optionName} = {isSelected}");
+            Log.WriteLine($"Updated general option: {optionName} = {isSelected}");
         }
 
         private void LoadPlayerTypeSettings(string playerType)
@@ -957,7 +956,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine($"Saved player type settings for {playerType}");
+            Log.WriteLine($"Saved player type settings for {playerType}");
         }
 
         private void LoadEntityTypeSettings(string entityType)
@@ -1067,7 +1066,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine($"Saved entity type settings for {entityType}");
+            Log.WriteLine($"Saved entity type settings for {entityType}");
         }
 
         public void RefreshQuestHelper()
@@ -1228,18 +1227,18 @@ namespace eft_dma_radar.UI.Pages
 
         private void InitMonitors()
         {
-            XMLogging.WriteLine("[InitMonitors] Starting monitor initialization...");
+            Log.WriteLine("[InitMonitors] Starting monitor initialization...");
             if (!Memory.Ready)
             {
-                XMLogging.WriteLine("[ERROR] Memory or Game is null, cannot initialize monitors.");
+                Log.WriteLine("[ERROR] Memory or Game is null, cannot initialize monitors.");
                 return;
             }
 
             var gameRes = Memory.GetMonitorRes();
-            XMLogging.WriteLine($"[InitMonitors] Game resolution: {gameRes.Width}x{gameRes.Height}");
+            Log.WriteLine($"[InitMonitors] Game resolution: {gameRes.Width}x{gameRes.Height}");
 
             var monitors = MonitorHelper.GetAllMonitors();
-            XMLogging.WriteLine($"[InitMonitors] Found {monitors.Count} monitor(s).");
+            Log.WriteLine($"[InitMonitors] Found {monitors.Count} monitor(s).");
 
             cboMonitor.Items.Clear();
             var selectedIndex = 0;
@@ -1247,11 +1246,11 @@ namespace eft_dma_radar.UI.Pages
             for (int i = 0; i < monitors.Count; i++)
             {
                 var mon = monitors[i];
-                XMLogging.WriteLine($"[InitMonitors] Monitor {i + 1}: {mon.Bounds.Width}x{mon.Bounds.Height}");
+                Log.WriteLine($"[InitMonitors] Monitor {i + 1}: {mon.Bounds.Width}x{mon.Bounds.Height}");
 
                 var isGame = (int)mon.Bounds.Width == gameRes.Width && (int)mon.Bounds.Height == gameRes.Height;
                 if (isGame)
-                    XMLogging.WriteLine($"[InitMonitors] Monitor {i + 1} matches game resolution and will be selected.");
+                    Log.WriteLine($"[InitMonitors] Monitor {i + 1} matches game resolution and will be selected.");
 
                 var label = isGame ? $"Game Monitor ({mon.Bounds.Width}x{mon.Bounds.Height})"
                                    : $"Monitor {i + 1} ({mon.Bounds.Width}x{mon.Bounds.Height})";
@@ -1274,7 +1273,7 @@ namespace eft_dma_radar.UI.Pages
                 txtGameWidth.Text = monitors[selectedIndex].Bounds.Width.ToString();
                 txtGameHeight.Text = monitors[selectedIndex].Bounds.Height.ToString();
 
-                XMLogging.WriteLine($"[InitMonitors] Selected monitor index: {selectedIndex}");
+                Log.WriteLine($"[InitMonitors] Selected monitor index: {selectedIndex}");
             }
         }
 
@@ -1289,7 +1288,7 @@ namespace eft_dma_radar.UI.Pages
 
                 if (monitors == null || monitors.Count == 0)
                 {
-                    XMLogging.WriteLine("[UpdateMonitorWH] No monitors found");
+                    Log.WriteLine("[UpdateMonitorWH] No monitors found");
                     return;
                 }
 
@@ -1317,7 +1316,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[ERROR] UpdateMonitorWH: {ex.Message}");
+                Log.WriteLine($"[ERROR] UpdateMonitorWH: {ex.Message}");
             }
         }
 
@@ -1353,7 +1352,7 @@ namespace eft_dma_radar.UI.Pages
             {
                 var value = cbo.IsChecked == true;
 
-                XMLogging.WriteLine($"[Checkbox] {cbo.Name} changed to {value}");
+                Log.WriteLine($"[Checkbox] {cbo.Name} changed to {value}");
 
                 switch (tag)
                 {
@@ -1400,7 +1399,7 @@ namespace eft_dma_radar.UI.Pages
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("Saved Config");
+                Log.WriteLine("Saved Config");
             }
         }
 
@@ -1409,12 +1408,12 @@ namespace eft_dma_radar.UI.Pages
             if (sender is RadioButton rdb && rdb.Tag is string tag)
             {
                 var isChecked = rdb.IsChecked == true;
-                XMLogging.WriteLine($"[RadioButton] {rdb.Name} changed to {isChecked}");
+                Log.WriteLine($"[RadioButton] {rdb.Name} changed to {isChecked}");
 
                 if (isChecked)
                 {
                     Config.Save();
-                    XMLogging.WriteLine("Saved Config");
+                    Log.WriteLine("Saved Config");
                 }
             }
         }
@@ -1466,7 +1465,7 @@ namespace eft_dma_radar.UI.Pages
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("Saved Config");
+                Log.WriteLine("Saved Config");
             }
         }
 
@@ -1483,7 +1482,7 @@ namespace eft_dma_radar.UI.Pages
                 }
 
                 Config.Save();
-                XMLogging.WriteLine("[ComboBox] Selection changed and config saved.");
+                Log.WriteLine("[ComboBox] Selection changed and config saved.");
             }
         }
 
@@ -1611,7 +1610,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine("Saved widget settings");
+            Log.WriteLine("Saved widget settings");
         }
 
         private void generalOptionsCheckComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1639,7 +1638,7 @@ namespace eft_dma_radar.UI.Pages
             }
 
             Config.Save();
-            XMLogging.WriteLine("Saved general options settings");
+            Log.WriteLine("Saved general options settings");
         }
 
         private void cboPlayerType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2117,19 +2116,19 @@ namespace eft_dma_radar.UI.Pages
 
             var registeredCount = 0;
             var allHotkeys = GetAllHotkeys().ToList();
-            XMLogging.WriteLine($"[Hotkeys] Found {allHotkeys.Count} total hotkey entries in config");
+            Log.WriteLine($"[Hotkeys] Found {allHotkeys.Count} total hotkey entries in config");
             
             foreach (var (actionKey, entry) in allHotkeys)
             {
                 if (entry.Enabled && entry.Key != -1)
                 {
-                    XMLogging.WriteLine($"[Hotkeys] Registering: {actionKey} -> Key {entry.Key} (Mode: {entry.Mode})");
+                    Log.WriteLine($"[Hotkeys] Registering: {actionKey} -> Key {entry.Key} (Mode: {entry.Mode})");
                     var capturedActionKey = actionKey;
                     var capturedEntry = entry;
                     var actionName = $"{actionKey}_{DateTime.Now.Ticks}";
                     var actionId = InputManager.RegisterKeyAction(entry.Key, actionName, (sender, e) =>
                     {
-                        XMLogging.WriteLine($"[Hotkeys] Key event: {capturedActionKey} IsPressed={e.IsPressed}");
+                        Log.WriteLine($"[Hotkeys] Key event: {capturedActionKey} IsPressed={e.IsPressed}");
                         HandleHotkeyEvent(capturedActionKey, capturedEntry, e);
                     });
 
@@ -2141,11 +2140,11 @@ namespace eft_dma_radar.UI.Pages
                         _actionKeyMappings[actionKey].Add(actionId);
                         _actionIdToKeyMap[actionId] = actionKey;
                         registeredCount++;
-                        XMLogging.WriteLine($"[Hotkeys] OK Registered {actionKey} with actionId {actionId}");
+                        Log.WriteLine($"[Hotkeys] OK Registered {actionKey} with actionId {actionId}");
                     }
                     else
                     {
-                        XMLogging.WriteLine($"[Hotkeys] FAILED to register hotkey for {actionKey} (Key: {entry.Key})");
+                        Log.WriteLine($"[Hotkeys] FAILED to register hotkey for {actionKey} (Key: {entry.Key})");
                     }
                 }
             }
@@ -2175,7 +2174,7 @@ namespace eft_dma_radar.UI.Pages
 
         private void HandleHotkeyEvent(string actionKey, HotkeyEntry entry, InputManager.KeyEventArgs e)
         {
-            XMLogging.WriteLine($"[Hotkeys] HandleHotkeyEvent: {actionKey} IsPressed={e.IsPressed} Mode={entry.Mode}");
+            Log.WriteLine($"[Hotkeys] HandleHotkeyEvent: {actionKey} IsPressed={e.IsPressed} Mode={entry.Mode}");
 
             // For OnKey mode, key-release must always be processed to properly reset state.
             // Only apply cooldown to press events (or Toggle mode).
@@ -2186,7 +2185,7 @@ namespace eft_dma_radar.UI.Pages
                 var elapsed = (DateTime.UtcNow - lastTime).TotalMilliseconds;
                 if (elapsed < HOTKEY_COOLDOWN_MS)
                 {
-                    XMLogging.WriteLine($"[Hotkeys] Cooldown active for {actionKey} ({elapsed:F0}ms < {HOTKEY_COOLDOWN_MS}ms)");
+                    Log.WriteLine($"[Hotkeys] Cooldown active for {actionKey} ({elapsed:F0}ms < {HOTKEY_COOLDOWN_MS}ms)");
                     return;
                 }
             }
@@ -2199,7 +2198,7 @@ namespace eft_dma_radar.UI.Pages
                         var currentState = _toggleStates.GetValueOrDefault(actionKey);
                         var newState = !currentState;
                         _toggleStates[actionKey] = newState;
-                        XMLogging.WriteLine($"[Hotkeys] Toggle {actionKey}: {currentState} -> {newState}");
+                        Log.WriteLine($"[Hotkeys] Toggle {actionKey}: {currentState} -> {newState}");
 
                         Dispatcher.Invoke(() => ExecuteHotkeyAction(actionKey, newState));
                         _lastExecutionTime[actionKey] = DateTime.UtcNow;
@@ -2211,14 +2210,14 @@ namespace eft_dma_radar.UI.Pages
                     {
                         if (e.IsPressed)
                         {
-                            XMLogging.WriteLine($"[Hotkeys] OnKey (continuous) {actionKey}: true");
+                            Log.WriteLine($"[Hotkeys] OnKey (continuous) {actionKey}: true");
                             Dispatcher.Invoke(() => ExecuteHotkeyAction(actionKey, true));
                             _lastExecutionTime[actionKey] = DateTime.UtcNow;
                         }
                     }
                     else
                     {
-                        XMLogging.WriteLine($"[Hotkeys] OnKey {actionKey}: {e.IsPressed}");
+                        Log.WriteLine($"[Hotkeys] OnKey {actionKey}: {e.IsPressed}");
                         Dispatcher.Invoke(() => ExecuteHotkeyAction(actionKey, e.IsPressed));
                         _lastExecutionTime[actionKey] = DateTime.UtcNow;
                     }
@@ -2318,7 +2317,7 @@ namespace eft_dma_radar.UI.Pages
 
         private void LoadHotkeyActions()
         {
-            XMLogging.WriteLine("[HotkeyCombo] Loading available hotkey actions...");
+            Log.WriteLine("[HotkeyCombo] Loading available hotkey actions...");
 
             AvailableHotkeyActions.Clear();
 
@@ -2411,7 +2410,7 @@ namespace eft_dma_radar.UI.Pages
             {
                 #region Testing
                 //case nameof(HotkeyConfig.TestAction):
-                    //XMLogging.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
+                    //Log.WriteLine($"Test action executed! IsOffline: {Memory.IsOffline}");
                     //break;
                 //case nameof(HotkeyConfig.TestAction2):
                   // try
@@ -2510,14 +2509,14 @@ namespace eft_dma_radar.UI.Pages
                     Config.MemWrites.Aimbot.Enabled = isActive;
                     break;
                 case nameof(HotkeyConfig.EngageAimbot):
-                    XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageAimbot = {isActive}");
+                    Log.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageAimbot = {isActive}");
                     Aimbot.Engaged = isActive;
                     break;
                 case nameof(HotkeyConfig.EngageLTW):
                     // LootThroughWalls removed
                     break;
                 case nameof(HotkeyConfig.EngageTeammate):
-                    XMLogging.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
+                    Log.WriteLine($"[Hotkeys] ExecuteHotkeyAction: EngageTeammate = {isActive}");
                     TeammatesWorker.Engaged = isActive;
                     break;
                 case nameof(HotkeyConfig.ToggleAimbotMode):
@@ -2610,7 +2609,7 @@ namespace eft_dma_radar.UI.Pages
                 #endregion
 
                 default:
-                    XMLogging.WriteLine($"[Hotkey] No action defined for: {actionKey}");
+                    Log.WriteLine($"[Hotkey] No action defined for: {actionKey}");
                     break;
             }
         }
@@ -2829,7 +2828,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Error loading config: {ex}");
+                Log.WriteLine($"Error loading config: {ex}");
                 NotificationsShared.Error($"Error loading config: {ex.Message}");
             }
         }
@@ -2906,7 +2905,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Error applying new config: {ex}");
+                Log.WriteLine($"[Config] Error applying new config: {ex}");
                 MessageBox.Show($"Error applying configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -2929,7 +2928,7 @@ namespace eft_dma_radar.UI.Pages
 
                 Config.ConfigName = newConfigName;
                 Config.Filename = newConfigName + ".json";
-                XMLogging.WriteLine($"[Config] Creating new config: {Config.ConfigName}");
+                Log.WriteLine($"[Config] Creating new config: {Config.ConfigName}");
 
                 var saved = ConfigManager.SaveAsNewConfig(Config.Filename);
 
@@ -2965,7 +2964,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Error creating new config: {ex}");
+                Log.WriteLine($"[Config] Error creating new config: {ex}");
                 NotificationsShared.Error($"Error creating new config: {ex.Message}");
             }
         }
@@ -3040,11 +3039,11 @@ namespace eft_dma_radar.UI.Pages
                 Clipboard.SetText(jsonData);
 
                 NotificationsShared.Success("[Config] Configuration exported to clipboard successfully! (Cache and WebRadar settings excluded)");
-                XMLogging.WriteLine("[Config] Configuration exported to clipboard (excluding Cache and WebRadar)");
+                Log.WriteLine("[Config] Configuration exported to clipboard (excluding Cache and WebRadar)");
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Export error: {ex}");
+                Log.WriteLine($"[Config] Export error: {ex}");
                 NotificationsShared.Error($"[Config] Export error: {ex.Message}");
             }
         }
@@ -3138,7 +3137,7 @@ namespace eft_dma_radar.UI.Pages
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Config] Import error: {ex}");
+                Log.WriteLine($"[Config] Import error: {ex}");
                 NotificationsShared.Error($"[Config] Import error: {ex.Message}");
             }
             finally
@@ -3146,6 +3145,70 @@ namespace eft_dma_radar.UI.Pages
                 btnImportClipboard.IsEnabled = true;
             }
         }          
+        #endregion
+
+        #region Font Handlers
+        private void BtnUploadFont_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Select Font File",
+                    Filter = "Font Files (*.ttf;*.otf)|*.ttf;*.otf",
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var fontsDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fonts");
+                    System.IO.Directory.CreateDirectory(fontsDir);
+                    var destPath = System.IO.Path.Combine(fontsDir, System.IO.Path.GetFileName(dialog.FileName));
+                    System.IO.File.Copy(dialog.FileName, destPath, overwrite: true);
+                    Log.WriteLine($"[Font] Uploaded font: {destPath}");
+                    NotificationsShared.Info("Font uploaded. Restart required to apply.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.WriteLine($"[Font] Upload error: {ex.Message}");
+                NotificationsShared.Error($"Font upload failed: {ex.Message}");
+            }
+        }
+
+        private void BtnRemoveFont_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var fontsDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fonts");
+                if (!System.IO.Directory.Exists(fontsDir))
+                {
+                    NotificationsShared.Info("No custom fonts installed.");
+                    return;
+                }
+
+                var fonts = System.IO.Directory.GetFiles(fontsDir, "*.ttf")
+                    .Concat(System.IO.Directory.GetFiles(fontsDir, "*.otf"))
+                    .ToArray();
+
+                if (fonts.Length == 0)
+                {
+                    NotificationsShared.Info("No custom fonts to remove.");
+                    return;
+                }
+
+                foreach (var font in fonts)
+                    System.IO.File.Delete(font);
+
+                Log.WriteLine("[Font] Removed all custom fonts.");
+                NotificationsShared.Info("Custom fonts removed. Restart required to revert to default.");
+            }
+            catch (Exception ex)
+            {
+                Log.WriteLine($"[Font] Remove error: {ex.Message}");
+                NotificationsShared.Error($"Font removal failed: {ex.Message}");
+            }
+        }
         #endregion
     }
 }
