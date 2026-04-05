@@ -364,3 +364,5 @@ FodyWeavers.xsd
 /src/bin
 
 .planning/
+/src/.claude
+/.claude

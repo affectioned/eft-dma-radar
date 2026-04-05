@@ -6,7 +6,14 @@
       "WebFetch(domain:github.com)",
       "Bash(xargs grep:*)",
       "Bash(find C:UsersadminAppDataLocalGitHubEFT-DMA-Radarsrc -name *.cs -type f)",
-      "Bash(grep -r \"AimbotLocked\\\\|Aimbot.*class\\\\|class.*Aimbot\" C:UsersadminAppDataLocalGitHubEFT-DMA-Radarsrc --include=*.cs)"
+      "Bash(grep -r \"AimbotLocked\\\\|Aimbot.*class\\\\|class.*Aimbot\" C:UsersadminAppDataLocalGitHubEFT-DMA-Radarsrc --include=*.cs)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(grep -r \"QuestPlanner\\\\|HideoutStash\\\\|HideoutManager\\\\|WebRadar\\\\|ProfileApi\\\\|EFTProfileService\\\\|ApiKeyStore\\\\|ApiKeyWizard\" src/ --include=*.cs --include=*.xaml)",
+      "Bash(git commit:*)",
+      "Bash(dotnet build:*)",
+      "Bash(grep -oP 'src\\\\\\\\[^\\(]+\\\\.cs')"
     ]
   }
 }
