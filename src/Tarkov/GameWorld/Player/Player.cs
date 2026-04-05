@@ -128,11 +128,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                // Rate limit error messages - log each unique player base error only once per 5 seconds
+                // Rate limit error messages - log each unique player base error only once per 30 seconds.
+                // "Player class not ready" is normal during raid start while EFT initialises player objects.
                 Log.WriteRateLimited(
-                    AppLogLevel.Error,
+                    AppLogLevel.Warning,
                     $"player_alloc_{playerBase:X}",
-                    TimeSpan.FromSeconds(5),
+                    s_rateLimitInterval30s,
                     $"Player Allocation failed for 0x{playerBase:X}: {ex.Message}",
                     "Player");
                 return false;

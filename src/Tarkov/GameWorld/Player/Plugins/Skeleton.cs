@@ -472,8 +472,19 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         /// <returns>Box ESP Screen Coordinates.</returns>
         public SKRect? GetESPBox(SKPoint baseScreen)
         {
-            if (!CameraManagerBase.WorldToScreen(ref _bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position, out var topScreen, true, true))
-                return null;
+            SKPoint topScreen;
+            if (!CameraManagerBase.WorldToScreen(ref _bones[eft_dma_radar.Common.Unity.Bones.HumanHead].Position, out topScreen, true, true))
+            {
+                // Fall back to cached head position to prevent flickering when the bone
+                // temporarily reads as origin or goes slightly off-screen.
+                if (!_hasValidCache || !IsValid(_lastHead))
+                    return null;
+                topScreen = _lastHead;
+            }
+            else
+            {
+                _lastHead = topScreen;
+            }
 
             float height = Math.Abs(topScreen.Y - baseScreen.Y);
             float width = height / 2.05f;
