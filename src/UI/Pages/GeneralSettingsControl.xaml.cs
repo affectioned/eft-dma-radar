@@ -158,7 +158,6 @@ namespace eft_dma_radar.UI.Pages
                     expEntityInformation,
                     expMonitorSettings,
                     expQuestHelper,
-                    expWebRadar,
                     expPlayerColors,
                     expLootColors,
                     expOtherColors,
@@ -317,12 +316,10 @@ namespace eft_dma_radar.UI.Pages
                             Log.WriteLine("[Config] Starting config import process...");
 
                             var currentCache = Config.Cache;
-                            var currentWebRadar = Config.WebRadar;
 
                             Config.EnsureComplexObjectsInitialized(importedConfig);
 
                             importedConfig.Cache = currentCache;
-                            importedConfig.WebRadar = currentWebRadar;
 
                             Program.UpdateConfig(importedConfig);
 
@@ -634,14 +631,6 @@ namespace eft_dma_radar.UI.Pages
             chkKillZones.Checked += GeneralCheckbox_Checked;
             chkKillZones.Unchecked += GeneralCheckbox_Checked;
 
-            // Web Radar Server
-            btnWebRadarStart.Click += btnWebRadarStart_Click;
-            chkWebRadarUPnP.Checked += GeneralCheckbox_Checked;
-            chkWebRadarUPnP.Unchecked += GeneralCheckbox_Checked;
-            lblWebRadarLink.MouseLeftButtonUp += lblWebRadarLink_MouseLeftButtonUp;
-            txtWebRadarPort.TextChanged += GeneralTextbox_TextChanged;
-
-
         }
 
         private void LoadGeneralSettings()
@@ -663,9 +652,6 @@ namespace eft_dma_radar.UI.Pages
             chkOptionalTaskFilter.IsChecked = Config.QuestHelper.OptionalTaskFilter;
             chkKillZones.IsChecked = Config.QuestHelper.KillZones;
             RefreshQuestHelper();
-
-            // Web Radar Server
-            InitializeWebRadar();
 
             UpdateUIScale();
 
@@ -1114,23 +1100,6 @@ namespace eft_dma_radar.UI.Pages
                 });
             }
         }
-        private void InitializeWebRadar()
-        {
-            chkWebRadarUPnP.IsChecked = Config.WebRadar.UPnP;
-            txtWebRadarPort.Text = Config.WebRadar.Port;
-            // WebRadarServer removed
-            btnWebRadarStart.Content = "Start";
-            ToggleWebRadarControls(false);
-        }
-
-        private void ToggleWebRadarControls(bool enabled = false)
-        {
-            btnWebRadarStart.IsEnabled = true;
-            chkWebRadarUPnP.IsEnabled = enabled;
-            txtWebRadarPort.IsEnabled = enabled;
-
-        }
-
         private void ToggleMapSetup()
         {
             var cbo = chkMapSetup;
@@ -1393,9 +1362,6 @@ namespace eft_dma_radar.UI.Pages
                     case "KillZones":
                         Config.QuestHelper.KillZones = value;
                         break;
-                    case "UPnP":
-                        Config.WebRadar.UPnP = value;
-                        break;
                 }
 
                 Config.Save();
@@ -1455,12 +1421,6 @@ namespace eft_dma_radar.UI.Pages
                     case "GameHeight":
                         Config.MonitorHeight = intValue;
                         CameraManagerBase.UpdateViewportRes();
-                        break;
-                    case "WebRadarClientURL":
-                        Config.WebRadar.WebClientURL = text;
-                        break;
-                    case "WebRadarPort":
-                        Config.WebRadar.Port = text;
                         break;
                 }
 
@@ -1541,32 +1501,6 @@ namespace eft_dma_radar.UI.Pages
                 else
                     Config.QuestHelper.BlacklistedQuests.Add(id);
             }
-        }
-
-        private void lblWebRadarLink_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            var link = lblWebRadarLink.Text;
-
-            if (string.IsNullOrWhiteSpace(link))
-                return;
-
-            try
-            {
-                Process.Start(new ProcessStartInfo(link) { UseShellExecute = true });
-            }
-            catch { }
-        }
-
-        private void btnWebRadarStart_Click(object sender, RoutedEventArgs e)
-        {
-            // WebRadarServer removed
-            NotificationsShared.Warning("Web Radar feature has been removed.");
-        }
-
-        private void btnAutoDetectIP_Click(object sender, RoutedEventArgs e)
-        {
-            // WebRadarServer removed
-            NotificationsShared.Warning("Web Radar feature has been removed.");
         }
 
         private void btnRefreshMonitors_Click(object sender, RoutedEventArgs e)
@@ -3026,7 +2960,6 @@ namespace eft_dma_radar.UI.Pages
                 var configForExport = JsonSerializer.Deserialize<Config>(JsonSerializer.Serialize(Config));
                 if (configForExport is null) return;
                 configForExport.Cache = null;
-                configForExport.WebRadar = null;
 
                 var options = new JsonSerializerOptions
                 {
@@ -3038,8 +2971,8 @@ namespace eft_dma_radar.UI.Pages
                 var jsonData = JsonSerializer.Serialize(configForExport, options);
                 Clipboard.SetText(jsonData);
 
-                NotificationsShared.Success("[Config] Configuration exported to clipboard successfully! (Cache and WebRadar settings excluded)");
-                Log.WriteLine("[Config] Configuration exported to clipboard (excluding Cache and WebRadar)");
+                NotificationsShared.Success("[Config] Configuration exported to clipboard successfully! (Cache settings excluded)");
+                Log.WriteLine("[Config] Configuration exported to clipboard (excluding Cache)");
             }
             catch (Exception ex)
             {

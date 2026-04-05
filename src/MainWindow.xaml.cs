@@ -90,10 +90,6 @@ namespace eft_dma_radar
         private const int MIN_SETTINGS_PANEL_HEIGHT = 200;
         private const int MIN_SEARCH_SETTINGS_PANEL_WIDTH = 200;
         private const int MIN_SEARCH_SETTINGS_PANEL_HEIGHT = 200;
-        private const int MIN_QUEST_PLANNER_PANEL_WIDTH = 300;
-        private const int MIN_QUEST_PLANNER_PANEL_HEIGHT = 300;
-        private const int MIN_HIDEOUT_STASH_PANEL_WIDTH = 340;
-        private const int MIN_HIDEOUT_STASH_PANEL_HEIGHT = 240;
         private const int MIN_WATCHLIST_PANEL_WIDTH = 200;
         private const int MIN_WATCHLIST_PANEL_HEIGHT = 200;
         private const int MIN_PLAYERHISTORY_PANEL_WIDTH = 350;
@@ -104,7 +100,6 @@ namespace eft_dma_radar
         private volatile bool _uiInteractionActive = false;
         private DispatcherTimer _uiActivityTimer = null!;
         private bool _lastInRaidState = false;
-        private bool _wasQuestPlannerOpenBeforeRaid = false;
 
         private readonly Stopwatch _statusSw = Stopwatch.StartNew();
         private int _statusOrder = 1;
@@ -1041,7 +1036,6 @@ namespace eft_dma_radar
 
                     try
                     {
-                        UpdateQuestPlannerRaidState();
                         skCanvas.InvalidateVisual();
                     }
                     finally
@@ -1529,53 +1523,6 @@ namespace eft_dma_radar
             LootItem.ClearNotificationHistory();
         }
 
-        /// <summary>
-        /// Updates Quest Planner panel visibility and button state based on raid status.
-        /// Hides panel and disables button when in raid, re-enables when in lobby.
-        /// </summary>
-        private void UpdateQuestPlannerRaidState()
-        {
-            var inRaid = Memory.InRaid;
-
-            // Only process state transitions
-            if (inRaid == _lastInRaidState) return;
-            _lastInRaidState = inRaid;
-
-            if (inRaid)
-            {
-                // Entering raid - remember if panel was open, then hide it
-                if (_panels != null && _panels.TryGetValue("QuestPlanner", out var panelInfo))
-                {
-                    _wasQuestPlannerOpenBeforeRaid = panelInfo.Panel.Visibility == Visibility.Visible;
-                    if (_wasQuestPlannerOpenBeforeRaid)
-                    {
-                        SetPanelVisibility("QuestPlanner", false);
-                    }
-                }
-                btnQuestPlanner.IsEnabled = false;
-            }
-            else
-            {
-                // Leaving raid - re-enable button and restore panel if it was open
-                btnQuestPlanner.IsEnabled = true;
-                if (_wasQuestPlannerOpenBeforeRaid)
-                {
-                    SetPanelVisibility("QuestPlanner", true);
-                    _wasQuestPlannerOpenBeforeRaid = false;
-                }
-            }
-        }
-
-        private void btnQuestPlanner_Click(object sender, RoutedEventArgs e)
-        {
-            TogglePanelVisibility("QuestPlanner");
-        }
-
-        private void btnHideoutStash_Click(object sender, RoutedEventArgs e)
-        {
-            TogglePanelVisibility("HideoutStash");
-        }
-
         private void btnWatchlist_Click(object sender, RoutedEventArgs e)
         {
             TogglePanelVisibility("Watchlist");
@@ -1584,6 +1531,11 @@ namespace eft_dma_radar
         private void btnPlayerHistory_Click(object sender, RoutedEventArgs e)
         {
             TogglePanelVisibility("PlayerHistory");
+        }
+
+        private void btnAimbot_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePanelVisibility("Aimbot");
         }
 
         private void btnFreeMode_Click(object sender, RoutedEventArgs e)
@@ -2049,7 +2001,6 @@ namespace eft_dma_radar
                 "ESPPanel" => MIN_ESP_PANEL_WIDTH,
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_WIDTH,
                 "MapSetupPanel" => 300,
-                "QuestPlannerPanel" => MIN_QUEST_PLANNER_PANEL_WIDTH,
                 "WatchlistPanel" => MIN_WATCHLIST_PANEL_WIDTH,
                 "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_WIDTH,
                 _ => 200
@@ -2065,7 +2016,6 @@ namespace eft_dma_radar
                 "ESPPanel" => MIN_ESP_PANEL_HEIGHT,
                 "LootFilterPanel" => MIN_LOOT_FILTER_PANEL_HEIGHT,
                 "MapSetupPanel" => 300,
-                "QuestPlannerPanel" => MIN_QUEST_PLANNER_PANEL_HEIGHT,
                 "WatchlistPanel" => MIN_WATCHLIST_PANEL_HEIGHT,
                 "PlayerHistoryPanel" => MIN_PLAYERHISTORY_PANEL_HEIGHT,
                 _ => 200
@@ -2272,6 +2222,10 @@ namespace eft_dma_radar
             PlayerHistoryControl.DragRequested += sharedDragHandler;
             PlayerHistoryControl.ResizeRequested += sharedResizeHandler;
             PlayerHistoryControl.CloseRequested += sharedCloseHandler;
+
+            AimbotControl.DragRequested += sharedDragHandler;
+            AimbotControl.ResizeRequested += sharedResizeHandler;
+            AimbotControl.CloseRequested += sharedCloseHandler;
         }
 
         private void InitializePanelsCollection()
@@ -2285,7 +2239,8 @@ namespace eft_dma_radar
                 ["MapSetup"] = new PanelInfo(MapSetupPanel, MapSetupCanvas, "MapSetup", 300, 300),
                 ["SettingsSearch"] = new PanelInfo(SettingsSearchPanel, SettingsSearchCanvas, "SettingsSearch", MIN_SEARCH_SETTINGS_PANEL_WIDTH, MIN_SEARCH_SETTINGS_PANEL_HEIGHT),
                 ["Watchlist"] = new PanelInfo(WatchlistPanel, WatchlistCanvas, "Watchlist", MIN_WATCHLIST_PANEL_WIDTH, MIN_WATCHLIST_PANEL_HEIGHT),
-                ["PlayerHistory"] = new PanelInfo(PlayerHistoryPanel, PlayerHistoryCanvas, "PlayerHistory", MIN_PLAYERHISTORY_PANEL_WIDTH, MIN_PLAYERHISTORY_PANEL_HEIGHT)
+                ["PlayerHistory"] = new PanelInfo(PlayerHistoryPanel, PlayerHistoryCanvas, "PlayerHistory", MIN_PLAYERHISTORY_PANEL_WIDTH, MIN_PLAYERHISTORY_PANEL_HEIGHT),
+                ["Aimbot"] = new PanelInfo(AimbotPanel, AimbotCanvas, "Aimbot", 200, 200)
             };
         }
 

@@ -26,6 +26,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         private float _cachedHydration = 0f;
         private RateLimiter _energyHydrationRefreshLimit = new(TimeSpan.FromSeconds(3));
         private RateLimiter _energyHydrationErrLimit = new(TimeSpan.FromSeconds(30));
+        private RateLimiter _checkIfAdsErrLimit = new(TimeSpan.FromSeconds(5));
         private Action<ScatterReadIndex> _localRealtimeCallback;
 
         /// <summary>
@@ -213,7 +214,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                Log.WriteLine($"CheckIfADS() ERROR: {ex}");
+                if (_checkIfAdsErrLimit.TryEnter())
+                    Log.WriteLine($"CheckIfADS() ERROR: {ex.Message}");
                 return false;
             }
         }

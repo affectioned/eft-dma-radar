@@ -506,54 +506,6 @@
                                 </hc:SimpleStackPanel>
                             </Expander>
 
-                            <!-- Web Radar Section -->
-                            <Expander x:Name="expWebRadar" Header="Web Radar Server" Style="{StaticResource PanelExpander}" IsExpanded="True">
-                                <hc:SimpleStackPanel Style="{StaticResource ExpanderContent}" Margin="2,8,2,0">
-                                    <!-- Start Button, UPnP checkbox & Link URL Label-->
-                                    <Grid Margin="0,0,0,5">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <Button x:Name="btnWebRadarStart" Content="Start" Width="80" Height="28"
-                                                Style="{StaticResource ButtonPrimary}"/>
-
-                                        <CheckBox x:Name="chkWebRadarUPnP" Content="UPnP"  Tag="UPnP"
-                                                  Style="{StaticResource DynamicCheckBoxStyle}" Grid.Column="1" Margin="10,0,0,0" 
-                                                  VerticalAlignment="Center"/>
-
-                                        <TextBlock x:Name="lblWebRadarLink" Text="http://" Foreground="{DynamicResource InfoBrush}" 
-                                                   TextWrapping="Wrap" Margin="10,5,0,5" Grid.Column="2"
-                                                   Cursor="Hand" TextDecorations="Underline"/>
-                                    </Grid>
-
-                                    <!-- Bind IP & Port -->
-                                    <Grid Margin="0,8,0,5">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <!-- Port Label -->
-                                        <TextBlock Text="Port" Style="{StaticResource LabelText}" 
-                                                   VerticalAlignment="Center" Grid.Column="3" Grid.Row="0" Margin="15,0,5,0"/>
-
-                                        <!-- Port TextBox -->
-                                        <hc:TextBox x:Name="txtWebRadarPort" Width="80" Tag="WebRadarPort"
-                                                    Grid.Column="4" Grid.Row="0"
-                                                    hc:InfoElement.Placeholder="8080"/>
-                                    </Grid>
-                                </hc:SimpleStackPanel>
-                            </Expander>
 
                         </hc:SimpleStackPanel>
                     </ScrollViewer>

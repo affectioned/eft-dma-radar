@@ -10,7 +10,7 @@
         Title="EFT DMA Radar"
         ShowTitle="False"
         WindowStartupLocation="CenterScreen"
-        Height="720" 
+        Height="720"
         Width="1280"
         NonClientAreaHeight="32">
 
@@ -29,6 +29,7 @@
     <Grid>
         <Grid Name="mainContentGrid" Margin="0,0,0,0">
             <skia:SKGLElement x:Name="skCanvas"/>
+            <skia:SKElement x:Name="skCanvasCpu" Visibility="Collapsed"/>
         </Grid>
 
         <Canvas Name="ToolbarCanvas" Panel.ZIndex="1500">
@@ -56,7 +57,7 @@
 
                     <!--Debug button-->
                     <Button x:Name="btnDebug" Visibility="Collapsed"
-                            Style="{StaticResource ButtonIcon}" 
+                            Style="{StaticResource ButtonIcon}"
                             ToolTip="Debug/test functionality button"
                             Background="Transparent"
                             BorderThickness="0"
@@ -67,8 +68,8 @@
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnFreeMode" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnFreeMode"
+                            Style="{StaticResource ButtonIcon}"
                             ToolTip="Toggle Follow/Free Mode"
                             Background="Transparent"
                             BorderThickness="0"
@@ -79,8 +80,8 @@
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnLootSettings" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnLootSettings"
+                            Style="{StaticResource ButtonIcon}"
                             ToolTip="Opens the loot settings"
                             Background="Transparent"
                             BorderThickness="0"
@@ -92,8 +93,8 @@
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnLootFilter" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnLootFilter"
+                            Style="{StaticResource ButtonIcon}"
                             ToolTip="Opens the loot filter panel"
                             Background="Transparent"
                             BorderThickness="0"
@@ -104,8 +105,8 @@
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
 
-                    <Button x:Name="btnESPSettings" 
-                            Style="{StaticResource ButtonIcon}" 
+                    <Button x:Name="btnESPSettings"
+                            Style="{StaticResource ButtonIcon}"
                             ToolTip="Opens the chams/fuser esp configuration panel"
                             Background="Transparent"
                             BorderThickness="0"
@@ -114,8 +115,21 @@
                             hc:IconElement.Width="18"
                             hc:IconElement.Geometry="{StaticResource GlassesGeometry}" Click="btnESPSettings_Click"/>
 
+                    <Button x:Name="btnAimbot"
+                            Style="{StaticResource ButtonIcon}"
+                            ToolTip="Opens the aimbot configuration panel"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Width="32" Height="32"
+                            Padding="6"
+                            hc:IconElement.Width="18"
+                            hc:IconElement.Geometry="{StaticResource CrosshairGeometry}"
+                            Click="btnAimbot_Click"/>
+
+                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
+
                     <Button x:Name="btnGeneralSettings"
-                            Style="{StaticResource ButtonIcon}" 
+                            Style="{StaticResource ButtonIcon}"
                             ToolTip="Opens the general settings panel"
                             Background="Transparent"
                             BorderThickness="0"
@@ -152,30 +166,6 @@
                             Click="btnRestart_Click"/>
 
                     <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
-                    <Button x:Name="btnQuestPlanner"
-                            Style="{StaticResource ButtonIcon}"
-                            ToolTip="Opens the quest planner panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource MapGeometry}"
-                            Click="btnQuestPlanner_Click"/>
-
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
-                    <Button x:Name="btnHideoutStash"
-                            Style="{StaticResource ButtonIcon}"
-                            ToolTip="Opens the hideout stash value panel"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Width="32" Height="32"
-                            Padding="6"
-                            hc:IconElement.Width="18"
-                            hc:IconElement.Geometry="{StaticResource BoxGeometry}"
-                            Click="btnHideoutStash_Click"/>
-
-                    <Rectangle Width="1" Height="24" Fill="{DynamicResource BorderBrush}" Opacity="0.7" Margin="3,0"/>
                     <Button x:Name="btnWatchlist"
                             Style="{StaticResource ButtonIcon}"
                             ToolTip="Opens the player watchlist panel"
@@ -208,10 +198,10 @@
                 <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
             </Canvas.Resources>
 
-            <Border x:Name="GeneralSettingsPanel" 
+            <Border x:Name="GeneralSettingsPanel"
                     Width="340" Height="600"
                     Canvas.Left="700" Canvas.Top="50"
-                    CornerRadius="8" 
+                    CornerRadius="8"
                     Visibility="Collapsed"
                     Effect="{StaticResource PanelShadow}"
                     Background="Transparent"
@@ -226,15 +216,33 @@
                 <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
             </Canvas.Resources>
 
-            <Border x:Name="LootSettingsPanel" 
+            <Border x:Name="LootSettingsPanel"
                     Width="350" Height="450"
                     Canvas.Left="700" Canvas.Top="50"
-                    CornerRadius="8" 
+                    CornerRadius="8"
                     Visibility="Collapsed"
                     Effect="{StaticResource PanelShadow}"
                     Background="Transparent"
                     BorderThickness="0">
                 <local:LootSettingsControl x:Name="LootSettingsControl"/>
+            </Border>
+        </Canvas>
+
+        <!-- aimbot panel -->
+        <Canvas Name="AimbotCanvas" Panel.ZIndex="1000">
+            <Canvas.Resources>
+                <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
+            </Canvas.Resources>
+
+            <Border x:Name="AimbotPanel"
+                    Width="350" Height="550"
+                    Canvas.Left="650" Canvas.Top="70"
+                    CornerRadius="8"
+                    Visibility="Collapsed"
+                    Effect="{StaticResource PanelShadow}"
+                    Background="Transparent"
+                    BorderThickness="0">
+                <local:AimbotControl x:Name="AimbotControl"/>
             </Border>
         </Canvas>
 
@@ -244,10 +252,10 @@
                 <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
             </Canvas.Resources>
 
-            <Border x:Name="ESPPanel" 
+            <Border x:Name="ESPPanel"
                     Width="350" Height="550"
                     Canvas.Left="600" Canvas.Top="90"
-                    CornerRadius="8" 
+                    CornerRadius="8"
                     Visibility="Collapsed"
                     Effect="{StaticResource PanelShadow}"
                     Background="Transparent"
@@ -262,10 +270,10 @@
                 <DropShadowEffect x:Key="PanelShadow" BlurRadius="15" ShadowDepth="5" Direction="315" Color="Black" Opacity="0.5"/>
             </Canvas.Resources>
 
-            <Border x:Name="LootFilterPanel" 
+            <Border x:Name="LootFilterPanel"
                     Width="350" Height="450"
                     Canvas.Left="550" Canvas.Top="110"
-                    CornerRadius="8" 
+                    CornerRadius="8"
                     Visibility="Collapsed"
                     Effect="{StaticResource PanelShadow}"
                     Background="Transparent"
@@ -273,7 +281,7 @@
                 <local:LootFilterControl x:Name="LootFilterControl"/>
             </Border>
         </Canvas>
-        
+
         <!-- settings search panel -->
         <Canvas Name="SettingsSearchCanvas" Panel.ZIndex="1000">
           <Canvas.Resources>
@@ -290,7 +298,8 @@
                   BorderThickness="0">
             <local:SettingsSearchControl x:Name="SettingsSearchControl"/>
           </Border>
-        </Canvas>       
+        </Canvas>
+
         <!-- map setup panel -->
         <Canvas Name="MapSetupCanvas" Panel.ZIndex="1000">
             <Canvas.Resources>
@@ -318,7 +327,7 @@
             <Border x:Name="WatchlistPanel"
                     Width="350" Height="450"
                     Canvas.Left="550" Canvas.Top="110"
-                    CornerRadius="8" 
+                    CornerRadius="8"
                     Visibility="Collapsed"
                     Effect="{StaticResource PanelShadow}"
                     Background="Transparent"
@@ -336,7 +345,7 @@
             <Border x:Name="PlayerHistoryPanel"
                     Width="490" Height="200"
                     Canvas.Left="550" Canvas.Top="110"
-                    CornerRadius="8" 
+                    CornerRadius="8"
                     Visibility="Collapsed"
                     Effect="{StaticResource PanelShadow}"
                     Background="Transparent"

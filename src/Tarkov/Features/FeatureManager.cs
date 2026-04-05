@@ -7,6 +7,7 @@ using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.DMA.Features;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.Tarkov.EFTPlayer;
+using eft_dma_radar.Misc.Makcu;
 
 namespace eft_dma_radar.Tarkov.Features
 {
@@ -23,6 +24,18 @@ namespace eft_dma_radar.Tarkov.Features
 
         internal static void ModuleInit()
         {
+            // Force eager initialization of all feature singletons so they are
+            // registered in IFeature.AllFeatures before GameStarted fires.
+            _ = Aimbot.Instance;
+
+            // Auto-connect Makcu on startup if configured.
+            var aimbotCfg = (SharedProgram.Config as Config)?.Aimbot;
+            if (aimbotCfg?.AutoConnect == true && !string.IsNullOrWhiteSpace(aimbotCfg.MakcuPort))
+            {
+                try { MakcuManager.Connect(aimbotCfg.MakcuPort); }
+                catch (Exception ex) { Log.WriteLine($"[Makcu] Auto-connect failed: {ex.Message}"); }
+            }
+
             new Thread(Worker)
             {
                 IsBackground = true,

@@ -94,7 +94,13 @@
 			<SystemManagementDll Include="$(NuGetPackageRoot)system.management\9.0.0\runtimes\win\lib\net9.0\System.Management.dll" />
 		</ItemGroup>
 		<Copy SourceFiles="@(SystemManagementDll)" DestinationFolder="$(OutputPath)runtimes\win\lib\net9.0\" Condition="Exists('$(NuGetPackageRoot)system.management\9.0.0\runtimes\win\lib\net9.0\System.Management.dll')" />
-	</Target>
+	</Target>	
+	<ItemGroup>
+	  <Compile Remove="Tarkov\Unity\LowLevel\Hooks\**" />
+	  <EmbeddedResource Remove="Tarkov\Unity\LowLevel\Hooks\**" />
+	  <None Remove="Tarkov\Unity\LowLevel\Hooks\**" />
+	  <Page Remove="Tarkov\Unity\LowLevel\Hooks\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="VmmSharpEx" Version="3.200.12" />
@@ -102,7 +108,6 @@
 
 	<ItemGroup>
 	  <Folder Include="Misc\MessagePack\ESPServerMessagePack\" />
-	  <Folder Include="Tarkov\Unity\LowLevel\Hooks\" />
 	</ItemGroup>
 
 </Project>

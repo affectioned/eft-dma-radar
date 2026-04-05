@@ -20,17 +20,24 @@ These were intentionally removed from the fork. Upstream may re-add them — alw
 ### Memory writes
 - Delete `src/Tarkov/Features/MemoryWrites/` and anything named `*MemWrite*` or `*MemoryWrite*`
 - Delete `src/UI/Pages/MemoryWritingControl.xaml` and `.xaml.cs`
-- Delete `IMemWriteFeature.cs`, `MemWriteFeature.cs`
+- Delete `IMemWriteFeature.cs`, `MemWriteFeature.cs`, `ScatterWriteHandle.cs`
 - `Config.Aimbot` must be a direct `[JsonInclude]` property — never `=> MemWrites.Aimbot`
+- Remove `MemWritesConfig` class and `Config.MemWrites` property entirely from `Config.cs`
+- Remove any "Memory Writing" tab/button from the toolbar and all panels
 
 ### WebRadar
 - Delete `src/Web/WebRadar/` and anything named `*WebRadar*`
+- Remove "Web Radar Server" expander from `GeneralSettingsControl.xaml`
+- Remove all `btnWebRadarStart`, `chkWebRadarUPnP`, `lblWebRadarLink`, `txtWebRadarPort` event handlers from `GeneralSettingsControl.xaml.cs`
 
 ### HideoutStash / HideoutManager
 - Delete `src/Tarkov/Hideout/`, `HideoutStashControl.xaml/.cs`, `StashDogtagDumper.cs`
+- Remove `btnHideoutStash` toolbar button from `MainWindow.xaml`
 
 ### QuestPlanner
 - Delete `src/Tarkov/QuestPlanner/`
+- Remove `btnQuestPlanner` toolbar button from `MainWindow.xaml`
+- Remove `UpdateQuestPlannerRaidState()` and related fields from `MainWindow.xaml.cs`
 
 ---
 
@@ -45,6 +52,32 @@ These are fork-specific. If upstream deletes them (UD conflict), use `git add` t
 | `src/UI/Pages/AimbotControl.xaml` + `.cs` | Aimbot settings UI |
 | `.github/workflows/release.yml` | CI/CD pipeline |
 | `README.md` | Fork-specific readme — always revert to our version after cherry-picking |
+
+### Aimbot toolbar tab wiring (must survive every merge)
+
+After any merge, verify all three pieces are present or restore them:
+
+1. **`MainWindow.xaml`** — toolbar button and panel canvas:
+   ```xml
+   <Button x:Name="btnAimbot" ... hc:IconElement.Geometry="{StaticResource CrosshairGeometry}" Click="btnAimbot_Click"/>
+   ```
+   ```xml
+   <Canvas Name="AimbotCanvas" Panel.ZIndex="1000">
+       <Border x:Name="AimbotPanel" Width="350" Height="450" ...>
+           <local:AimbotControl x:Name="AimbotControl"/>
+       </Border>
+   </Canvas>
+   ```
+
+2. **`MainWindow.xaml.cs`** — `_panels` registration and click handler:
+   ```csharp
+   ["Aimbot"] = new PanelInfo(AimbotPanel, AimbotCanvas, "Aimbot", 200, 200)
+   ```
+   ```csharp
+   private void btnAimbot_Click(object sender, RoutedEventArgs e) => TogglePanelVisibility("Aimbot");
+   ```
+
+3. **`src/UI/Resources/IconResources.xaml`** — `CrosshairGeometry` key must exist.
 
 ---
 
@@ -81,3 +114,6 @@ Run after any upstream cherry-pick or sync:
 6. `src/Misc/Makcu/` → must contain MakcuDevice.cs, MakcuManager.cs, MakcuNative.cs
 7. `AimbotConfig` in `Config.cs` → must have `MakcuPort` and `FovDegrees`, not `TargetingMode`
 8. `Config.Aimbot` → must be a direct property, not a shortcut to `MemWrites.Aimbot`
+9. `MainWindow.xaml` → must have `btnAimbot` toolbar button and `AimbotCanvas`/`AimbotPanel` with `<local:AimbotControl>`
+10. `MainWindow.xaml.cs` → `_panels` must contain `["Aimbot"]` entry and `btnAimbot_Click` handler must exist
+11. `MainWindow.xaml` → must NOT have `btnQuestPlanner` or `btnHideoutStash` toolbar buttons
