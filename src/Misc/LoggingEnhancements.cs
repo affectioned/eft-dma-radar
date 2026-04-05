@@ -3,17 +3,6 @@ using System.Collections.Concurrent;
 namespace eft_dma_radar.Common.Misc
 {
     /// <summary>
-    /// Log severity levels for application logging
-    /// </summary>
-    public enum AppLogLevel
-    {
-        Debug,    // Detailed diagnostic info
-        Info,     // General informational messages
-        Warning,  // Warnings that don't prevent operation
-        Error     // Errors that may affect functionality
-    }
-
-    /// <summary>
     /// Enhanced logging utilities with rate limiting and log levels
     /// </summary>
     public static class LoggingEnhancements
