@@ -1,4 +1,4 @@
-﻿﻿using eft_dma_radar.Tarkov.EFTPlayer;
+﻿using eft_dma_radar.Tarkov.EFTPlayer;
 using eft_dma_radar.UI.Misc;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity.LowLevel;
@@ -72,7 +72,7 @@ namespace eft_dma_radar.UI.Pages
                 }
                 catch (TimeoutException ex)
                 {
-                    XMLogging.WriteLine($"[PANELS] {ex.Message}");
+                    Log.WriteLine($"[PANELS] {ex.Message}");
                 }
             };
         }
@@ -293,7 +293,7 @@ namespace eft_dma_radar.UI.Pages
                 catch (Exception ex)
                 {
                     NotificationsShared.Error($"Error adding to watchlist: {ex.Message}");
-                    XMLogging.WriteLine($"[PlayerHistory] Error adding to watchlist: {ex}");
+                    Log.WriteLine($"[PlayerHistory] Error adding to watchlist: {ex}");
                 }
             }
             else
@@ -320,12 +320,12 @@ namespace eft_dma_radar.UI.Pages
                     UseShellExecute = true
                 });
 
-                XMLogging.WriteLine($"[PlayerHistory] Opening profile for player ID: {playerId}");
+                Log.WriteLine($"[PlayerHistory] Opening profile for player ID: {playerId}");
             }
             catch (Exception ex)
             {
                 NotificationsShared.Error($"Error opening player profile: {ex.Message}");
-                XMLogging.WriteLine($"[PlayerHistory] Error opening player profile: {ex}");
+                Log.WriteLine($"[PlayerHistory] Error opening player profile: {ex}");
             }
         }
 
@@ -351,7 +351,8 @@ namespace eft_dma_radar.UI.Pages
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.Invoke(() => {
+                Dispatcher.Invoke(() =>
+                {
                     RefreshDataGrid();
                     RefreshSorting();
                 });
@@ -416,7 +417,7 @@ namespace eft_dma_radar.UI.Pages
                 catch (Exception ex)
                 {
                     NotificationsShared.Error($"Error removing entry: {ex.Message}");
-                    XMLogging.WriteLine($"[PlayerHistory] Error removing entry: {ex}");
+                    Log.WriteLine($"[PlayerHistory] Error removing entry: {ex}");
                 }
             }
         }
@@ -437,7 +438,7 @@ namespace eft_dma_radar.UI.Pages
             catch (Exception ex)
             {
                 NotificationsShared.Error($"Error clearing history: {ex.Message}");
-                XMLogging.WriteLine($"[PlayerHistory] Error clearing history: {ex}");
+                Log.WriteLine($"[PlayerHistory] Error clearing history: {ex}");
             }
         }
         #endregion

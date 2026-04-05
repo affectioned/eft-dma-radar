@@ -1,4 +1,4 @@
-using eft_dma_radar.Common.Misc;
+﻿using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 
 using eft_dma_radar.Common.DMA;
@@ -24,8 +24,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         private float _cachedEnergy = 0f;
         private float _cachedHydration = 0f;
-        private DateTime _lastEnergyHydrationRead = DateTime.MinValue;
-        private readonly TimeSpan _energyHydrationCacheTime = TimeSpan.FromSeconds(3);
+        private RateLimiter _energyHydrationRefreshLimit = new(TimeSpan.FromSeconds(3));
+        private RateLimiter _energyHydrationErrLimit = new(TimeSpan.FromSeconds(30));
+        private Action<ScatterReadIndex> _localRealtimeCallback;
 
         /// <summary>
         /// ValueStruct layout for reading Current/Maximum health values (IL2CPP).
@@ -81,19 +82,19 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             if (IsPmc)
             {
                 try
-            {
-                var entryPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.EntryPoint);
-                EntryPoint = Memory.ReadUnityString(entryPtr);
+                {
+                    var entryPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.EntryPoint);
+                    EntryPoint = Memory.ReadUnityString(entryPtr);
                 }
                 catch { }
             }
             else if (IsScav)
             {
                 try
-            {
-                var profileIdPtr = Memory.ReadPtr(this.Profile + Offsets.Profile.Id);
-                ProfileId = Memory.ReadUnityString(profileIdPtr);
-            }
+                {
+                    var profileIdPtr = Memory.ReadPtr(this.Profile + Offsets.Profile.Id);
+                    ProfileId = Memory.ReadUnityString(profileIdPtr);
+                }
                 catch { }
             }
 
@@ -119,25 +120,25 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 _healthController = Memory.ReadPtr(Base + Offsets.Player._healthController, false);
                 if (!_healthController.IsValidVirtualAddress())
                 {
-                    LoggingEnhancements.Log(AppLogLevel.Warning, "HealthController address invalid", "LocalPlayer");
+                    Log.Write(AppLogLevel.Warning, "HealthController address invalid", "LocalPlayer");
                     return;
                 }
 
                 _energyPtr = Memory.ReadPtr(_healthController + Offsets.HealthController.Energy, false);
                 _hydrationPtr = Memory.ReadPtr(_healthController + Offsets.HealthController.Hydration, false);
-                
+
                 if (_energyPtr.IsValidVirtualAddress() && _hydrationPtr.IsValidVirtualAddress())
                 {
-                    LoggingEnhancements.Log(AppLogLevel.Debug, $"Health pointers initialized: Energy=0x{_energyPtr:X}, Hydration=0x{_hydrationPtr:X}", "LocalPlayer");
+                    Log.Write(AppLogLevel.Debug, $"Health pointers initialized: Energy=0x{_energyPtr:X}, Hydration=0x{_hydrationPtr:X}", "LocalPlayer");
                 }
                 else
                 {
-                    LoggingEnhancements.Log(AppLogLevel.Warning, "Energy/Hydration pointers invalid", "LocalPlayer");
+                    Log.Write(AppLogLevel.Warning, "Energy/Hydration pointers invalid", "LocalPlayer");
                 }
             }
             catch (Exception ex)
             {
-                LoggingEnhancements.Log(AppLogLevel.Error, $"Failed to initialize health pointers: {ex.Message}", "LocalPlayer");
+                Log.Write(AppLogLevel.Error, $"Failed to initialize health pointers: {ex.Message}", "LocalPlayer");
             }
         }
 
@@ -174,16 +175,19 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             index.AddEntry<MemPointer>(-10, this.MovementContext + Offsets.MovementContext.CurrentState);
             index.AddEntry<MemPointer>(-11, this.HandsControllerAddr);
-            index.Callbacks += x1 =>
-            {
-                if (x1.TryGetResult<MemPointer>(-10, out var currentState))
-                    ILocalPlayer.PlayerState = currentState;
-                if (x1.TryGetResult<MemPointer>(-11, out var handsController))
-                    ILocalPlayer.HandsController = handsController;
-            };
+            _localRealtimeCallback ??= LocalRealtimeCallback;
+            index.Callbacks += _localRealtimeCallback;
             Firearm.OnRealtimeLoop(index);
             //explosives.OnRealtimeLoop(_scatterIndex);
             base.OnRealtimeLoop(index);
+        }
+
+        private void LocalRealtimeCallback(ScatterReadIndex x1)
+        {
+            if (x1.TryGetResult<MemPointer>(-10, out var currentState))
+                ILocalPlayer.PlayerState = currentState;
+            if (x1.TryGetResult<MemPointer>(-11, out var handsController))
+                ILocalPlayer.HandsController = handsController;
         }
 
         /// <summary>
@@ -209,7 +213,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CheckIfADS() ERROR: {ex}");
+                Log.WriteLine($"CheckIfADS() ERROR: {ex}");
                 return false;
             }
         }
@@ -225,14 +229,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (_energyPtr == 0)
                     return 100f; // Default if not available
 
-                if (DateTime.UtcNow - _lastEnergyHydrationRead >= _energyHydrationCacheTime)
+                if (_energyHydrationRefreshLimit.TryEnter())
                     UpdateEnergyHydrationCache();
 
                 return _cachedEnergy;
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"GetEnergy() ERROR: {ex}");
+                Log.WriteLine($"GetEnergy() ERROR: {ex}");
                 return _cachedEnergy;
             }
         }
@@ -248,14 +252,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (_hydrationPtr == 0)
                     return 100f; // Default if not available
 
-                if (DateTime.UtcNow - _lastEnergyHydrationRead >= _energyHydrationCacheTime)
+                if (_energyHydrationRefreshLimit.TryEnter())
                     UpdateEnergyHydrationCache();
 
                 return _cachedHydration;
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"GetHydration() ERROR: {ex}");
+                Log.WriteLine($"GetHydration() ERROR: {ex}");
                 return _cachedHydration;
             }
         }
@@ -281,17 +285,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 _cachedEnergy = energyStruct.Current;
                 _cachedHydration = hydrationStruct.Current;
-                _lastEnergyHydrationRead = DateTime.UtcNow;
             }
             catch (Exception ex)
             {
                 // Rate limit this error message
-                LoggingEnhancements.LogRateLimited(
-                    AppLogLevel.Error,
-                    "update_energy_hydration",
-                    TimeSpan.FromSeconds(30),
-                    $"UpdateEnergyHydrationCache failed: {ex.Message}",
-                    "LocalPlayer");
+                if (_energyHydrationErrLimit.TryEnter())
+                    Log.Write(AppLogLevel.Error,
+                        $"UpdateEnergyHydrationCache failed: {ex.Message}",
+                        "LocalPlayer");
             }
         }
     }

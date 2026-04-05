@@ -15,9 +15,9 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                 var data = await TarkovDevCore.QueryTarkovDevAsync();
                 var result = new TarkovMarketData()
                 {
-                    Items   = ParseMarketData(data),
-                    Tasks   = data.Data.Tasks,
-                    Maps    = ParseMapsData(data),
+                    Items = ParseMarketData(data),
+                    Tasks = data.Data.Tasks,
+                    Maps = ParseMapsData(data),
                     Traders = data.Data.Traders
                         ?.Where(t => !string.IsNullOrEmpty(t.Id) && !string.IsNullOrEmpty(t.Name))
                         .Select(t => new OutgoingTrader { Id = t.Id, Name = t.Name })
@@ -27,7 +27,7 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"{nameof(TarkovMarketJob)} [FAIL]: {ex}");
+                Log.WriteLine($"{nameof(TarkovMarketJob)} [FAIL]: {ex}");
                 throw;
             }
         }
@@ -57,7 +57,7 @@ namespace eft_dma_radar.Common.Misc.Data.TarkovMarket
                     ImageLink = item.ImageLink,
                     Caliber = item.Properties?.Caliber
                 });
-                
+
             }
             foreach (var questItem in data.Data.QuestItems)
             {

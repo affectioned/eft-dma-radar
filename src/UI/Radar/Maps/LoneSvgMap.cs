@@ -133,14 +133,18 @@ namespace eft_dma_radar.Common.Maps
         /// Map parameters for WPF map view.
         /// </summary>
         public XMMapParams GetParameters(SKGLElement element, int zoom, ref Vector2 localPlayerMapPos)
+            => GetParameters(element.CanvasSize, zoom, ref localPlayerMapPos);
+
+        /// <summary>
+        /// Map parameters for WPF map view (CPU / RDP fallback path).
+        /// </summary>
+        public XMMapParams GetParameters(SKSize canvasSize, int zoom, ref Vector2 localPlayerMapPos)
         {
             zoom = Math.Clamp(zoom, 1, 800);
 
             float zoomMul = 0.01f * zoom;
             float zoomWidth = _mapWidth * zoomMul;
             float zoomHeight = _mapHeight * zoomMul;
-
-            var canvasSize = element.CanvasSize;
 
             var bounds = new SKRect(
                 localPlayerMapPos.X - zoomWidth * 0.5f,

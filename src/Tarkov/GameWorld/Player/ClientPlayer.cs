@@ -79,8 +79,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         }
         private Skeleton _skeleton;
         private bool _skeletonFailed;
-        public override int VoipId { get; }   
-        
+        public override int VoipId { get; }
+
         private static int ParseVoipId(ulong baseAddr)
         {
             try
@@ -99,7 +99,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 return -1;
             }
-        }            
+        }
         internal ClientPlayer(ulong playerBase) : base(playerBase)
         {
             Profile = Memory.ReadPtr(this + Offsets.Player.Profile);
@@ -129,8 +129,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (isAI)
                 {
                     IsHuman = false;
-                        Name = "AI";
-                        Type = PlayerType.AIScav;
+                    Name = "AI";
+                    Type = PlayerType.AIScav;
                 }
                 else
                 {
@@ -185,14 +185,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             catch (Exception ex)
             {
                 _skeletonFailed = true;
-                XMLogging.WriteLine($"[Skeleton] LocalPlayer not ready yet: {ex.Message}");
+                Log.WriteLine($"[Skeleton] LocalPlayer not ready yet: {ex.Message}");
             }
         }
         public override void OnRealtimeLoop(ScatterReadIndex index)
         {
             _skeletonFailed = false; // allow retry
             base.OnRealtimeLoop(index);
-        }        
+        }
         /// <summary>
         /// Gets player's Group Number.
         /// </summary>

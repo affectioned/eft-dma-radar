@@ -15,6 +15,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
         private static readonly uint[] _toSyncObjects = [Offsets.GameWorld.SynchronizableObjectLogicProcessor, Offsets.SynchronizableObjectLogicProcessor._activeSynchronizableObjects];
         private readonly ulong _localGameWorld = localGameWorld;
         private readonly ConcurrentDictionary<ulong, IExplosiveItem> _explosives = new();
+        private readonly List<ulong> _expiredKeys = new();
         private ulong _grenadesBase;
 
         private void Init()
@@ -33,7 +34,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
             {
                 // just to see if this is even firing
                 // NOTE: comment out later if too spammy
-                // XMLogging.WriteLine($"[EXP-RTL] Refresh start. Count={_explosives.Count}");
+                // Log.WriteLine($"[EXP-RTL] Refresh start. Count={_explosives.Count}");
 
                 // ─────────────────────────────────────────────────────
                 // 1) Fast path: update ALL existing explosives with scatter
@@ -55,14 +56,14 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                         }
                         catch (Exception ex)
                         {
-                            XMLogging.WriteLine($"[EXP-RTL] QueueScatterReads error for 0x{explosive.Addr:X}: {ex}");
+                            Log.WriteLine($"[EXP-RTL] QueueScatterReads error for 0x{explosive.Addr:X}: {ex}");
                         }
                     }
 
                     // If nobody actually queued anything, DO NOT call scatter
                     if (idx.EntryCount > 0)
                     {
-                        //XMLogging.WriteLine($"[EXP-RTL] Scatter executing. Entries={idx.EntryCount}");
+                        //Log.WriteLine($"[EXP-RTL] Scatter executing. Entries={idx.EntryCount}");
 
                         try
                         {
@@ -70,7 +71,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                         }
                         catch (Exception)
                         {
-                            //XMLogging.WriteLine($"[EXP-RTL] Scatter Execute error");
+                            //Log.WriteLine($"[EXP-RTL] Scatter Execute error");
                         }
 
                         // Apply results
@@ -82,21 +83,22 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                             }
                             catch (Exception)
                             {
-                                //XMLogging.WriteLine($"[EXP-RTL] OnRefresh error for 0x{explosive.Addr:X}");
+                                //Log.WriteLine($"[EXP-RTL] OnRefresh error for 0x{explosive.Addr:X}");
                             }
                         }
                     }
                     else
                     {
-                        //XMLogging.WriteLine("[EXP-RTL] Scatter skipped (no entries queued).");
+                        //Log.WriteLine("[EXP-RTL] Scatter skipped (no entries queued).");
                     }
 
                     // Cleanup inactive / expired explosives
-                    foreach (var kv in _explosives.ToArray())
-                    {
+                    _expiredKeys.Clear();
+                    foreach (var kv in _explosives)
                         if (!kv.Value.IsActive)
-                            _explosives.TryRemove(kv.Key, out _);
-                    }
+                            _expiredKeys.Add(kv.Key);
+                    foreach (var key in _expiredKeys)
+                        _explosives.TryRemove(key, out _);
                 }
 
                 // ─────────────────────────────────────────────────────
@@ -107,7 +109,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                 GetTripwires();
                 GetMortarProjectiles();
 
-                // XMLogging.WriteLine($"[EXP-RTL] Refresh end. Count={_explosives.Count}");
+                // Log.WriteLine($"[EXP-RTL] Refresh end. Count={_explosives.Count}");
             }
             catch (ObjectDisposedException)
             {
@@ -115,7 +117,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[EXP-RTL] Refresh error: {ex}");
+                Log.WriteLine($"[EXP-RTL] Refresh error: {ex}");
             }
         }
 
@@ -144,13 +146,13 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                         {
                             var grenade = new Grenade(grenadeAddr, _explosives);
                             _explosives[grenade] = grenade;
-                            // XMLogging.WriteLine($"[EXP-RTL] New grenade @ 0x{grenadeAddr:X}");
+                            // Log.WriteLine($"[EXP-RTL] New grenade @ 0x{grenadeAddr:X}");
                         }
                     }
                     catch (Exception)
                     {
                         // Silently skip invalid grenades to reduce log spam
-                        // XMLogging.WriteLine($"[EXP-RTL] Grenade create error @ 0x{grenadeAddr:X}");
+                        // Log.WriteLine($"[EXP-RTL] Grenade create error @ 0x{grenadeAddr:X}");
                     }
                 }
             }
@@ -162,7 +164,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
             catch (Exception ex)
             {
                 _grenadesBase = 0x0;
-                XMLogging.WriteLine($"Grenades Error: {ex}");
+                Log.WriteLine($"Grenades Error: {ex}");
             }
         }
 
@@ -180,7 +182,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                     try
                     {
                         var type = (Enums.SynchronizableObjectType)Memory.ReadValue<int>(syncObject + Offsets.SynchronizableObject.Type);
-                        //XMLogging.WriteLine($"Type: {type}");
+                        //Log.WriteLine($"Type: {type}");
                         if (type is not Enums.SynchronizableObjectType.Tripwire)
                             continue;
                         if (!_explosives.ContainsKey(syncObject))
@@ -191,7 +193,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                     }
                     catch (Exception ex)
                     {
-                        XMLogging.WriteLine($"Error Processing SyncObject @ 0x{syncObject:X}: {ex}");
+                        Log.WriteLine($"Error Processing SyncObject @ 0x{syncObject:X}: {ex}");
                     }
                 }
             }
@@ -201,7 +203,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Sync Objects Error: {ex}");
+                Log.WriteLine($"Sync Objects Error: {ex}");
             }
         }
 
@@ -237,12 +239,12 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
                         {
                             var mortarProjectile = new MortarProjectile(activeProjectile.Value, _explosives);
                             _explosives[mortarProjectile] = mortarProjectile;
-                            // XMLogging.WriteLine($"[EXP-RTL] New mortar @ 0x{activeProjectile.Value:X}");
+                            // Log.WriteLine($"[EXP-RTL] New mortar @ 0x{activeProjectile.Value:X}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        XMLogging.WriteLine($"Error Processing Mortar Projectile @ 0x{activeProjectile.Value:X}: {ex}");
+                        Log.WriteLine($"Error Processing Mortar Projectile @ 0x{activeProjectile.Value:X}: {ex}");
                     }
                 }
             }
@@ -252,7 +254,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Mortar Projectiles Error: {ex}");
+                Log.WriteLine($"Mortar Projectiles Error: {ex}");
             }
         }
 

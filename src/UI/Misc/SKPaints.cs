@@ -109,7 +109,7 @@ namespace eft_dma_radar.UI.Misc
             Style = SKPaintStyle.Stroke,
             IsAntialias = true,
         };
-                
+
         public static SKPaint TextMouseoverGroup { get; } = new()
         {
             Color = SKColors.LawnGreen,
@@ -603,7 +603,7 @@ namespace eft_dma_radar.UI.Misc
             IsAntialias = true,
         };
 
-        public static SKPaint PaintMiniWeapons{ get; } = new()
+        public static SKPaint PaintMiniWeapons { get; } = new()
         {
             Color = SKColor.Parse("ffa756"),
             StrokeWidth = 0.25f,
@@ -785,7 +785,7 @@ namespace eft_dma_radar.UI.Misc
             IsAntialias = true,
         };
 
-        public static SKPaint PaintDoorInteracting{ get; } = new()
+        public static SKPaint PaintDoorInteracting { get; } = new()
         {
             Color = SKColors.Blue,
             StrokeWidth = 0.25f,
@@ -843,7 +843,7 @@ namespace eft_dma_radar.UI.Misc
             IsAntialias = true,
         };
 
-        public static SKPaint TextExfilClosed{ get; } = new()
+        public static SKPaint TextExfilClosed { get; } = new()
         {
             Color = SKColors.Red,
             IsStroke = false,

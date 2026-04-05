@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -70,9 +71,29 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// </summary>
         private static ulong _lastDisposedBase;
 
+        /// <summary>
+        /// When set, <see cref="Dispose"/> will NOT record <see cref="Base"/> into
+        /// <see cref="_lastDisposedBase"/>.  This allows a user-initiated restart
+        /// to re-detect the same (still-live) GameWorld.
+        /// Accessed via <see cref="Interlocked"/>.
+        /// </summary>
+        private static int _suppressStaleGuard;
+
         private bool _disposed;
         private bool _raidStarted;
         private int _mapCheckTick;
+        private readonly List<Player> _realtimeScratch = new(128);
+        private readonly List<Player> _validateScratch = new(128);
+
+        // Pre-allocated TimeSpans to avoid per-tick allocations in hot paths
+        private static readonly TimeSpan s_rateLimitInterval1ms = TimeSpan.FromMilliseconds(1);
+        private static readonly TimeSpan s_miscSleepTarget = TimeSpan.FromMilliseconds(50);
+        private static readonly TimeSpan s_grenadeSleepTarget = TimeSpan.FromMilliseconds(10);
+        private static readonly TimeSpan s_fastSleepTarget = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan s_interactablesSleepTarget = TimeSpan.FromMilliseconds(750);
+        // Static rate limiters for loop-wide exceptions (shared across all raid instances)
+        private static RateLimiter s_realtimeLoopExLimit = new(TimeSpan.FromSeconds(10));
+        private static RateLimiter s_validateLoopExLimit = new(TimeSpan.FromSeconds(10));
 
         public bool InRaid => !_disposed;
         public IReadOnlyCollection<Player> Players => _rgtPlayers;
@@ -84,6 +105,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
         public QuestManager QuestManager { get; private set; }
 
         public CameraManager CameraManager { get; private set; }
+        private long _cameraRetryAfter;
 
         /// <summary>
         /// True if raid instance is still active, and safe to Write Memory.
@@ -112,12 +134,24 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
         private static void Memory_GameStopped(object sender, EventArgs e)
         {
-            Interlocked.Exchange(ref _lastDisposedBase, 0); // Game process exited � all addresses are invalid
+            Interlocked.Exchange(ref _lastDisposedBase, 0); // Game process exited — all addresses are invalid
             LevelSettings = 0;
             MatchingProgress = 0;
             LevelSettingsResolver.Reset();
             MatchingProgressResolver.Reset();
             Il2CppClass.ForceReset();      // <?? REQUIRED
+        }
+
+        /// <summary>
+        /// Clears the stale GameWorld address guard and suppresses the next
+        /// <see cref="Dispose"/> from re-recording it.
+        /// Call this when the user explicitly requests a radar restart so the
+        /// same (still-live) GameWorld can be re-detected by <see cref="CreateGameInstance"/>.
+        /// </summary>
+        public static void ClearStaleGuard()
+        {
+            Interlocked.Exchange(ref _suppressStaleGuard, 1);
+            Interlocked.Exchange(ref _lastDisposedBase, 0);
         }
 
         /// <summary>
@@ -131,6 +165,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
 
             // Reset static assets for a new raid/game.
             Player.Reset();
+
+            // Delay camera resolution by 20s from raid start.
+            // EFT's CameraManager.Instance is not available until well after raid begins.
+            _cameraRetryAfter = Environment.TickCount64 + 20_000;
         }
 
         /// <summary>
@@ -139,16 +177,17 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// </summary>
         private void WaitForRaidReady(CancellationToken ct)
         {
-            XMLogging.WriteLine("[Raid] Waiting for raid to be fully ready...");
+            Log.WriteLine("[Raid] Waiting for raid to be fully ready...");
 
             // Camera resolution is handled lazily by RefreshCameraManager() in FastWorker.
             // Loading times vary, so we don't block on camera here.
 
-            XMLogging.WriteLine("[Raid] Waiting for LocalPlayer to be fully in raid...");
+            Log.WriteLine("[Raid] Waiting for LocalPlayer to be fully in raid...");
 
             // Phase 2: Wait for LocalPlayer to be valid (RegisteredPlayers list populated)
             const int maxPlayerAttempts = 60; // 30 seconds max wait
             int attempts = 0;
+            bool alreadyMidRaid = false;
             while (attempts++ < maxPlayerAttempts)
             {
                 ct.ThrowIfCancellationRequested();
@@ -157,27 +196,54 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     if (IsLocalPlayerInRaid())
                     {
-                        XMLogging.WriteLine("[Raid] LocalPlayer confirmed in raid!");
+                        Log.WriteLine("[Raid] LocalPlayer confirmed in raid!");
+                        // attempts == 1 means we succeeded on the very first try with no sleep,
+                        // i.e. the radar was launched / restarted while already mid-raid.
+                        alreadyMidRaid = attempts == 1;
                         break;
                     }
                 }
                 catch (Exception ex)
                 {
                     if (attempts % 10 == 0)
-                        XMLogging.WriteLine($"[Raid] Waiting... ({ex.Message})");
+                        Log.WriteLine($"[Raid] Waiting... ({ex.Message})");
                 }
 
                 ct.WaitHandle.WaitOne(500);
             }
 
             if (attempts >= maxPlayerAttempts)
-                XMLogging.WriteLine("[Raid] Timeout waiting for raid confirmation, proceeding anyway...");
+                Log.WriteLine("[Raid] Timeout waiting for raid confirmation, proceeding anyway...");
 
-            InitializeGameData(ct);
-            XMLogging.WriteLine("[Raid] Waiting for real raid start...");
+            // When launched or restarted mid-raid the camera is already initialised by EFT,
+            // so skip the 20 s initial delay and let RefreshCameraManager attempt immediately.
+            if (alreadyMidRaid)
+            {
+                _cameraRetryAfter = 0;
+                Log.WriteLine("[Raid] Mid-raid entry detected, skipping camera init delay.");
+            }
+
+            const int maxInitAttempts = 10;
+            for (int initAttempt = 1; initAttempt <= maxInitAttempts; initAttempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    InitializeGameData(ct);
+                    break;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (initAttempt < maxInitAttempts)
+                {
+                    Log.WriteLine($"[Raid] Game data init attempt {initAttempt}/{maxInitAttempts} failed ({ex.Message}), retrying in 3s...");
+                    ct.WaitHandle.WaitOne(3000);
+                }
+            }
+
+            Log.WriteLine("[Raid] Waiting for real raid start...");
 
             if (IsInRealRaid())
-                XMLogging.WriteLine("[Raid] Raid fully active!");
+                Log.WriteLine("[Raid] Raid fully active!");
         }
 
         /// <summary>
@@ -209,7 +275,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (firstPlayer == 0 || !firstPlayer.IsValidVirtualAddress())
                 return false;
 
-            XMLogging.WriteLine($"[Raid] RegisteredPlayers validated: {playerCount} player(s)");
+            Log.WriteLine($"[Raid] RegisteredPlayers validated: {playerCount} player(s)");
             return true;
         }
 
@@ -219,7 +285,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// </summary>
         private void InitializeGameData(CancellationToken ct)
         {
-            XMLogging.WriteLine("[Raid] Initializing game data...");
+            Log.WriteLine("[Raid] Initializing game data...");
 
             var rgtPlayersAddr = Memory.ReadPtr(Base + Offsets.ClientLocalGameWorld.RegisteredPlayers, false);
             _rgtPlayers = new RegisteredPlayers(rgtPlayersAddr, this);
@@ -229,11 +295,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             _lootManager = new LootManager(Base, ct);
             _exfilManager = new ExitManager(Base, _rgtPlayers.LocalPlayer.IsPmc);
             _grenadeManager = new ExplosivesManager(Base);
-            XMLogging.WriteLine($"[WorldInteractablesManager] Calling from LocalGameWorld: 0x{Base:X}");
+            Log.WriteLine($"[WorldInteractablesManager] Calling from LocalGameWorld: 0x{Base:X}");
             _worldInteractablesManager = new WorldInteractablesManager(Base);
 
-            XMLogging.WriteLine("[Raid] Game data initialized successfully!");
-
+            Log.WriteLine("[Raid] Game data initialized successfully!");
         }
 
         /// <summary>
@@ -302,23 +367,23 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     if (instance.Base == Interlocked.Read(ref _lastDisposedBase))
                         throw new InvalidOperationException("GameWorld not found");
 
-                    // Accepted � this is a genuinely new GameWorld instance.
+                    // Accepted — this is a genuinely new GameWorld instance.
                     Interlocked.Exchange(ref _lastDisposedBase, 0);
 
                     // Assign MatchingProgress from cache (may already be resolved)
                     if (MatchingProgressResolver.TryGetCached(out var mp) && mp.IsValidVirtualAddress())
                     {
                         MatchingProgress = mp;
-                        XMLogging.WriteLine($"[IL2CPP] MatchingProgress assigned @ 0x{mp:X}");
+                        Log.WriteLine($"[IL2CPP] MatchingProgress assigned @ 0x{mp:X}");
                     }
 
-                    // Matching phase is over � stop the stage poller and freeze the timer
+                    // Matching phase is over — stop the stage poller and freeze the timer
                     MatchingProgressResolver.NotifyRaidStarted();
 
                     // Phase 2: Wait for raid to be ready, then initialize game data
                     instance.WaitForRaidReady(ct);
 
-                    XMLogging.WriteLine("Raid has started!");
+                    Log.WriteLine("Raid has started!");
                     return instance;
                 }
                 catch (OperationCanceledException)
@@ -327,7 +392,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"ERROR Instantiating Game Instance: {ex.InnerException?.Message ?? ex.Message}");
+                    Log.WriteLine($"ERROR Instantiating Game Instance: {ex.InnerException?.Message ?? ex.Message}");
                 }
                 finally
                 {
@@ -348,46 +413,46 @@ namespace eft_dma_radar.Tarkov.GameWorld
         private static LocalGameWorld GetLocalGameWorld(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-        
+
             try
             {
                 // Use IL2CPP GameObjectManager to find GameWorld (Mono is deprecated)
                 var gomAddress = Memory.GOM;
                 if (!gomAddress.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid GOM address");
-        
+
                 // Find GameWorld via IL2CPP GOM iteration with parallel search
                 var localGameWorld = GameWorldExtensions.GetGameWorld(gomAddress, ct, out string map);
                 if (!localGameWorld.IsValidVirtualAddress())
                     throw new InvalidOperationException("Invalid LocalGameWorld address");
-        
-                // ?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��
+
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
                 // OFFLINE / ONLINE detection (cheap)
-                // ?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
                 try
                 {
                     ulong classNamePtr = Memory.ReadPtrChain(
                         localGameWorld,
                         UnityOffsets.Component.To_NativeClassName,
                         useCache: false);
-        
+
                     string className = Memory.ReadString(classNamePtr, 64, useCache: false);
-        
+
                     IsOffline = className.Equals(
                         "ClientLocalGameWorld",
                         StringComparison.OrdinalIgnoreCase);
-        
-                    XMLogging.WriteLine($"[IL2CPP] Raid Mode: {(IsOffline ? "OFFLINE" : "ONLINE")}");
+
+                    Log.WriteLine($"[IL2CPP] Raid Mode: {(IsOffline ? "OFFLINE" : "ONLINE")}");
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[IL2CPP] Could not detect offline mode: {ex.Message}");
+                    Log.WriteLine($"[IL2CPP] Could not detect offline mode: {ex.Message}");
                     IsOffline = false;
                 }
-        
-                // ?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��
-                // LEVEL SETTINGS ��C non-blocking
-                // ?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��?��
+
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
+                // LEVEL SETTINGS ¡§C non-blocking
+                // ?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è?¡è
                 try
                 {
                     // 1) Fast path: use cached value if we already resolved it
@@ -398,10 +463,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     }
                     else
                     {
-                        // 2) No cached value yet ��C schedule a background resolve.
+                        // 2) No cached value yet ¡§C schedule a background resolve.
                         //    Do NOT block the game / raid init thread here.
                         LevelSettings = 0;
-        
+
                         ThreadPool.QueueUserWorkItem(_ =>
                         {
                             try
@@ -410,19 +475,19 @@ namespace eft_dma_radar.Tarkov.GameWorld
                                 if (ls.IsValidVirtualAddress())
                                 {
                                     LevelSettings = ls;
-                                    XMLogging.WriteLine($"[IL2CPP] LevelSettings resolved async @ 0x{ls:X}");
+                                    Log.WriteLine($"[IL2CPP] LevelSettings resolved async @ 0x{ls:X}");
                                 }
                             }
                             catch (Exception ex2)
                             {
-                                XMLogging.WriteLine($"[IL2CPP] Async LevelSettings resolve failed: {ex2.Message}");
+                                Log.WriteLine($"[IL2CPP] Async LevelSettings resolve failed: {ex2.Message}");
                             }
                         });
                     }
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[IL2CPP] LevelSettings resolution error: {ex.Message}");
+                    Log.WriteLine($"[IL2CPP] LevelSettings resolution error: {ex.Message}");
                     LevelSettings = 0;
                 }
 
@@ -459,7 +524,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             catch (RaidEnded)
             {
                 NotificationsShared.Info("Raid has ended!");
-                XMLogging.WriteLine("Raid has ended!");
+                Log.WriteLine("Raid has ended!");
                 LootFilterControl.RemoveNonStaticGroups();
                 LootItem.ClearNotificationHistory();
                 LevelSettingsResolver.Reset();
@@ -472,7 +537,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR - Raid ended due to unhandled exception: {ex}");
+                Log.WriteLine($"CRITICAL ERROR - Raid ended due to unhandled exception: {ex}");
                 LootFilterControl.RemoveNonStaticGroups();
                 LootItem.ClearNotificationHistory();
                 throw;
@@ -500,7 +565,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     if (now < _nextAllowed)
                     {
                         var waitMs = (int)(_nextAllowed - now).TotalMilliseconds;
-                        XMLogging.WriteLine($"[RaidCooldown] Waiting {waitMs} ms before next raid init...");
+                        Log.WriteLine($"[RaidCooldown] Waiting {waitMs} ms before next raid init...");
                         Monitor.Exit(_lock);
                         try
                         {
@@ -532,7 +597,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 Thread.Sleep(10); // short delay between attempts
             }
 
-            // Definitively over � clean up once then signal
+            // Definitively over — clean up once then signal
             LevelSettings = 0;
             MatchingProgress = 0;
             LevelSettingsResolver.Reset();
@@ -561,7 +626,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 if (_rgtPlayers.GetPlayerCount() <= 0)
                     return false;
 
-                // 3) Map transition detection ��C but not on every single call
+                // 3) Map transition detection ¡§C but not on every single call
                 if ((_mapCheckTick++ & 0x3F) == 0) // every 64 calls
                 {
                     var currentMapId = GetCurrentMapId();
@@ -569,7 +634,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         !string.IsNullOrEmpty(MapID) &&
                         !string.Equals(currentMapId, MapID, StringComparison.Ordinal))
                     {
-                        XMLogging.WriteLine($"[Raid] Map changed: '{MapID}' -> '{currentMapId}'. Marking raid as ended.");
+                        Log.WriteLine($"[Raid] Map changed: '{MapID}' -> '{currentMapId}'. Marking raid as ended.");
                         return false;
                     }
                 }
@@ -628,14 +693,14 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 var local = LocalPlayer; // from this LocalGameWorld
                 if (local is null)
                 {
-                    XMLogging.WriteLine("Not Fully in raid yet (no LocalPlayer)...");
+                    Log.WriteLine("Not Fully in raid yet (no LocalPlayer)...");
                     return false;
                 }
 
                 ulong handsController = local.Firearm.HandsController.Item1;
                 if (!Utils.IsValidVirtualAddress(handsController))
                 {
-                    XMLogging.WriteLine("Not Fully in raid yet (hands controller invalid)...");
+                    Log.WriteLine("Not Fully in raid yet (hands controller invalid)...");
                     return false;
                 }
 
@@ -643,35 +708,6 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     _raidStarted = true;
 
-                    // Fire feature hooks async so we don't block the caller
-                    Task.Run(() =>
-                    {
-                        foreach (var feature in IFeature.AllFeatures)
-                        {
-                            try
-                            {
-                                feature.OnRaidStart();
-                            }
-                            catch (Exception ex)
-                            {
-                                XMLogging.WriteLine($"[Raid] OnRaidStart error in {feature.GetType().Name}: {ex}");
-                            }
-                        }
-                        foreach (var player in Memory.Players)
-                        {
-                            if(player is null)
-                                continue;
-                            try
-                            {
-                                // Profile lookup removed
-                            }
-                            catch (Exception ex)
-                            {
-                                XMLogging.WriteLine($"[Raid] OnRaidStart error in Player {player}: {ex}");
-                            }
-                        }
-                        XMLogging.WriteLine("[Raid] Raid fully active, all features notified.");
-                    });
                 }
 
                 return true;
@@ -694,13 +730,13 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (_disposed) return;
             try
             {
-                XMLogging.WriteLine("Realtime thread starting...");
+                Log.WriteLine("Realtime thread starting...");
                 while (InRaid)
                 {
                     if (Memory.IsDisposed) { Dispose(); break; }
                     if (Config.RatelimitRealtimeReads || !CameraManagerBase.EspRunning)
                     {
-                        _refreshWait.AutoWait(TimeSpan.FromMilliseconds(1), 1000);
+                        _refreshWait.AutoWait(s_rateLimitInterval1ms, 1000);
                     }
 
                     ct.ThrowIfCancellationRequested();
@@ -716,12 +752,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR on Realtime Thread: {ex}");
+                Log.WriteLine($"CRITICAL ERROR on Realtime Thread: {ex}");
                 Dispose(); // Game object is in a corrupted state --> Dispose
             }
             finally
             {
-                XMLogging.WriteLine("Realtime thread stopping...");
+                Log.WriteLine("Realtime thread stopping...");
             }
         }
 
@@ -733,16 +769,16 @@ namespace eft_dma_radar.Tarkov.GameWorld
             try
             {
                 var localPlayer = LocalPlayer;
-                int playerCount = 0;
 
-                // Count active+alive players first (single pass)
+                // Single pass: collect active+alive players into pre-allocated scratch list
+                _realtimeScratch.Clear();
                 foreach (var p in _rgtPlayers)
                 {
                     if (p.IsActive && p.IsAlive)
-                        playerCount++;
+                        _realtimeScratch.Add(p);
                 }
 
-                if (playerCount == 0)
+                if (_realtimeScratch.Count == 0)
                 {
                     Thread.Sleep(1);
                     return;
@@ -755,11 +791,21 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     cm.OnRealtimeLoop(round1[-1], localPlayer);
                 }
 
-                int i = 0;
-                foreach (var player in _rgtPlayers)
+                var count = _realtimeScratch.Count;
+                for (int i = 0; i < count; i++)
                 {
-                    if (player.IsActive && player.IsAlive)
-                        player.OnRealtimeLoop(round1[i++]);
+                    var p = _realtimeScratch[i];
+                    try
+                    {
+                        p.OnRealtimeLoop(round1[i]);
+                    }
+                    catch (NullReferenceException nre)
+                    {
+                        if (p.RealtimeNreLimit.TryEnter())
+                            Log.Write(AppLogLevel.Warning,
+                                $"[{p.Name} @ 0x{p.Base:X}] OnRealtimeLoop NRE (transient allocation race): {nre.Message}",
+                                "RealtimeLoop");
+                    }
                 }
 
                 scatterMap.Execute(); // Execute scatter read
@@ -770,7 +816,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR - UpdatePlayers Loop FAILED: {ex}");
+                if (s_realtimeLoopExLimit.TryEnter())
+                    Log.Write(AppLogLevel.Warning,
+                        $"UpdatePlayers Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
+                        "RealtimeLoop");
             }
         }
 
@@ -786,13 +835,18 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (_disposed) return;
             try
             {
-                XMLogging.WriteLine("Misc thread starting...");
+                Log.WriteLine("Misc thread starting...");
                 while (InRaid)
                 {
                     if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
+                    long start = Stopwatch.GetTimestamp();
                     UpdateMisc();
-                    Thread.Sleep(50);
+                    // Dynamic sleep: target 50ms total cycle time (subtract work duration)
+                    var elapsed = Stopwatch.GetElapsedTime(start);
+                    var remaining = s_miscSleepTarget - elapsed;
+                    if (remaining > TimeSpan.Zero)
+                        Thread.Sleep(remaining);
                 }
             }
             catch (OperationCanceledException)
@@ -804,12 +858,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR on Misc Thread: {ex}");
+                Log.WriteLine($"CRITICAL ERROR on Misc Thread: {ex}");
                 Dispose(); // Game object is in a corrupted state --> Dispose
             }
             finally
             {
-                XMLogging.WriteLine("Misc thread stopping...");
+                Log.WriteLine("Misc thread stopping...");
             }
         }
 
@@ -834,7 +888,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[Wishlist] ERROR Refreshing: {ex}");
+                    Log.WriteLine($"[Wishlist] ERROR Refreshing: {ex}");
                 }
             }
 
@@ -857,7 +911,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[QuestManager] CRITICAL ERROR: {ex}");
+                    Log.WriteLine($"[QuestManager] CRITICAL ERROR: {ex}");
                 }
             }
         }
@@ -884,25 +938,33 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             try
             {
-                int playerCount = 0;
+                // Single pass: collect eligible players into pre-allocated scratch list
+                _validateScratch.Clear();
                 foreach (var p in _rgtPlayers)
                 {
                     if (p.IsActive && p.IsAlive && p is not BtrOperator)
-                        playerCount++;
+                        _validateScratch.Add(p);
                 }
 
-                if (playerCount > 0)
+                if (_validateScratch.Count > 0)
                 {
                     using var scatterMap = ScatterReadMap.Get();
                     var round1 = scatterMap.AddRound();
                     var round2 = scatterMap.AddRound();
-                    int i = 0;
-                    foreach (var player in _rgtPlayers)
+                    var count = _validateScratch.Count;
+                    for (int i = 0; i < count; i++)
                     {
-                        if (player.IsActive && player.IsAlive && player is not BtrOperator)
+                        var p = _validateScratch[i];
+                        try
                         {
-                            player.OnValidateTransforms(round1[i], round2[i]);
-                            i++;
+                            p.OnValidateTransforms(round1[i], round2[i]);
+                        }
+                        catch (NullReferenceException nre)
+                        {
+                            if (p.ValidateNreLimit.TryEnter())
+                                Log.Write(AppLogLevel.Warning,
+                                    $"[{p.Name} @ 0x{p.Base:X}] OnValidateTransforms NRE (transient allocation race): {nre.Message}",
+                                    "ValidateTransforms");
                         }
                     }
                     scatterMap.Execute(); // execute scatter read
@@ -914,7 +976,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR - ValidatePlayerTransforms Loop FAILED: {ex}");
+                if (s_validateLoopExLimit.TryEnter())
+                    Log.Write(AppLogLevel.Warning,
+                        $"ValidatePlayerTransforms Loop FAILED: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}",
+                        "ValidateTransforms");
             }
         }
 
@@ -930,13 +995,16 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (_disposed) return;
             try
             {
-                XMLogging.WriteLine("Grenades thread starting...");
+                Log.WriteLine("Grenades thread starting...");
                 while (InRaid)
                 {
                     if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
+                    long start = Stopwatch.GetTimestamp();
                     _grenadeManager.Refresh();
-                    Thread.Sleep(10);
+                    var remaining = s_grenadeSleepTarget - Stopwatch.GetElapsedTime(start);
+                    if (remaining > TimeSpan.Zero)
+                        Thread.Sleep(remaining);
                 }
             }
             catch (OperationCanceledException)
@@ -948,12 +1016,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR on Grenades Thread: {ex}");
+                Log.WriteLine($"CRITICAL ERROR on Grenades Thread: {ex}");
                 Dispose(); // Game object is in a corrupted state --> Dispose
             }
             finally
             {
-                XMLogging.WriteLine("Grenades thread stopping...");
+                Log.WriteLine("Grenades thread stopping...");
             }
         }
 
@@ -970,14 +1038,17 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (_disposed) return;
             try
             {
-                XMLogging.WriteLine("FastWorker thread starting...");
+                Log.WriteLine("FastWorker thread starting...");
                 while (InRaid)
                 {
                     if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
+                    long start = Stopwatch.GetTimestamp();
                     RefreshCameraManager();
                     RefreshFast();
-                    Thread.Sleep(100);
+                    var remaining = s_fastSleepTarget - Stopwatch.GetElapsedTime(start);
+                    if (remaining > TimeSpan.Zero)
+                        Thread.Sleep(remaining);
                 }
             }
             catch (OperationCanceledException)
@@ -989,12 +1060,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR on FastWorker Thread: {ex}");
+                Log.WriteLine($"CRITICAL ERROR on FastWorker Thread: {ex}");
                 Dispose(); // Game object is in a corrupted state --> Dispose
             }
             finally
             {
-                XMLogging.WriteLine("FastWorker thread stopping...");
+                Log.WriteLine("FastWorker thread stopping...");
             }
         }
 
@@ -1003,13 +1074,16 @@ namespace eft_dma_radar.Tarkov.GameWorld
             if (_disposed) return;
             try
             {
-                XMLogging.WriteLine("Interactables thread starting...");
+                Log.WriteLine("Interactables thread starting...");
                 while (InRaid)
                 {
                     if (Memory.IsDisposed) { Dispose(); break; }
                     ct.ThrowIfCancellationRequested();
+                    long start = Stopwatch.GetTimestamp();
                     RefreshWorldInteractables();
-                    Thread.Sleep(750);
+                    var remaining = s_interactablesSleepTarget - Stopwatch.GetElapsedTime(start);
+                    if (remaining > TimeSpan.Zero)
+                        Thread.Sleep(remaining);
                 }
             }
             catch (OperationCanceledException)
@@ -1021,29 +1095,30 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR on Interactables Thread: {ex}");
+                Log.WriteLine($"CRITICAL ERROR on Interactables Thread: {ex}");
                 Dispose(); // Game object is in a corrupted state --> Dispose
             }
             finally
             {
-                XMLogging.WriteLine("Interactables thread stopping...");
+                Log.WriteLine("Interactables thread stopping...");
             }
         }
 
         private void RefreshCameraManager()
         {
+            if (CameraManager is not null)
+                return;
+            if (Environment.TickCount64 < _cameraRetryAfter)
+                return;
             try
             {
-                if (CameraManager is null)
-                {
-                    CameraManager.Initialize();
-                    CameraManager = new CameraManager();
-                    XMLogging.WriteLine("[CameraManager] Camera resolved!");
-                }
+                CameraManager = new CameraManager();
+                Log.WriteLine("[CameraManager] Camera resolved!");
             }
             catch
             {
-                // Camera can fail transiently during loading/transitions � retry next tick
+                // Back off 3s before next attempt — Instance takes time to become available after raid start
+                _cameraRetryAfter = Environment.TickCount64 + 3_000;
             }
         }
 
@@ -1108,21 +1183,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             {
                 // Record this address so CreateGameInstance rejects the stale
                 // GameWorld that Unity keeps alive on the post-raid menu screen.
-                Interlocked.Exchange(ref _lastDisposedBase, Base);
+                // Skip when the user explicitly requested a restart — the GameWorld
+                // is still live and should be re-detectable.
+                if (Interlocked.Exchange(ref _suppressStaleGuard, 0) == 0)
+                    Interlocked.Exchange(ref _lastDisposedBase, Base);
 
-                XMLogging.WriteLine("[Raid] LocalGameWorld disposed � entering cooldown.");
-
-                foreach (var feature in IFeature.AllFeatures)
-                {
-                    try
-                    {
-                        feature.OnRaidEnd();
-                    }
-                    catch (Exception ex)
-                    {
-                        XMLogging.WriteLine($"[Raid] OnRaidEnd error in {feature.GetType().Name}: {ex}");
-                    }
-                }
+                Log.WriteLine("[Raid] LocalGameWorld disposed — entering cooldown.");
 
                 _raidStarted = false;
 

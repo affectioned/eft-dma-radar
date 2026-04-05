@@ -31,7 +31,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         Exclude = true,
         ApplyToMembers = true,
         Feature = "all"
-    )]    
+    )]
     public sealed class PlayerListWorker
     {
         static PlayerListWorker()
@@ -77,7 +77,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         private static readonly object _lock = new();
 
         private static readonly string _filePath =
-            Path.Combine(AppContext.BaseDirectory, "PlayerList.json");
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "eft-dma-radar-public", "PlayerList.json");
 
         /* ==============================
          * STARTUP
@@ -333,14 +333,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         {
             if (string.IsNullOrEmpty(profileId) || !IsValidSpawn(spawn))
                 return -1;
-        
+
             lock (_lock)
             {
                 if (_players.TryGetValue(profileId, out var existing))
                     return existing.GroupId;
-        
+
                 int groupId = FindOrCreateGroup(spawn);
-        
+
                 var entry = new PlayerEntry
                 {
                     ProfileId = profileId,
@@ -348,10 +348,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                     GroupId = groupId,
                     Spawn = spawn
                 };
-        
+
                 _players[profileId] = entry;
                 Save();
-        
+
                 return groupId;
             }
         }
@@ -421,8 +421,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         {
             try
             {
-                ulong unityBase = Memory.UnityBase;
-                ulong gomAddr = GameObjectManager.GetAddr(unityBase);
+                ulong gomAddr = Memory.GOM;
+                if (!gomAddr.IsValidVirtualAddress()) return null;
                 var gom = GameObjectManager.Get(gomAddr);
 
                 ulong app = gom.FindBehaviourByClassName("TarkovApplication");

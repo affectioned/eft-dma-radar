@@ -292,7 +292,7 @@ namespace eft_dma_radar.UI.Misc
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Quest ID: {Id}");
             sb.AppendLine($"Name: {Name}");
-            
+
             // Get quest data from QuestManager if available
             if (Memory.Game is Tarkov.GameWorld.LocalGameWorld lgw && lgw.QuestManager != null)
             {
@@ -320,7 +320,7 @@ namespace eft_dma_radar.UI.Misc
                         if (obj.RequiredItemIds.Any())
                             sb.AppendLine($"   Items: {string.Join(", ", obj.RequiredItemIds)}");
                     }
-                    
+
                     if (quest.CompletedConditions.Any())
                     {
                         sb.AppendLine();
@@ -338,7 +338,7 @@ namespace eft_dma_radar.UI.Misc
             {
                 sb.AppendLine("(QuestManager not available)");
             }
-            
+
             DebugTooltip = sb.ToString().TrimEnd();
         }
 
@@ -401,37 +401,23 @@ namespace eft_dma_radar.UI.Misc
 
     public static class SkiaResourceTracker
     {
-        private static DateTime _lastMainWindowPurge = DateTime.UtcNow;
-        private static DateTime _lastESPPurge = DateTime.UtcNow;
+        private static RateLimiter s_mainWindowPurgeLimit = new(TimeSpan.FromSeconds(5));
+        private static RateLimiter s_espPurgeLimit = new(TimeSpan.FromSeconds(10));
         private static int _mainWindowFrameCount = 0;
         private static int _espFrameCount = 0;
 
         public static void TrackMainWindowFrame()
         {
             _mainWindowFrameCount++;
-
-            var now = DateTime.UtcNow;
-            var timeSincePurge = (now - _lastMainWindowPurge).TotalSeconds;
-
-            if (timeSincePurge >= 5.0 && _mainWindowFrameCount % 300 == 0)
-            {
-                _lastMainWindowPurge = now;
+            if (_mainWindowFrameCount % 300 == 0 && s_mainWindowPurgeLimit.TryEnter())
                 MainWindow.Window?.PurgeSKResources();
-            }
         }
 
         public static void TrackESPFrame()
         {
             _espFrameCount++;
-
-            var now = DateTime.UtcNow;
-            var timeSincePurge = (now - _lastESPPurge).TotalSeconds;
-
-            if (timeSincePurge >= 10.0 && _espFrameCount % 600 == 0)
-            {
-                _lastESPPurge = now;
+            if (_espFrameCount % 600 == 0 && s_espPurgeLimit.TryEnter())
                 ESPForm.Window?.PurgeSKResources();
-            }
         }
     }
 

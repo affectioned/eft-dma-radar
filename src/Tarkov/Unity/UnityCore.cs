@@ -21,7 +21,7 @@ namespace eft_dma_radar.Common.Unity
                 return hash;
             }
         }
-    }    
+    }
     /// <summary>
     /// GOM List Node.
     /// </summary>
@@ -191,7 +191,7 @@ namespace eft_dma_radar.Common.Unity
         {
             [FieldOffset(0x8)]
             public readonly ulong Component;
-        }        
+        }
     }
 
     [StructLayout(LayoutKind.Explicit, Pack = 1)]
@@ -246,15 +246,15 @@ namespace eft_dma_radar.Common.Unity
             int maxLen = 64)
         {
             className = null;
-        
+
             if (!objectBase.IsValidVirtualAddress())
                 return false;
-        
+
             // Il2CppObject.klass is always at +0x0 in IL2CPP
             ulong klass = Memory.ReadPtr(objectBase, false);
             if (!klass.IsValidVirtualAddress())
                 return false;
-        
+
             try
             {
                 className = ObjectClass.ReadName(objectBase, maxLen);
@@ -264,7 +264,7 @@ namespace eft_dma_radar.Common.Unity
             {
                 return false;
             }
-        }        
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

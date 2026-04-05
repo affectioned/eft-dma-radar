@@ -91,5 +91,5 @@ namespace eft_dma_radar.Common.Misc.Data
 
             public override string ToString() => Name;
         }
-    }   
+    }
 }

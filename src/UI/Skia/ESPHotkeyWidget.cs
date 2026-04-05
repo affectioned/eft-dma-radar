@@ -241,7 +241,7 @@ namespace eft_dma_radar.UI.ESP
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Exception in IsHotkeyActive: {ex.Message}");
+                Log.WriteLine($"Exception in IsHotkeyActive: {ex.Message}");
                 return false;
             }
         }
@@ -426,12 +426,12 @@ namespace eft_dma_radar.UI.ESP
                         return Config.MemWrites.TimeOfDay.Enabled;
                     case "Full Bright":
                         return Config.MemWrites.FullBright.Enabled;
-                   //case "Loot Through Walls":
-                   //    return Config.MemWrites.LootThroughWalls.Enabled;
-                   //case "Extended Reach":
-                   //    return Config.MemWrites.ExtendedReach.Enabled;
-                   //case "Engage LTW":
-                   //    return LootThroughWalls.ZoomEngaged;
+                    //case "Loot Through Walls":
+                    //    return Config.MemWrites.LootThroughWalls.Enabled;
+                    //case "Extended Reach":
+                    //    return Config.MemWrites.ExtendedReach.Enabled;
+                    //case "Engage LTW":
+                    //    return LootThroughWalls.ZoomEngaged;
 
                     // Memory Writes - Camera
                     case "No Visor":
@@ -478,13 +478,13 @@ namespace eft_dma_radar.UI.ESP
                         return Config.QuestHelper.Enabled;
 
                     default:
-                        XMLogging.WriteLine($"Unknown action name in CheckFeatureActiveState: '{actionName}'");
+                        Log.WriteLine($"Unknown action name in CheckFeatureActiveState: '{actionName}'");
                         return false;
                 }
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Exception in CheckFeatureActiveState for '{actionName}': {ex.Message}");
+                Log.WriteLine($"Exception in CheckFeatureActiveState for '{actionName}': {ex.Message}");
                 return false;
             }
         }

@@ -517,7 +517,7 @@ namespace eft_dma_radar.UI.Misc
                         }
                     }
                     break;
-            }            
+            }
         }
 
         private static TAncestor FindAncestor<TAncestor>(DependencyObject start) where TAncestor : DependencyObject

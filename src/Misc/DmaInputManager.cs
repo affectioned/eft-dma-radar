@@ -85,7 +85,7 @@ namespace eft_dma_radar.Misc
                         throw new Exception("DmaInputManager: failed to get win32k module");
 
                     ulong win32kBase = win32kMod.vaBase;
-                    ulong win32kEnd  = win32kBase + win32kMod.cbImageSize;
+                    ulong win32kEnd = win32kBase + win32kMod.cbImageSize;
 
                     // Try win32ksgd signature first, then win32k fallback
                     ulong gSessionPtr = _vmm.FindSignature(pid, "48 8B 05 ?? ?? ?? ?? 48 8B 04 C8", win32kBase, win32kEnd);
@@ -111,7 +111,7 @@ namespace eft_dma_radar.Misc
                         throw new Exception("DmaInputManager: failed to get win32kbase.sys");
 
                     ulong baseStart = baseMod.vaBase;
-                    ulong baseEnd   = baseStart + baseMod.cbImageSize;
+                    ulong baseEnd = baseStart + baseMod.cbImageSize;
                     ulong ptr = _vmm.FindSignature(pid, "48 8D 90 ?? ?? ?? ?? E8 ?? ?? ?? ?? 0F 57 C0", baseStart, baseEnd);
                     if (ptr == 0)
                         throw new Exception("DmaInputManager: gafAsyncKeyStateExport sig not found");

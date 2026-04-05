@@ -17,8 +17,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
         /// Tracks failed player allocations to prevent spam. Key=playerBase, Value=(failCount, lastAttemptTime)
         /// </summary>
         private readonly ConcurrentDictionary<ulong, (int Count, DateTime LastAttempt)> _failedAllocations = new();
+        private readonly HashSet<ulong> _registeredScratch = new(64);
         private const int MAX_FAIL_COUNT = 5;
         private static readonly TimeSpan FAIL_RETRY_COOLDOWN = TimeSpan.FromSeconds(2);
+        private int _refreshTick;
 
         /// <summary>
         /// LocalPlayer Instance.
@@ -47,7 +49,12 @@ namespace eft_dma_radar.Tarkov.GameWorld
             try
             {
                 using var playersList = MemList<ulong>.Get(this, false); // Realtime Read
-                var registered = playersList.Where(x => x != 0x0).ToHashSet();
+                // Reuse the pre-allocated scratch set to avoid a per-tick HashSet allocation.
+                _registeredScratch.Clear();
+                foreach (var addr in playersList)
+                    if (addr != 0x0)
+                        _registeredScratch.Add(addr);
+                var registered = _registeredScratch;
                 int i = -1;
                 // Allocate New Players
                 foreach (var playerBase in registered)
@@ -59,7 +66,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     {
                         if (existingPlayer.ErrorTimer.ElapsedMilliseconds >= 1500) // Erroring out a lot? Re-Alloc
                         {
-                            XMLogging.WriteLine($"WARNING - Existing player '{existingPlayer.Name}' being re-allocated due to excessive errors...");
+                            Log.WriteLine($"WARNING - Existing player '{existingPlayer.Name}' being re-allocated due to excessive errors...");
                             _ = Player.Allocate(_players, playerBase); // Ignore result, already in dict
                         }
                         // Nothing else needs to happen here
@@ -70,27 +77,23 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         if (_failedAllocations.TryGetValue(playerBase, out var failInfo))
                         {
                             // If we've failed too many times, wait for cooldown before retrying
-                            if (failInfo.Count >= MAX_FAIL_COUNT && 
+                            if (failInfo.Count >= MAX_FAIL_COUNT &&
                                 DateTime.UtcNow - failInfo.LastAttempt < FAIL_RETRY_COOLDOWN)
                                 continue;
                         }
-                            
+
                         if (Player.Allocate(_players, playerBase))
                         {
                             _failedAllocations.TryRemove(playerBase, out _); // Clear fail count on success
-                            LoggingEnhancements.Log(AppLogLevel.Info, $"New Player Allocated: {i} - {playerBase:X}", "Players");
-                            foreach(var player in _players.Values)
-                            {
-                                if (player.ListIndex == i) // Ensure ListIndex is set correctly
-                                    continue;
-                                player.ListIndex = i; // Set ListIndex for new player
-                            }
+                            if (_players.TryGetValue(playerBase, out var newPlayer))
+                                newPlayer.ListIndex = i;
+                            Log.Write(AppLogLevel.Info, $"New Player Allocated: {i} - {playerBase:X}", "Players");
                         }
                         else
                         {
                             // Track failure with timestamp
-                            _failedAllocations.AddOrUpdate(playerBase, 
-                                (1, DateTime.UtcNow), 
+                            _failedAllocations.AddOrUpdate(playerBase,
+                                (1, DateTime.UtcNow),
                                 (_, old) => (old.Count + 1, DateTime.UtcNow));
                         }
                     }
@@ -99,11 +102,15 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 // Update Existing Players including LocalPlayer
                 UpdateExistingPlayers(registered);
                 HandleBtrStickiness();
-                // Clean up failed allocation tracking for addresses no longer in the game
-                foreach (var failedAddr in _failedAllocations.Keys.ToArray())
+                // Clean up failed allocation tracking for addresses no longer in the game.
+                // Only run every 64 refreshes — entries are small and the list changes rarely.
+                if ((_refreshTick++ & 0x3F) == 0)
                 {
-                    if (!registered.Contains(failedAddr))
-                        _failedAllocations.TryRemove(failedAddr, out _);
+                    foreach (var kvp in _failedAllocations)
+                    {
+                        if (!registered.Contains(kvp.Key))
+                            _failedAllocations.TryRemove(kvp.Key, out _);
+                    }
                 }
             }
             catch (ObjectDisposedException)
@@ -112,30 +119,40 @@ namespace eft_dma_radar.Tarkov.GameWorld
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"CRITICAL ERROR - RegisteredPlayers Loop FAILED: {ex}");
+                Log.WriteLine($"CRITICAL ERROR - RegisteredPlayers Loop FAILED: {ex}");
             }
         }
+        private static RateLimiter s_btrFixLocalLimit = new(TimeSpan.FromSeconds(5));
+        /// <summary>
+        /// Scratch list reused by HandleBtrStickiness to avoid per-call allocation.
+        /// </summary>
+        private readonly List<Vector3> _btrPosScratch = new(4);
         private void HandleBtrStickiness()
         {
-            // Collect BTR positions
-            var btrs = _players.Values
-                .OfType<BtrOperator>()
-                .Select(b => b.Position)
-                .ToList();
-        
-            if (btrs.Count == 0)
+            // Single pass: collect BTR positions and process other players simultaneously.
+            // ConcurrentDictionary.Values is snapshotted once instead of three times.
+            _btrPosScratch.Clear();
+            var allPlayers = _players.Values;
+            foreach (var p in allPlayers)
+            {
+                if (p is BtrOperator btr)
+                    _btrPosScratch.Add(btr.Position);
+            }
+
+            // Fast-path: no BTR operators on this map (the common case)
+            if (_btrPosScratch.Count == 0)
                 return;
-        
-            foreach (var player in _players.Values)
+
+            foreach (var player in allPlayers)
             {
                 // Skip BTR entities themselves
                 if (player is BtrOperator)
                     continue;
-        
+
                 bool isLocal = player is LocalPlayer;
                 bool isObservedHuman =
                     player is ObservedPlayer op && op.IsHuman;
-        
+
                 // Only humans + LocalPlayer are eligible
                 if (!isLocal && !isObservedHuman)
                 {
@@ -143,10 +160,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     player.BtrStaticRotationTicks = 0;
                     continue;
                 }
-        
+
                 // Check if player is sitting on a BTR
                 bool nearBtr = false;
-                foreach (var btrPos in btrs)
+                foreach (var btrPos in _btrPosScratch)
                 {
                     if (NearlyEqual(player.Position, btrPos))
                     {
@@ -154,7 +171,7 @@ namespace eft_dma_radar.Tarkov.GameWorld
                         break;
                     }
                 }
-        
+
                 if (!nearBtr)
                 {
                     // Fully free again
@@ -162,24 +179,24 @@ namespace eft_dma_radar.Tarkov.GameWorld
                     player.BtrStaticRotationTicks = 0;
                     continue;
                 }
-        
+
                 // ---- Rotation logic (MapRotation) ----
                 float currentRot = player.MapRotation;
-        
+
                 if (MapRotationNearlyEqual(currentRot, player.LastBtrMapRotation))
                 {
-                    // Rotation is stable → legit BTR passenger
+                    // Rotation is stable — legit BTR passenger
                     player.BtrStaticRotationTicks++;
                 }
                 else
                 {
-                    // Rotation changed → suspicious
+                    // Rotation changed — suspicious
                     player.BtrStaticRotationTicks = 0;
                 }
-        
+
                 player.LastBtrMapRotation = currentRot;
                 player.BtrStickTicks++;
-        
+
                 // ---- Decision gate ----
                 // Only reset if:
                 // - stuck long enough
@@ -189,30 +206,22 @@ namespace eft_dma_radar.Tarkov.GameWorld
                 {
                     if (isLocal)
                     {
-                        LoggingEnhancements.LogRateLimited(
-                            AppLogLevel.Warning,
-                            "btr_fix_local",
-                            TimeSpan.FromSeconds(5),
-                            "LocalPlayer stuck to BTR with rotating view → soft reset",
-                            "BTR FIX");
-        
-                        player.BtrStickTicks = 0;
-                        player.BtrStaticRotationTicks = 0;
-                        player.SoftResetRuntimeState();
+                        if (s_btrFixLocalLimit.TryEnter())
+                            Log.Write(AppLogLevel.Warning,
+                                "LocalPlayer stuck to BTR with rotating view — soft reset",
+                                "BTR FIX");
                     }
                     else
                     {
-                        LoggingEnhancements.LogRateLimited(
-                            AppLogLevel.Warning,
-                            $"btr_fix_{player.Base:X}",
-                            TimeSpan.FromSeconds(5),
-                            $"Stuck player {player.Name} rotating at BTR → soft reset",
-                            "BTR FIX");
-        
-                        player.BtrStickTicks = 0;
-                        player.BtrStaticRotationTicks = 0;
-                        player.SoftResetRuntimeState();
+                        if (player.BtrFixLimit.TryEnter())
+                            Log.Write(AppLogLevel.Warning,
+                                $"Stuck player {player.Name} rotating at BTR — soft reset",
+                                "BTR FIX");
                     }
+
+                    player.BtrStickTicks = 0;
+                    player.BtrStaticRotationTicks = 0;
+                    player.SoftResetRuntimeState();
                 }
             }
         }
@@ -288,20 +297,20 @@ namespace eft_dma_radar.Tarkov.GameWorld
         {
             if (!_players.TryGetValue(btrPlayerBase, out var existing))
                 return;
-        
+
             // 🚫 NEVER convert real players into BTR operators
             if (existing.IsHuman || existing is LocalPlayer)
                 return;
-        
+
             // 🚫 Already a BTR
             if (existing is BtrOperator)
                 return;
-        
+
             // Only AI-controlled BTR gunners should be allowed
             var btr = new BtrOperator(btrView, btrPlayerBase);
             _players[btrPlayerBase] = btr;
-        
-            XMLogging.WriteLine("BTR AI operator allocated");
+
+            Log.WriteLine("BTR AI operator allocated");
         }
 
         #region IReadOnlyCollection

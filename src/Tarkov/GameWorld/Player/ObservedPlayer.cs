@@ -8,6 +8,7 @@ using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Tarkov.EFTPlayer.Plugins;
 using eft_dma_radar.Tarkov.EFTPlayer.SpecialCollections;
 using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Web.ProfileApi;
 using static SDK.Enums;
 using static SDK.Offsets;
 
@@ -55,13 +56,13 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 if (!IsHuman || string.IsNullOrEmpty(ProfileID))
                     return -1;
-        
+
                 return PlayerListWorker.GetOrAssignSpawnGroup(
                     ProfileID,
                     Position,
                     PlayerSide);
             }
-        }     
+        }
 
         /// <summary>
         /// Player's Faction.
@@ -115,12 +116,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 _pmcIndex[this] = index;
                 return index;
             }
-        }               
+        }
         /// <summary>
         /// Player's Skeleton Bones.
         /// </summary>
         public override Skeleton Skeleton { get; protected set; }
-        public override int VoipId { get; }  
+        public override int VoipId { get; }
         private static int ParseVoipId(ulong baseAddr)
         {
             try
@@ -139,7 +140,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 return -1;
             }
-        }     
+        }
         public bool TryEnsureSkeleton()
         {
             if (Skeleton != null)
@@ -155,7 +156,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 Skeleton = null;
                 return false;
             }
-        }            
+        }
         /// <summary>
         /// Player's Current Health Status
         /// </summary>
@@ -195,6 +196,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 if (isAI)
                 {
                     var gearMgr = new GearManager(this, this.IsPmc);
+                    gearMgr.Refresh();
 
                     // =====================================================
                     // 1) SANTA DETECTION (FIRST, AUTHORITATIVE, SLOT-AGNOSTIC)
@@ -285,7 +287,8 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         gearMgr,
                         new HandsManager(this),
                         Memory.MapID,
-                        Type))
+                        Type,
+                        Name))
                     {
                         Name = "Guard";
                         Type = PlayerType.AIRaider;
@@ -362,7 +365,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             {
                 var handController = Memory.ReadPtr(HandsControllerAddr);
                 var dickController = Memory.ReadPtr(handController + Offsets.ObservedHandsController.BundleAnimationBones);
-                this.PWA =  Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
+                this.PWA = Memory.ReadPtr(dickController + Offsets.BundleAnimationBonesController.ProceduralWeaponAnimationObs);
                 Profile = new PlayerProfile(this);
             }
 
@@ -442,13 +445,13 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                             ClearAlerts();
                             UpdateAlerts(alertReason);
 
-                            XMLogging.WriteLine($"[Streaming] {Name} ({AccountID}) is no longer streaming");
+                            Log.WriteLine($"[Streaming] {Name} ({AccountID}) is no longer streaming");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[Streaming] Error checking if {Name} [{AccountID}] is live: {ex.Message}");
+                    Log.WriteLine($"[Streaming] Error checking if {Name} [{AccountID}] is live: {ex.Message}");
                 }
             });
         }
@@ -526,7 +529,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         _identityApplied = true;
                         PlayerHistory.AddOrUpdate(this);
 
-                        XMLogging.WriteLine(
+                        Log.WriteLine(
                             $"[ObservedPlayer] Identity applied from PlayerList.json: {Name} ({AccountID})");
                     }
                     else
@@ -534,12 +537,26 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         // Fallback: use the nickname stored in the local dogtag database if the
                         // in-game name is not yet available. Don't set _identityApplied so the
                         // real in-game name still takes over as soon as the game provides it.
-                        // PlayerLookupApiClient removed
+                        var cached = PlayerLookupApiClient.TryGetCached(ProfileID);
+                        if (!string.IsNullOrEmpty(cached?.Nickname))
+                        {
+                            Name = cached.Nickname;
+                            PlayerHistory.AddOrUpdate(this);
+                        }
                     }
                 }
             }
 
-            // PlayerLookupApiClient removed - AccountID resolution disabled
+            // Resolve AccountID from DogtagDatabase once ProfileID is available
+            if (string.IsNullOrEmpty(AccountID) && !string.IsNullOrEmpty(ProfileID))
+            {
+                var cached = PlayerLookupApiClient.TryGetCached(ProfileID);
+                if (!string.IsNullOrEmpty(cached?.AccountId))
+                {
+                    AccountID = cached.AccountId;
+                    PlayerHistory.AddOrUpdate(this);
+                }
+            }
 
             // Re-check watchlist when AccountID is available (supports mid-raid watchlist additions)
             if (!string.IsNullOrEmpty(AccountID) && IsHumanHostile)
@@ -607,7 +624,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"ERROR updating Member Category for '{Name}': {ex}");
+                Log.WriteLine($"ERROR updating Member Category for '{Name}': {ex}");
             }
         }
 
@@ -635,7 +652,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"ERROR updating Health Status for '{Name}': {ex}");
+                Log.WriteLine($"ERROR updating Health Status for '{Name}': {ex}");
             }
         }
 
@@ -654,13 +671,13 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 //if (!IsAI)
                 //{
                 //    ZoomLevel = GetObservedScopeZoom(pwa);
-                //    //XMLogging.WriteLine($"Player '{Name}' Aiming Status: {IsAiming}, ZoomLevel: {ZoomLevel:F2}x");
+                //    //Log.WriteLine($"Player '{Name}' Aiming Status: {IsAiming}, ZoomLevel: {ZoomLevel:F2}x");
                 //}
-                
+
             }
             catch //(Exception ex)
             {
-                //XMLogging.WriteLine($"ERROR updating Aiming Status for '{Name}': {ex}" +
+                //Log.WriteLine($"ERROR updating Aiming Status for '{Name}': {ex}" +
                 //    $"\n  HandsControllerAddr : 0x{HandsControllerAddr:X}" +
                 //    $"\n  HandsController     : 0x{handsController:X}" +
                 //    $"\n  BundleAnimBones     : 0x{bundleAnimBones:X}" +
@@ -689,7 +706,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"GetObservedScopeZoom ERROR: {ex}");
+                Log.WriteLine($"GetObservedScopeZoom ERROR: {ex}");
                 return 1f;
             }
         }

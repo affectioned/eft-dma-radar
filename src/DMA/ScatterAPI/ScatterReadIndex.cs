@@ -17,7 +17,7 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
         /// <summary>
         /// Number of scatter entries registered on this index.
         /// </summary>
-        public int EntryCount => Entries.Count;        
+        public int EntryCount => Entries.Count;
         /// <summary>
         /// Callback to execute on completion.
         /// NOTE: Exceptions will be automatically handled.
@@ -35,17 +35,11 @@ namespace eft_dma_radar.Common.DMA.ScatterAPI
             var cbs = Callbacks;
             if (cbs is not null)
             {
-                foreach (var del in cbs.GetInvocationList())
+                try
                 {
-                    try
-                    {
-                        if (del is Action<ScatterReadIndex> cb)
-                        {
-                            cb.Invoke(this);
-                        }
-                    }
-                    catch { }
+                    cbs.Invoke(this);
                 }
+                catch { }
             }
         }
 

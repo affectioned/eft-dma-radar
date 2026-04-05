@@ -5,6 +5,8 @@ using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity.Collections;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
+using eft_dma_radar.Tarkov.API;
+using eft_dma_radar.Web.ProfileApi;
 
 namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
 {
@@ -51,7 +53,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
         private readonly bool _isPMC;
         private readonly Player _player;
         private IReadOnlyDictionary<string, ulong> _slots =
-            FrozenDictionary<string, ulong>.Empty;        
+            FrozenDictionary<string, ulong>.Empty;
         public GearManager(Player player, bool isPMC = false)
         {
             _player = player;
@@ -103,8 +105,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 return false;
 
             _equipmentSlotsPtr = Memory.ReadPtr(equipment + Offsets.Equipment.Slots);
-
-            ulong slotsPtr = Memory.ReadPtr(equipment + Offsets.Equipment.Slots);
+            ulong slotsPtr = _equipmentSlotsPtr;
             if (!slotsPtr.IsValidVirtualAddress())
                 return false;
 
@@ -127,7 +128,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 }
                 catch { }
             }
-            TryResolveAliveDogtagProfileId(_player, _equipmentSlotsPtr);  
+            TryResolveAliveDogtagProfileId(_player, _equipmentSlotsPtr);
 
             _slots = dict.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
             return _slots.Count > 0;
@@ -185,10 +186,20 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
             Loot = loot.OrderLoot().ToList();
             Equipment = gear;
 
-            Value = Loot.Sum(x => x.Price);
-            HasNVG = Loot.Any(x => NVG_IDS.Contains(x.ID));
-            HasThermal = Loot.Any(x => THERMAL_IDS.Contains(x.ID));
-            HasUBGL = Loot.Any(x => UBGL_IDS.Contains(x.ID));
+            int value = 0;
+            bool hasNvg = false, hasThermal = false, hasUBGL = false;
+            foreach (var item in Loot)
+            {
+                value += item.Price;
+                var id = item.ID;
+                if (!hasNvg && NVG_IDS.Contains(id)) hasNvg = true;
+                if (!hasThermal && THERMAL_IDS.Contains(id)) hasThermal = true;
+                if (!hasUBGL && UBGL_IDS.Contains(id)) hasUBGL = true;
+            }
+            Value = value;
+            HasNVG = hasNvg;
+            HasThermal = hasThermal;
+            HasUBGL = hasUBGL;
         }
         // ============================================================
         // ALIVE DOGTAG → PROFILE ID RESOLUTION
@@ -200,9 +211,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 return;
             if (player.IsAI)
                 return;
-        
+
             ulong barterOther = 0;
-        
+
             using var slots = MemArray<ulong>.Get(slotsPtr);
             foreach (var slotPtr in slots)
             {
@@ -214,34 +225,34 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                         continue;
                 }
                 catch { continue; }
-        
+
                 string className;
                 try
                 {
                     className = ObjectClass.ReadName(item);
                 }
                 catch { continue; }
-        
+
                 if (!className.Equals("BarterOther", StringComparison.Ordinal))
                     continue;
-        
+
                 barterOther = item;
                 break;
             }
-        
+
             if (barterOther == 0)
                 return;
-        
+
             try
             {
                 var dogtag = Memory.ReadPtr(barterOther + Offsets.BarterOtherOffsets.Dogtag);
                 if (!dogtag.IsValidVirtualAddress())
                     return;
-        
+
                 var profileIdPtr = Memory.ReadPtr(dogtag + Offsets.DogtagComponent.ProfileId);
                 if (!profileIdPtr.IsValidVirtualAddress())
                     return;
-        
+
                 var profileId = Memory.ReadUnityString(profileIdPtr, 32);
                 if (string.IsNullOrWhiteSpace(profileId))
                     return;
@@ -249,9 +260,19 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 // ✅ SET PROFILE ID ONCE
                 player.ProfileID = profileId;
 
-                XMLogging.WriteLine(
+                Log.WriteLine(
                     $"[GearManager] Resolved ProfileID for {player}: {profileId}");
 
+                // Register this profileId in the local database. AccountId is not
+                // available from the player's own dogtag — it will be filled in if
+                // they appear as a killer on a corpse dogtag in this or a future raid.
+                DogtagDatabase.TryAddOrUpdate(profileId, null, null);
+
+                // If accountId was already seeded (e.g. they killed someone previously),
+                // trigger stats fetch now.
+                var cached = PlayerLookupApiClient.TryGetCached(profileId);
+                if (cached?.AccountId is string acctId)
+                    EFTProfileService.RegisterProfile(acctId);
             }
             catch { }
         }
@@ -273,7 +294,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer.Plugins
                 {
                     gear[SECURE_SLOT] = new GearItem
                     {
-                        Long  = entry.Name ?? "Secure Container",
+                        Long = entry.Name ?? "Secure Container",
                         Short = entry.ShortName ?? "Secure"
                     };
                 }

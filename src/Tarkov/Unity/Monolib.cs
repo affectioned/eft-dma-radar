@@ -45,19 +45,19 @@ namespace eft_dma_radar.Common.Unity
         {
             try
             {
-                XMLogging.WriteLine("Initializing Mono...");
+                Log.WriteLine("Initializing Mono...");
                 var singletons = Singleton.FindMany("GameWorld", "LevelSettings");
-                
+
                 if (!singletons[0].IsValidVirtualAddress())
                     throw new ArgumentOutOfRangeException("GameWorld");
-                
+
                 GameWorldField = singletons[0];
 
                 if (singletons[1].IsValidVirtualAddress())
                     _levelSettingsField = singletons[1];
 
                 FunctionsWorker.Refresh(); // Signal Functions Worker
-                XMLogging.WriteLine("Mono Init [OK]");
+                Log.WriteLine("Mono Init [OK]");
             }
             catch (Exception ex)
             {
@@ -74,7 +74,7 @@ namespace eft_dma_radar.Common.Unity
         {
             try
             {
-                XMLogging.WriteLine("Initializing Mono...");
+                Log.WriteLine("Initializing Mono...");
                 var singletons = Singleton.FindMany("GameWorld", "AbstractGame");
                 if (!singletons[0].IsValidVirtualAddress())
                     throw new ArgumentOutOfRangeException("GameWorld");
@@ -83,7 +83,7 @@ namespace eft_dma_radar.Common.Unity
                 GameWorldField = singletons[0];
                 AbstractGameField = singletons[1];
                 FunctionsWorker.Refresh(); // Signal Functions Worker
-                XMLogging.WriteLine("Mono Init [OK]");
+                Log.WriteLine("Mono Init [OK]");
             }
             catch (Exception ex)
             {
@@ -434,7 +434,7 @@ namespace eft_dma_radar.Common.Unity
 
             public readonly string GetName() =>
                 ReadName(pName, 128);
-            public readonly int GetParamCount(ulong self) => 0x0;             
+            public readonly int GetParamCount(ulong self) => 0x0;
         }
         [StructLayout(LayoutKind.Explicit, Pack = 1)]
         public readonly struct MonoClassField
@@ -599,7 +599,7 @@ namespace eft_dma_radar.Common.Unity
                 int methodCount = this.GetNumMethods();
                 if (methodCount > 5000)
                 {
-                    XMLogging.WriteLine($"[MONO] FindMethod(): methodCount is out of bounds!");
+                    Log.WriteLine($"[MONO] FindMethod(): methodCount is out of bounds!");
                     return default;
                 }
 
@@ -728,7 +728,7 @@ namespace eft_dma_radar.Common.Unity
                     subclassParts = className.Split('+').ToList();
 
                 if (findSubClass && subclassParts.Count < 2)
-                    XMLogging.WriteLine($"[MONO] -> FindClass(): Invalid subclass markup! The definition must have the main class name and at least one subclass.");
+                    Log.WriteLine($"[MONO] -> FindClass(): Invalid subclass markup! The definition must have the main class name and at least one subclass.");
 
                 for (int i = 0; i < rowCount; i++)
                 {
@@ -976,12 +976,12 @@ namespace eft_dma_radar.Common.Unity
                             _functions[function.pMonoMethod] = function.pJittedMethod;
                         }
                     }
-                    XMLogging.WriteLine("Mono Init Funcs [OK]");
+                    Log.WriteLine("Mono Init Funcs [OK]");
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"Mono Init Funcs [FAIL]: {ex}");
+                    Log.WriteLine($"Mono Init Funcs [FAIL]: {ex}");
                     return false;
                 }
             }

@@ -187,18 +187,18 @@ namespace eft_dma_radar.Tarkov.GameWorld.Exits
                 namePoint.Offset(nameXOffset, nameYOffset);
                 canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
                 canvas.DrawText(Name, namePoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paint.Item2);
-                }
+            }
 
-                if (Settings.ShowDistance)
-                {
-                    var distText = $"{(int)dist}m";
-                    var distWidth = SKPaints.RadarFontRegular12.MeasureText($"{(int)dist}", paint.Item2);
-                    var distPoint = new SKPoint(
-                        point.X - (distWidth / 2),
-                        point.Y + distanceYOffset
-                    );
-                    canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
-                    canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paint.Item2);
+            if (Settings.ShowDistance)
+            {
+                var distText = $"{(int)dist}m";
+                var distWidth = SKPaints.RadarFontRegular12.MeasureText($"{(int)dist}", paint.Item2);
+                var distPoint = new SKPoint(
+                    point.X - (distWidth / 2),
+                    point.Y + distanceYOffset
+                );
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, SKPaints.TextOutline);
+                canvas.DrawText(distText, distPoint, SKTextAlign.Left, SKPaints.RadarFontRegular12, paint.Item2);
             }
         }
 

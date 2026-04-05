@@ -88,7 +88,7 @@ namespace eft_dma_radar.Common.DMA
 
         protected MemDMABase(FpgaAlgo fpgaAlgo, bool useMemMap)
         {
-            XMLogging.WriteLine("Initializing DMA...");
+            Log.WriteLine("Initializing DMA...");
             /// Check MemProcFS Versions...
             var vmmVersion = FileVersionInfo.GetVersionInfo("vmm.dll").FileVersion;
             var lcVersion = FileVersionInfo.GetVersionInfo("leechcore.dll").FileVersion;
@@ -105,7 +105,7 @@ namespace eft_dma_radar.Common.DMA
                 /// Begin Init...
                 if (useMemMap && !File.Exists(_memoryMapFile))
                 {
-                    XMLogging.WriteLine("[DMA] No MemMap, attempting to generate...");
+                    Log.WriteLine("[DMA] No MemMap, attempting to generate...");
                     _hVMM = new Vmm(initArgs);
                     _ = _hVMM.GetMemoryMap(applyMap: true, outputFile: _memoryMapFile);
                 }
@@ -121,7 +121,7 @@ namespace eft_dma_radar.Common.DMA
                 _hVMM.RegisterAutoRefresh(RefreshOption.MemoryPartial, TimeSpan.FromMilliseconds(300));
                 _hVMM.RegisterAutoRefresh(RefreshOption.TlbPartial, TimeSpan.FromSeconds(2));
                 BaseMemoryHolder.MemoryBase = this;
-                XMLogging.WriteLine("DMA Initialized!");
+                Log.WriteLine("DMA Initialized!");
             }
             catch (Exception ex)
             {
@@ -225,56 +225,48 @@ namespace eft_dma_radar.Common.DMA
         #region ScatterRead
 
         /// <summary>
-        /// Performs multiple reads in one sequence, significantly faster than single reads.
-        /// Designed to run without throwing unhandled exceptions, which will ensure the maximum amount of
-        /// reads are completed OK even if a couple fail.
+        /// Performs multiple reads in one sequence using the native VmmScatter API.
+        /// Page deduplication and result extraction are handled at the native layer —
+        /// no managed HashSet, page array, or results dictionary is allocated.
         /// </summary>
         public void ReadScatter(IScatterEntry[] entries, bool useCache = true)
+            => ReadScatter(entries, entries.Length, useCache);
+
+        /// <summary>
+        /// Overload that accepts an explicit count, enabling callers to pass ArrayPool-rented
+        /// arrays larger than the actual entry count without extra allocation.
+        /// </summary>
+        public void ReadScatter(IScatterEntry[] entries, int count, bool useCache = true)
         {
-            if (entries.Length == 0)
+            if (count == 0)
                 return;
             ThrowIfVmmDisposed();
-            var pagesToRead = new HashSet<ulong>(entries.Length); // Will contain each unique page only once to prevent reading the same page multiple times
-            foreach (var entry in entries) // First loop through all entries - GET INFO
+
+            var vmmFlags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
+            using var scatter = new VmmScatter(_hVMM, ProcessPID, vmmFlags);
+
+            // First pass: register each address with the native scatter handle.
+            for (int i = 0; i < count; i++)
             {
-                // INTEGRITY CHECK - Make sure the read is valid and within range
+                var entry = entries[i];
                 if (entry.Address == 0x0 || entry.CB == 0 || (uint)entry.CB > MAX_READ_SIZE)
                 {
-                    //XMLogging.WriteLine($"[Scatter Read] Out of bounds read @ 0x{entry.Address.ToString("X")} ({entry.CB})");
                     entry.IsFailed = true;
                     continue;
                 }
-
-                // get the number of pages
-                uint numPages = ADDRESS_AND_SIZE_TO_SPAN_PAGES(entry.Address, (uint)entry.CB);
-                ulong basePage = PAGE_ALIGN(entry.Address);
-
-                //loop all the pages we would need
-                for (int p = 0; p < numPages; p++)
-                {
-                    ulong page = basePage + 0x1000 * (uint)p;
-                    pagesToRead.Add(page);
-                }
-            }
-            if (pagesToRead.Count == 0)
-                return;
-
-            var vmmFlags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
-            var pageArray = new ulong[pagesToRead.Count];
-            pagesToRead.CopyTo(pageArray);
-            var scatterRaw = _hVMM.MemReadScatter(ProcessPID, vmmFlags, pageArray.AsSpan());
-            var scatterResults = new Dictionary<ulong, byte[]>(scatterRaw.Length);
-            foreach (var s in scatterRaw)
-            {
-                if (s.f && s.pb != null)
-                    scatterResults[s.qwA] = s.pb;
+                if (!scatter.PrepareRead(entry.Address, (uint)entry.CB))
+                    entry.IsFailed = true;
             }
 
-            foreach (var entry in entries) // Second loop through all entries - PARSE RESULTS
+            // Execute all prepared reads in one native call.
+            scatter.Execute();
+
+            // Second pass: extract results via native ReadSpan (no page-boundary logic needed).
+            for (int i = 0; i < count; i++)
             {
-                if (entry.IsFailed)
-                    continue;
-                entry.SetResult(scatterResults);
+                var entry = entries[i];
+                if (!entry.IsFailed)
+                    entry.ReadResult(scatter);
             }
         }
 
@@ -311,7 +303,7 @@ namespace eft_dma_radar.Common.DMA
             if (!allowPartialRead && buffer.Length == 0)
                 throw new VmmException("Memory Read Failed!");
         }
-         /// <summary>
+        /// <summary>
         /// Read an array of type <typeparamref name="T"/> from memory.
         /// The first element begins reading at 0x0 and the array is assumed to be contiguous.
         /// IMPORTANT: You must call <see cref="IDisposable.Dispose"/> on the returned SharedArray when done."/>
@@ -349,7 +341,7 @@ namespace eft_dma_radar.Common.DMA
             {
                 throw new Exception($"[DMA] ERROR reading buffer at 0x{addr:X}", ex);
             }
-        }        
+        }
         /// <summary>
         /// Read memory into a Buffer of type <typeparamref name="T"/> and ensure the read is correct.
         /// </summary>
@@ -394,7 +386,7 @@ namespace eft_dma_radar.Common.DMA
         public static unsafe byte[] ReadBufferEnsureE(ulong addr, int size)
         {
             const int ValidationCount = 3;
-        
+
             try
             {
                 if (BaseMemoryHolder.MemoryBase == null)
@@ -415,17 +407,17 @@ namespace eft_dma_radar.Common.DMA
                     if (bytesRead != size)
                         throw new Exception($"Incomplete memory read ({bytesRead}/{size}) at 0x{addr:X}");
                 }
-        
+
                 // Validation: ensure all reads match
                 for (int i = 1; i < ValidationCount; i++)
                 {
                     if (!buffers[i].SequenceEqual(buffers[0]))
                     {
-                        XMLogging.WriteLine($"[WARN] ReadBufferEnsure() -> 0x{addr:X} failed memory consistency check.");
+                        Log.WriteLine($"[WARN] ReadBufferEnsure() -> 0x{addr:X} failed memory consistency check.");
                         return null;
                     }
                 }
-        
+
                 return buffers[0];
             }
             catch (Exception ex)
@@ -482,7 +474,7 @@ namespace eft_dma_radar.Common.DMA
             var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
             return _hVMM.MemReadString(ProcessPID, addr, cb, Encoding.UTF8, flags) ??
                 throw new VmmException("Memory Read Failed!");
-        }        
+        }
         /// <summary>
         /// Read value type/struct from specified address.
         /// </summary>
@@ -495,7 +487,7 @@ namespace eft_dma_radar.Common.DMA
             var flags = useCache ? VmmFlags.NONE : VmmFlags.NOCACHE;
             return _hVMM.MemReadValue<T>(ProcessPID, addr, flags);
         }
-        
+
         public ulong FindDataXref(
             ulong targetAddress,
             string moduleName = "UnityPlayer.dll",
@@ -508,11 +500,11 @@ namespace eft_dma_radar.Common.DMA
             ulong moduleBase = _hVMM.ProcessGetModuleBase(ProcessPID, moduleName);
             if (moduleBase == 0 || moduleBase == ulong.MaxValue)
                 return 0;
-        
+
             // Scan forward from the string location
             ulong scanStart = targetAddress & ~0xFFFUL; // page-align
-            ulong scanEnd   = scanStart + (ulong)searchRange;
-        
+            ulong scanEnd = scanStart + (ulong)searchRange;
+
             byte[] buffer;
             try
             {
@@ -539,7 +531,7 @@ namespace eft_dma_radar.Common.DMA
                     return scanStart + (ulong)i;
                 }
             }
-        
+
             return 0;
         }
 
@@ -694,7 +686,7 @@ namespace eft_dma_radar.Common.DMA
                 var moduleBase = _hVMM.ProcessGetModuleBase(ProcessPID, moduleName);
                 if (moduleBase == 0 || moduleBase == ulong.MaxValue)
                 {
-                    XMLogging.WriteLine($"[Signature] Module {moduleName} not found");
+                    Log.WriteLine($"[Signature] Module {moduleName} not found");
                     return Array.Empty<ulong>();
                 }
 
@@ -729,7 +721,7 @@ namespace eft_dma_radar.Common.DMA
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[Signature] Error searching module {moduleName}: {ex.Message}");
+                Log.WriteLine($"[Signature] Error searching module {moduleName}: {ex.Message}");
                 return Array.Empty<ulong>();
             }
         }
@@ -807,7 +799,7 @@ namespace eft_dma_radar.Common.DMA
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[DMA] Error in FindSignatures: {ex.Message}");
+                Log.WriteLine($"[DMA] Error in FindSignatures: {ex.Message}");
                 return Array.Empty<ulong>();
             }
         }
@@ -1074,7 +1066,7 @@ namespace eft_dma_radar.Common.DMA
 
                     if (validateBytes is null || !validateBytes.SequenceEqual(buffer))
                     {
-                        XMLogging.WriteLine($"[WARN] WriteBufferEnsure() -> 0x{addr:X} did not pass validation on try {i + 1}!");
+                        Log.WriteLine($"[WARN] WriteBufferEnsure() -> 0x{addr:X} did not pass validation on try {i + 1}!");
                         success = false;
                         continue;
                     }

@@ -9,7 +9,7 @@ namespace eft_dma_radar.Common.Unity.LowLevel.Types
     {
         public static implicit operator ulong(RemoteBytes x) => x._pmem;
 
-        #pragma warning disable CS0649 // Field is never assigned to
+#pragma warning disable CS0649 // Field is never assigned to
         private readonly uint _size;
 #pragma warning restore CS0649
         private ulong _pmem;
@@ -18,19 +18,19 @@ namespace eft_dma_radar.Common.Unity.LowLevel.Types
             private readonly byte[] _p1;
             private readonly byte[] Length;
             private readonly byte[] Data;
-        
+
             private const int MonoString_p1 = 0x10;
-        
+
             public MonoString(string data)
             {
                 _p1 = new byte[MonoString_p1];
                 Length = BitConverter.GetBytes(data.Length);
                 Data = Encoding.Unicode.GetBytes(data);
             }
-        
+
             public int GetSize() => MonoString_p1 + Length.Length + Data.Length;
             public uint GetSizeU() => (uint)GetSize();
-        
+
             public byte[] GetBytes()
             {
                 byte[] bytes = new byte[GetSize()];
@@ -41,7 +41,7 @@ namespace eft_dma_radar.Common.Unity.LowLevel.Types
                 writer.Write(Data);
                 return bytes;
             }
-        
+
             public static MonoString Get(string str) => new(str);
         }
         public void WriteString(MonoString monoString)
@@ -49,7 +49,7 @@ namespace eft_dma_radar.Common.Unity.LowLevel.Types
             int byteSize = monoString.GetSize();
             if (byteSize > _size)
                 throw new Exception($"String size {byteSize} is larger than allocated memory size {_size} bytes!");
-        
+
             Memory.WriteBufferEnsure<byte>(_pmem, monoString.GetBytes());
         }
 

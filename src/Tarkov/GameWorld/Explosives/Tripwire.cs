@@ -19,7 +19,7 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
     public sealed class Tripwire : IExplosiveItem, IWorldEntity, IMapEntity, IESPEntity
     {
         private static void Log(string msg) =>
-            XMLogging.WriteLine($"[TRIPWIRE] {msg}");
+            eft_dma_radar.Common.Misc.Log.WriteLine($"[TRIPWIRE] {msg}");
 
         public static implicit operator ulong(Tripwire x) => x.Addr;
 
@@ -46,14 +46,14 @@ namespace eft_dma_radar.Tarkov.GameWorld.Explosives
             //Log($"Created Tripwire @ 0x{Addr:X}");
 
             var baseId = System.Threading.Interlocked.Add(ref _nextScatterBaseId, 3) - 3;
-            _scatterIdState   = baseId;
-            _scatterIdToPos   = baseId + 1;
+            _scatterIdState = baseId;
+            _scatterIdToPos = baseId + 1;
             _scatterIdFromPos = baseId + 2;
 
-            IsActive      = GetIsTripwireActive(false);
-            _position     = GetPosition(false);
+            IsActive = GetIsTripwireActive(false);
+            _position = GetPosition(false);
             _fromPosition = GetFromPosition(false);
-            Name          = GetName();
+            Name = GetName();
 
             //Log($"Initial: IsActive={IsActive}, Pos={_position}, FromPos={_fromPosition}, Name='{Name}'");
         }

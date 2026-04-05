@@ -32,7 +32,9 @@ namespace eft_dma_radar.Common.Misc
         /// <summary>
         /// Raised once when InputManager transitions to the ready state.
         /// </summary>
+#nullable enable
         public static event EventHandler? ReadyChanged;
+#nullable restore
 
         private static readonly Dictionary<int, List<KeyActionHandler>> _keyActionHandlers = new();
         private static readonly object _eventLock = new();
@@ -48,7 +50,7 @@ namespace eft_dma_radar.Common.Misc
                 if (MemoryInterface.Memory?.VmmHandle == null)
                 {
                     _safeMode = true;
-                    XMLogging.WriteLine("[InputManager] Starting in Safe Mode - Input functionality disabled");
+                    Log.WriteLine("[InputManager] Starting in Safe Mode - Input functionality disabled");
                     NotificationsShared.Warning("[InputManager] Safe Mode - Input functionality disabled");
                     return;
                 }
@@ -65,18 +67,18 @@ namespace eft_dma_radar.Common.Misc
 
                 if (InputManager.InitKeyboard())
                 {
-                    XMLogging.WriteLine("[InputManager] Initialized");
+                    Log.WriteLine("[InputManager] Initialized");
                     NotificationsShared.Success("[InputManager] Initialized successfully!");
                 }
                 else
                 {
-                    XMLogging.WriteLine("ERROR Initializing Input Manager");
+                    Log.WriteLine("ERROR Initializing Input Manager");
                     NotificationsShared.Error("[InputManager] Failed to initialize, you may need to restart your gaming pc for hotkeys to work.");
                 }
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[InputManager] Error during initialization: {ex.Message}");
+                Log.WriteLine($"[InputManager] Error during initialization: {ex.Message}");
                 _safeMode = true;
                 NotificationsShared.Warning("[InputManager] Initialization failed - Safe Mode active");
             }
@@ -89,7 +91,7 @@ namespace eft_dma_radar.Common.Misc
 
             if (_safeMode || _hVMM == null)
             {
-                XMLogging.WriteLine("[InputManager] Skipping keyboard initialization - Safe Mode");
+                Log.WriteLine("[InputManager] Skipping keyboard initialization - Safe Mode");
                 return false;
             }
 
@@ -102,7 +104,7 @@ namespace eft_dma_radar.Common.Misc
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"Error initializing keyboard: {ex.Message}\n{ex.StackTrace}");
+                Log.WriteLine($"Error initializing keyboard: {ex.Message}\n{ex.StackTrace}");
                 _initAttempts++;
                 return false;
             }
@@ -158,7 +160,7 @@ namespace eft_dma_radar.Common.Misc
                         }
                         catch (Exception ex)
                         {
-                            XMLogging.WriteLine($"Error executing key handler for action '{handler.ActionName}': {ex.Message}");
+                            Log.WriteLine($"Error executing key handler for action '{handler.ActionName}': {ex.Message}");
                         }
                     }
                 }
@@ -176,7 +178,7 @@ namespace eft_dma_radar.Common.Misc
         {
             if (!IsReady || _safeMode || handler == null || string.IsNullOrEmpty(actionName))
             {
-                XMLogging.WriteLine($"[InputManager] RegisterKeyAction skipped - Safe Mode or not ready");
+                Log.WriteLine($"[InputManager] RegisterKeyAction skipped - Safe Mode or not ready");
                 return -1;
             }
 
@@ -363,7 +365,7 @@ namespace eft_dma_radar.Common.Misc
         /// </summary>
         private static void Worker()
         {
-            XMLogging.WriteLine("InputManager thread starting...");
+            Log.WriteLine("InputManager thread starting...");
             while (true)
             {
                 try
@@ -380,7 +382,7 @@ namespace eft_dma_radar.Common.Misc
                 }
                 catch (Exception ex)
                 {
-                    XMLogging.WriteLine($"[InputManager] Worker thread error: {ex.Message}");
+                    Log.WriteLine($"[InputManager] Worker thread error: {ex.Message}");
                 }
                 finally
                 {
@@ -388,7 +390,7 @@ namespace eft_dma_radar.Common.Misc
                 }
             }
 
-            XMLogging.WriteLine("[InputManager] Worker thread exiting.");
+            Log.WriteLine("[InputManager] Worker thread exiting.");
         }
 
         private class KeyActionHandler

@@ -69,6 +69,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         public static implicit operator ulong(Player x) => x.Base;
         private static readonly ConcurrentDictionary<ulong, Stopwatch> _rateLimit = new();
+        private static readonly TimeSpan s_skeletonFixInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_rateLimitInterval30s = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan s_btrFixRateLimitInterval = TimeSpan.FromSeconds(5);
         protected static readonly GroupManager _groups = new();
         protected static int _playerScavNumber = 0;
         public virtual int VoipId { get; }
@@ -98,6 +101,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             PlayerHistory.Reset();
             _playerScavNumber = 0;
             _verticesOwner.Clear();
+            Log.ClearCaches();
         }
 
         #endregion
@@ -112,22 +116,20 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// <returns>True if allocation succeeded, false otherwise.</returns>
         public static bool Allocate(ConcurrentDictionary<ulong, Player> playerDict, ulong playerBase)
         {
-            var sw = _rateLimit.AddOrUpdate(playerBase,
-                key => new Stopwatch(),
-                (key, oldValue) => oldValue);
+            var sw = _rateLimit.GetOrAdd(playerBase, static _ => new Stopwatch());
             if (sw.IsRunning && sw.Elapsed.TotalMilliseconds < 500f)
                 return false; // Rate limited, not a real failure
             try
             {
                 var player = AllocateInternal(playerBase);
                 playerDict[player] = player; // Insert or swap
-                LoggingEnhancements.Log(AppLogLevel.Info, $"Player '{player.Name}' allocated.", "Player");
+                Log.Write(AppLogLevel.Info, $"Player '{player.Name}' allocated.", "Player");
                 return true;
             }
             catch (Exception ex)
             {
                 // Rate limit error messages - log each unique player base error only once per 5 seconds
-                LoggingEnhancements.LogRateLimited(
+                Log.WriteRateLimited(
                     AppLogLevel.Error,
                     $"player_alloc_{playerBase:X}",
                     TimeSpan.FromSeconds(5),
@@ -162,10 +164,15 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             ArgumentOutOfRangeException.ThrowIfZero(playerBase, nameof(playerBase));
             Base = playerBase;
+            // Per-player rate limiters — initialized once, zero allocation on every TryEnter()
+            RealtimeNreLimit = new RateLimiter(s_rateLimitInterval30s);
+            ValidateNreLimit = new RateLimiter(s_rateLimitInterval30s);
+            SkeletonFixLimit = new RateLimiter(s_skeletonFixInterval);
+            BtrFixLimit = new RateLimiter(s_btrFixRateLimitInterval);
         }
         public void SoftResetRuntimeState()
         {
-            XMLogging.WriteLine(
+            Log.WriteLine(
                 $"[PlayerReset] Soft reset runtime state for '{Name}' @ 0x{Base:X}");
 
             // Core flags
@@ -176,6 +183,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             // Position / rotation
             _cachedPosition = Vector3.Zero;
             Rotation = default;
+            MapRotation = 0f;
 
             // Timers / state
             ErrorTimer.Reset();
@@ -197,7 +205,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine(
+                Log.WriteLine(
                     $"[PlayerReset] Skeleton reset failed for {Name}: {ex}");
             }
 
@@ -218,7 +226,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         public int ListIndex { get; set; }
         public bool IsVisible { get; set; } = false;
         public Dictionary<Bones, bool> BoneVisibility { get; } = new();
-        public static readonly List<(Bones start, Bones end)> BoneSegments = new List<(Bones, Bones)>
+        public static readonly IReadOnlyList<(Bones start, Bones end)> BoneSegments = new (Bones, Bones)[]
         {
             (Bones.HumanHead, Bones.HumanNeck),
             (Bones.HumanNeck, Bones.HumanSpine3),
@@ -237,17 +245,25 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
             (Bones.HumanRCollarbone, Bones.HumanRForearm2),  // right elbow
             (Bones.HumanRForearm2, Bones.HumanRPalm),         // right hand
-        };        
+        };
         /// <summary>
         /// Player Class Base Address
         /// </summary>
         public ulong Base { get; }
 
         /// <summary>
+        /// Per-player rate limiters — zero allocation, Stopwatch-based.
+        /// </summary>
+        internal RateLimiter RealtimeNreLimit;
+        internal RateLimiter ValidateNreLimit;
+        internal RateLimiter SkeletonFixLimit;
+        internal RateLimiter BtrFixLimit;
+
+        /// <summary>
         /// True if the Player is Active (in the player list).
         /// </summary>
         public bool IsActive { get; private set; }
-        
+
         /// <summary>
         /// TRUE if critical memory reads (position/rotation) have failed.
         /// </summary>
@@ -265,19 +281,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
         /// <summary>
         /// Player's Map Rotation (with 90 degree correction applied).
+        /// Cached — recomputed when <see cref="Rotation"/> is set.
         /// </summary>
-        public float MapRotation
-        {
-            get
-            {
-                float mapRotation = Rotation.X; // Cache value
-                mapRotation -= 90f;
-                while (mapRotation < 0f)
-                    mapRotation += 360f;
-
-                return mapRotation;
-            }
-        }
+        public float MapRotation { get; private set; }
 
         /// <summary>
         /// Corpse field value.
@@ -299,17 +305,22 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// Duration of consecutive errors.
         /// </summary>
         public Stopwatch ErrorTimer { get; } = new();
-        
+
         /// <summary>
         /// Cached position fallback to prevent players from disappearing when skeleton temporarily fails.
         /// </summary>
         protected Vector3 _cachedPosition;
-        
+
         /// <summary>
         /// Dynamic vertex count for skeleton reads (recalculated each frame if needed).
         /// </summary>
         protected int _verticesCount;
-        
+
+        /// <summary>
+        /// Cached realtime loop callback delegate to avoid per-tick allocation.
+        /// </summary>
+        private Action<ScatterReadIndex> _realtimeCallback;
+
         /// <summary>
         /// Player's Gear/Loadout Information and contained items.
         /// </summary>
@@ -613,7 +624,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         public virtual void OnRegRefresh(ScatterReadIndex index, IReadOnlySet<ulong> registered, bool? isActiveParam = null)
         {
             if (!this.TryInitSkeleton())
-                return; 
+                return;
 
             if (this is ObservedPlayer op &&
                 op.IsPmc &&
@@ -621,7 +632,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 op.VoipId > 0)
             {
                 PlayerListWorker.GetOrAssignDisplayName(op);
-            }            
+            }
             if (isActiveParam is not bool isActive)
                 isActive = registered.Contains(this);
             if (isActive)
@@ -688,7 +699,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             index.AddEntry<Vector2>(-1, this.RotationAddress);
 
             // Bone vertices
-            foreach (var tr in Skeleton.Bones)
+            foreach (var tr in Skeleton.BonesDirect)
             {
                 index.AddEntry<SharedArray<UnityTransform.TrsX>>(
                     (int)(uint)tr.Key,
@@ -697,75 +708,71 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
 
             // -------------------------
-            // Scatter callback
+            // Scatter callback (cached delegate — avoids per-tick allocation)
             // -------------------------
-            index.Callbacks += x1 =>
+            _realtimeCallback ??= RealtimeLoopCallback;
+            index.Callbacks += _realtimeCallback;
+        }
+
+        private void RealtimeLoopCallback(ScatterReadIndex x1)
+        {
+            bool rotationOk = false;
+            bool bonesOk = true;
+
+            // ---- Rotation ----
+            if (x1.TryGetResult<Vector2>(-1, out var rotation))
+                rotationOk = this.SetRotation(ref rotation);
+
+            // ---- Bones ----
+            foreach (var tr in Skeleton.BonesDirect)
             {
-                bool rotationOk = false;
-                bool bonesOk = true;
-
-                // ---- Rotation ----
-                if (x1.TryGetResult<Vector2>(-1, out var rotation))
-                    rotationOk = this.SetRotation(ref rotation);
-
-                // ---- Bones ----
-                foreach (var tr in Skeleton.Bones)
+                if (x1.TryGetResult<SharedArray<UnityTransform.TrsX>>(
+                        (int)(uint)tr.Key,
+                        out var vertices))
                 {
-                    if (x1.TryGetResult<SharedArray<UnityTransform.TrsX>>(
-                            (int)(uint)tr.Key,
-                            out var vertices))
+                    try
                     {
-                        try
-                        {
-                            tr.Value.UpdatePosition(vertices);
-                        }
-                        catch
-                        {
-                            // Transform chain likely invalidated ¡ú rebuild just this bone
-                            Skeleton.ResetTransform(tr.Key);
-                            bonesOk = false;
-                        }
+                        tr.Value.UpdatePosition(vertices);
                     }
-                    else
+                    catch
                     {
+                        // Transform chain likely invalidated — rebuild just this bone
+                        Skeleton.ResetTransform(tr.Key);
                         bonesOk = false;
                     }
                 }
-
-                // -------------------------
-                // Stuck detection (AFTER update)
-                // -------------------------
-                Skeleton.UpdateStuckDetection();
-
-                // -------------------------
-                // Error / health tracking
-                // -------------------------
-                if (rotationOk && bonesOk)
-                    ErrorTimer.Reset();
                 else
-                    ErrorTimer.Start();
-
-                // -------------------------
-                // Stuck recovery (ONE-SHOT)
-                // -------------------------
-                if (Skeleton.IsLikelyStuck &&
-                    ErrorTimer.ElapsedMilliseconds > 800)
                 {
-                    // Rate limit skeleton fix messages to prevent spam (max once per 10 seconds per player)
-                    LoggingEnhancements.LogRateLimited(
-                        AppLogLevel.Warning,
-                        $"skeleton_fix_{Base:X}",
-                        TimeSpan.FromSeconds(10),
-                        $"{Name} skeleton frozen → soft reset",
-                        "SKELETON FIX");
-
-                    SoftResetRuntimeState();
-                    Skeleton.ResetESPCacheAndTransforms();
-
-                    // Explicitly clear stuck state
-                    Skeleton.IsLikelyStuck = false;
+                    bonesOk = false;
                 }
-            };
+            }
+
+            // -------------------------
+            // Stuck detection (AFTER update)
+            // -------------------------
+            Skeleton.UpdateStuckDetection();
+
+            // -------------------------
+            // Error / health tracking
+            // -------------------------
+            if (rotationOk && bonesOk)
+                ErrorTimer.Reset();
+            else
+                ErrorTimer.Start();
+
+            // -------------------------
+            // Stuck recovery (ONE-SHOT)
+            // -------------------------
+            if (Skeleton.IsLikelyStuck &&
+                ErrorTimer.ElapsedMilliseconds > 800 &&
+                SkeletonFixLimit.TryEnter())
+            {
+                Log.Write(AppLogLevel.Warning, $"{Name} skeleton frozen — soft reset", "SKELETON FIX");
+
+                var stuckSkeleton = Skeleton; // capture before null-out
+                SoftResetRuntimeState();      // sets Skeleton = null
+                stuckSkeleton?.ResetESPCacheAndTransforms();
+            }
         }
 
         protected bool TryInitSkeleton()
@@ -824,70 +831,73 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         /// <param name="round2">Index (round 2)</param>
         public void OnValidateTransforms(ScatterReadIndex round1, ScatterReadIndex round2)
         {
-            // Check skeleton root transform first (most critical - if this changes, rebuild everything)
-            round1.AddEntry<MemPointer>(-1, Skeleton.Root.TransformInternal +
-                UnityOffsets.TransformInternal.TransformAccess); // Root Hierarchy
-            round1.Callbacks += x1 =>
-            {
-                if (x1.TryGetResult<MemPointer>(-1, out var tra))
-                {
-                    round2.AddEntry<MemPointer>(-1, tra + UnityOffsets.TransformAccess.Vertices); // Root Vertices Ptr
-                    round2.Callbacks += x2 =>
-                    {
-                        if (x2.TryGetResult<MemPointer>(-1, out var verticesPtr))
-                        {
-                            if (Skeleton.Root.VerticesAddr != verticesPtr) // Root vertices address changed
-                            {
-                                // Rebuild root transform
-                                var transform = new UnityTransform(Skeleton.Root.TransformInternal);
-                                // Note: We can't directly set Skeleton.Root, but we can reset all bones
-                                // The root will be updated when we reset the HumanBase bone
-                                _verticesCount = 0; // Force fresh vertex count on next read
+            var skeleton = Skeleton;
+            if (skeleton is null)
+                return;
 
-                                // IMPORTANT: Rebuild all bone transforms when root changes
-                                try
-                                {
-                                    foreach (var bone in Skeleton.Bones.Keys.ToList())
-                                    {
-                                        Skeleton.ResetTransform(bone);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    XMLogging.WriteLine($"ERROR rebuilding skeleton for '{Name}': {ex}");
-                                }
-                            }
-                        }
-                    };
-                }
-            };
+            // Root bone: check root transform hierarchy access ptr
+            round1.AddEntry<MemPointer>(-1, skeleton.Root.TransformInternal +
+                UnityOffsets.TransformInternal.TransformAccess);
 
-            // Also check individual bone transforms (for non-root changes)
-            foreach (var tr in Skeleton.Bones)
+            // Non-root bones: one AddEntry per bone, all registered before the single callback fires
+            foreach (var tr in skeleton.BonesDirect)
             {
-                // Skip root bone (already checked above)
                 if (tr.Key == eft_dma_radar.Common.Unity.Bones.HumanBase)
                     continue;
-
                 round1.AddEntry<MemPointer>((int)(uint)tr.Key,
                     tr.Value.TransformInternal +
-                    UnityOffsets.TransformInternal.TransformAccess); // Bone Hierarchy
-                round1.Callbacks += x1 =>
-                {
-                    if (x1.TryGetResult<MemPointer>((int)(uint)tr.Key, out var tra))
-                        round2.AddEntry<MemPointer>((int)(uint)tr.Key, tra + UnityOffsets.TransformAccess.Vertices); // Vertices Ptr
-                    round2.Callbacks += x2 =>
-                    {
-                        if (x2.TryGetResult<MemPointer>((int)(uint)tr.Key, out var verticesPtr))
-                        {
-                            if (tr.Value.VerticesAddr != verticesPtr) // check if any addr changed
-                            {
-                                this.Skeleton.ResetTransform(tr.Key); // alloc new transform
-                            }
-                        }
-                    };
-                };
+                    UnityOffsets.TransformInternal.TransformAccess);
             }
+
+            // Single round1 callback handles root + all non-root bones at once
+            round1.Callbacks = x1 =>
+            {
+                // Root
+                if (x1.TryGetResult<MemPointer>(-1, out var rootTra))
+                    round2.AddEntry<MemPointer>(-1, rootTra + UnityOffsets.TransformAccess.Vertices);
+
+                // Non-root bones
+                foreach (var tr in skeleton.BonesDirect)
+                {
+                    if (tr.Key == eft_dma_radar.Common.Unity.Bones.HumanBase)
+                        continue;
+                    if (x1.TryGetResult<MemPointer>((int)(uint)tr.Key, out var tra))
+                        round2.AddEntry<MemPointer>((int)(uint)tr.Key, tra + UnityOffsets.TransformAccess.Vertices);
+                }
+
+                // Single round2 callback handles root + all non-root bones at once
+                round2.Callbacks = x2 =>
+                {
+                    // Root
+                    if (x2.TryGetResult<MemPointer>(-1, out var rootVerticesPtr) &&
+                        skeleton.Root.VerticesAddr != rootVerticesPtr)
+                    {
+                        _verticesCount = 0;
+                        try
+                        {
+                            foreach (var bone in skeleton.BonesDirect.Keys)
+                                skeleton.ResetTransform(bone);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.WriteLine($"ERROR rebuilding skeleton for '{Name}': {ex}");
+                        }
+                        return; // Root changed → all bones already reset, skip per-bone check
+                    }
+
+                    // Non-root bones
+                    foreach (var tr in skeleton.BonesDirect)
+                    {
+                        if (tr.Key == eft_dma_radar.Common.Unity.Bones.HumanBase)
+                            continue;
+                        if (x2.TryGetResult<MemPointer>((int)(uint)tr.Key, out var verticesPtr) &&
+                            tr.Value.VerticesAddr != verticesPtr)
+                        {
+                            skeleton.ResetTransform(tr.Key);
+                        }
+                    }
+                };
+            };
         }
 
         /// <summary>
@@ -905,6 +915,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 ArgumentOutOfRangeException.ThrowIfLessThan(rotation.Y, -90f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(rotation.Y, 90f);
                 Rotation = rotation;
+                MapRotation = ((rotation.X - 90f) % 360f + 360f) % 360f;
                 return true;
             }
             catch
@@ -925,7 +936,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[GearManager] ERROR for Player {Name}: {ex}");
+                Log.WriteLine($"[GearManager] ERROR for Player {Name}: {ex}");
             }
         }
 
@@ -1120,15 +1131,15 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 return new AIRole()
                 {
                     Name = "Usec",
-                    Type = PlayerType.AIScav
+                    Type = PlayerType.AIRaider
                 };
             if (voiceLine.Contains("bear", StringComparison.OrdinalIgnoreCase))
                 return new AIRole()
                 {
                     Name = "Bear",
-                    Type = PlayerType.AIScav
+                    Type = PlayerType.AIRaider
                 };
-            XMLogging.WriteLine($"Unknown Voice Line: {voiceLine}");
+            Log.WriteLine($"Unknown Voice Line: {voiceLine}");
             return new AIRole()
             {
                 Name = "AI",
@@ -1501,7 +1512,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                         Type = PlayerType.AIBoss
                     };
                 default:
-                    XMLogging.WriteLine("WARNING: Unknown WildSpawnType: " + (int)wildSpawnType);
+                    Log.WriteLine("WARNING: Unknown WildSpawnType: " + (int)wildSpawnType);
                     return new AIRole()
                     {
                         Name = "defaultAI",
@@ -1523,14 +1534,14 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 // PERF: cache once
                 var playerTypeKey = DeterminePlayerTypeKey();
-                var typeSettings  = Config.PlayerTypeSettings.GetSettings(playerTypeKey);
+                var typeSettings = Config.PlayerTypeSettings.GetSettings(playerTypeKey);
 
                 var dist = Vector3.Distance(localPlayer.Position, Position);
                 if (dist > typeSettings.RenderDistance)
                     return;
 
                 var mapPos = Position.ToMapPos(mapParams.Map);
-                var point  = mapPos.ToZoomedPos(mapParams);
+                var point = mapPos.ToZoomedPos(mapParams);
                 MouseoverPosition = new Vector2(point.X, point.Y);
 
                 if (!IsAlive)
@@ -1550,9 +1561,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 var height = Position.Y - localPlayer.Position.Y;
 
-                string nameText     = null;
+                string nameText = null;
                 string distanceText = null;
-                string heightText   = null;
+                string heightText = null;
 
                 // PERF: reuse list instead of recreating many temporaries
                 var rightSideInfo = new List<string>(8);
@@ -1585,24 +1596,29 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     gearLoot != null &&
                     Type != PlayerType.Teammate)
                 {
-                    var snapshot = gearLoot.ToList();
-                    importantLootItems = snapshot
-                        .Where(item =>
-                               item.IsImportant ||
-                               item is QuestItem ||
-                               (Config.QuestHelper.Enabled && item.IsQuestCondition) ||
-                               item.IsWishlisted ||
-                               (LootFilterControl.ShowBackpacks && item.IsBackpack) ||
-                               (LootFilterControl.ShowMeds && item.IsMeds) ||
-                               (LootFilterControl.ShowFood && item.IsFood) ||
-                               (LootFilterControl.ShowWeapons && item.IsWeapon) ||
-                               item.IsValuableLoot ||
-                               (!item.IsGroupedBlacklisted &&
-                                item.MatchedFilter?.Color != null &&
-                                !string.IsNullOrEmpty(item.MatchedFilter.Color)))
-                        .OrderLoot()
-                        .Take(5)
-                        .ToList();
+                    bool qe = Config.QuestHelper.Enabled;
+                    bool showBp = LootFilterControl.ShowBackpacks;
+                    bool showMeds = LootFilterControl.ShowMeds;
+                    bool showFood = LootFilterControl.ShowFood;
+                    bool showWep = LootFilterControl.ShowWeapons;
+                    var temp = new List<LootItem>(gearLoot.Count);
+                    foreach (var item in gearLoot)
+                    {
+                        if (item.IsImportant ||
+                            item is QuestItem ||
+                            (qe && item.IsQuestCondition) ||
+                            item.IsWishlisted ||
+                            (showBp && item.IsBackpack) ||
+                            (showMeds && item.IsMeds) ||
+                            (showFood && item.IsFood) ||
+                            (showWep && item.IsWeapon) ||
+                            item.IsValuableLoot ||
+                            (!item.IsGroupedBlacklisted &&
+                             item.MatchedFilter?.Color != null &&
+                             !string.IsNullOrEmpty(item.MatchedFilter.Color)))
+                            temp.Add(item);
+                    }
+                    importantLootItems = temp.OrderLoot().Take(5).ToList();
                 }
 
                 if (typeSettings.ShowHeight && !typeSettings.HeightIndicator)
@@ -1657,12 +1673,12 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"WARNING! Player Draw Error: {ex}");
+                Log.WriteLine($"WARNING! Player Draw Error: {ex}");
             }
         }
 
         private void DrawAlternateHeightIndicator(SKCanvas canvas, SKPoint point, float heightDiff, ValueTuple<SKPaint, SKPaint> paints)
-        { 
+        {
             var baseX = point.X - (15.0f * MainWindow.UIScale);
             var baseY = point.Y + (3.5f * MainWindow.UIScale);
 
@@ -2023,9 +2039,9 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             else if (!IsAlive)
             {
                 lines.Add(($"{Type.GetDescription()}:{name}", SKPaints.TextMouseover));
-            
+
                 string g = null;
-            
+
                 if (this is ObservedPlayer op)
                 {
                     if (op.SpawnGroupID != -1)
@@ -2033,7 +2049,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     else if (op.NetworkGroupID != -1)
                         g = $"NG:{op.NetworkGroupID}";
                 }
-            
+
                 if (g != null)
                     lines.Add((g, SKPaints.TextMouseover));
 
@@ -2071,26 +2087,27 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
         {
             if (this == localPlayer || !IsActive || !IsAlive)
                 return;
-        
-            if (!Skeleton.HasValidPosition)
+
+            var skeleton = Skeleton; // snapshot once — memory thread may null this any time
+            if (skeleton is null || !skeleton.HasValidPosition)
                 return;
-        
+
             var espSettings = ESP.Config.PlayerTypeESPSettings
                 .GetSettings(DeterminePlayerTypeKey());
-        
+
             float dist = Vector3.Distance(localPlayer.Position, Position);
             if (dist > espSettings.RenderDistance)
                 return;
-        
+
             if (!CameraManagerBase.WorldToScreen(ref Position, out var baseScreen))
                 return;
-        
+
             var paints = GetESPPaints();
             var textPaint = espSettings.UseOverrideTextColor
                 ? SKPaints.TextOverridePlayerESP
                 : paints.Item2;
             var renderMode = espSettings.RenderMode;
-        
+
             // ---------------- BTR ----------------
             if (renderMode != ESPPlayerRenderMode.None && this is BtrOperator btr)
             {
@@ -2098,43 +2115,43 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     btrScreen.DrawESPText(canvas, btr, localPlayer, espSettings.ShowDistance, textPaint, "BTR");
                 return;
             }
-        
+
             // ---------------- BOX ----------------
-            var box = Skeleton.GetESPBox(baseScreen);
+            var box = skeleton.GetESPBox(baseScreen);
             if (box == null)
                 return;
-        
+
             var playerBox = box.Value;
             var headPoint = new SKPoint(playerBox.MidX, playerBox.Top);
-        
+
             // ---------------- SKELETON ----------------
             if (renderMode == ESPPlayerRenderMode.Bones)
             {
-                if (!Skeleton.UpdateESPBuffer())
+                if (!skeleton.UpdateESPBuffer())
                     return;
-        
+
                 for (int i = 0; i < SkeletonSegments.Length; i++)
                 {
                     int idx = i * 2;
                     if (idx + 1 >= Skeleton.ESPBuffer.Length)
                         break;
-        
+
                     var p0 = Skeleton.ESPBuffer[idx];
                     var p1 = Skeleton.ESPBuffer[idx + 1];
-        
-                    // HARD GUARD ¡ú prevents long diagonal lines
+
+                    // HARD GUARD → prevents long diagonal lines
                     if (!p0.IsFinite() || !p1.IsFinite())
                         continue;
-        
+
                     var (b0, b1) = SkeletonSegments[i];
-        
+
                     bool v0 = BoneVisibility.TryGetValue(b0, out var s0) && s0;
                     bool v1 = BoneVisibility.TryGetValue(b1, out var s1) && s1;
-        
+
                     var paint = (v0 && v1)
                         ? SKPaints.PaintVisible
                         : paints.Item1;
-        
+
                     canvas.DrawLine(p0, p1, paint);
                 }
             }
@@ -2145,7 +2162,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             else if (renderMode == ESPPlayerRenderMode.HeadDot)
             {
                 if (CameraManagerBase.WorldToScreen(
-                        ref Skeleton.Bones[Bones.HumanHead].Position,
+                        ref skeleton.Bones[Bones.HumanHead].Position,
                         out var headScreen, true, true))
                 {
                     canvas.DrawCircle(headScreen, 1.5f * ESP.Config.FontScale, paints.Item1);
@@ -2155,10 +2172,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                     canvas.DrawCircle(headPoint, 1.5f * ESP.Config.FontScale, paints.Item1);
                 }
             }
-        
+
             if (BattleMode)
                 return;
-        
+
             // ---------------- TEXT ----------------
             var observed = this as ObservedPlayer;
             float textY = headPoint.Y - 5f * ESP.Config.FontScale;
@@ -2178,10 +2195,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
 
                 canvas.DrawText(name, new SKPoint(headPoint.X, textY), SKTextAlign.Center, SKPaints.ESPFontMedium12, textPaint);
             }
-        
+
             if (espSettings.ShowHealth && observed != null)
                 DrawHealthBar(canvas, observed, playerBox);
-        
+
             // ---------------- BOTTOM INFO ----------------
             if (!espSettings.ShowDistance &&
                 !espSettings.ShowWeapon &&
@@ -2191,31 +2208,31 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
                 !espSettings.ShowThermal &&
                 !espSettings.ShowUBGL)
                 return;
-        
+
             var lines = new string[6];
             int count = 0;
-        
+
             if (espSettings.ShowDistance)
                 lines[count++] = $"{(int)dist}m";
-        
+
             if (espSettings.ShowWeapon && Hands?.CurrentItem != null)
                 lines[count++] = espSettings.ShowAmmoType && Hands.CurrentAmmo != null
                     ? $"{Hands.CurrentItem}/{Hands.CurrentAmmo}"
                     : Hands.CurrentItem;
-        
+
             if (espSettings.ShowKD && observed?.Profile?.Overall_KD is float kd &&
                 kd >= espSettings.MinKD)
                 lines[count++] = kd.ToString("n2");
-        
+
             if (espSettings.ShowNVG && Gear?.HasNVG == true)
                 lines[count++] = "NVG";
-        
+
             if (espSettings.ShowThermal && Gear?.HasThermal == true)
                 lines[count++] = "THERMAL";
-        
+
             if (espSettings.ShowUBGL && Gear?.HasUBGL == true)
                 lines[count++] = "UBGL";
-        
+
             if (count > 0)
             {
                 var label = string.Join("\n", lines[..count]);
@@ -2242,16 +2259,16 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             (Bones.HumanSpine3, Bones.HumanSpine2),
             (Bones.HumanSpine2, Bones.HumanSpine1),
             (Bones.HumanSpine1, Bones.HumanPelvis),
-        
+
             (Bones.HumanPelvis, Bones.HumanLThigh2),
             (Bones.HumanLThigh2, Bones.HumanLFoot),
-        
+
             (Bones.HumanPelvis, Bones.HumanRThigh2),
             (Bones.HumanRThigh2, Bones.HumanRFoot),
-        
+
             (Bones.HumanLCollarbone, Bones.HumanLForearm2),
             (Bones.HumanLForearm2, Bones.HumanLPalm),
-        
+
             (Bones.HumanRCollarbone, Bones.HumanRForearm2),
             (Bones.HumanRForearm2, Bones.HumanRPalm),
         };
@@ -2264,7 +2281,7 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             for (int i = 0; i < bones.Length; i++)
             {
                 BoneVisibility[bones[i]] = results[i];
-                //XMLogging.WriteLine($"Bone {bones[i]} visibility: {results[i]}"); // Your log line
+                //Log.WriteLine($"Bone {bones[i]} visibility: {results[i]}"); // Your log line
             }
         }
 
@@ -2274,10 +2291,10 @@ namespace eft_dma_radar.Tarkov.EFTPlayer
             // For example, you might do something like:
             if (!this.Skeleton.Bones.TryGetValue(bone, out var transform))
                 return default;
-        
+
             if (!CameraManagerBase.WorldToScreen(ref transform.Position, out var screenPos))
                 return default;
-        
+
             return new SKPoint(screenPos.X, screenPos.Y);
         }
 
